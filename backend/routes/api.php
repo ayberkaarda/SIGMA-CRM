@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\LogController;
+use App\Http\Controllers\Api\PageVisitController;
 use App\Http\Controllers\Api\PresenceController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\UserController;
@@ -96,5 +98,25 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
          */
         Route::get('/presence/online', [PresenceController::class, 'online'])
             ->name('presence.online');
+
+        /*
+         * Log listeleme + dışa aktarma (Faz 5 / D).
+         *
+         * `logs.view` her üç listeleme ucunu, `logs.export` dışa aktarmayı
+         * korur — kontrol LogController içinde Gate::allows() ile yapılır
+         * (model policy yok, izin adı doğrudan kullanılır).
+         */
+        Route::get('/logs/sessions', [LogController::class, 'sessions'])->name('logs.sessions');
+        Route::get('/logs/page-visits', [LogController::class, 'pageVisits'])->name('logs.page-visits');
+        Route::get('/logs/activities', [LogController::class, 'activities'])->name('logs.activities');
+        Route::get('/logs/export', [LogController::class, 'export'])->name('logs.export');
+
+        /*
+         * Sayfa ziyaret takibi (Faz 5 / C) — her kimliği doğrulanmış kullanıcı
+         * yalnızca kendi ziyaretini kaydeder/günceller. Controller C
+         * tarafından yazılıyor; route sözleşmesi burada sabitlenir.
+         */
+        Route::post('/page-visits', [PageVisitController::class, 'store'])->name('page-visits.store');
+        Route::patch('/page-visits/{pageVisit}/heartbeat', [PageVisitController::class, 'heartbeat'])->name('page-visits.heartbeat');
     });
 });

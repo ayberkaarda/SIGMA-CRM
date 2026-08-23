@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ActivityLogging\LogsCrmActivity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 // Destek talebi (Ticket) modeli — SLA takibi ile müşteri destek kaydı.
 class Ticket extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, LogsCrmActivity, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.

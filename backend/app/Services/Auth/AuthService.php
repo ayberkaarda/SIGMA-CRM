@@ -3,7 +3,12 @@
 namespace App\Services\Auth;
 
 use App\Http\Requests\Auth\LoginRequest;
+use App\Listeners\LogFailedLogin;
+use App\Listeners\LogLockout;
+use App\Listeners\LogSuccessfulLogin;
+use App\Listeners\LogSuccessfulLogout;
 use App\Models\User;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,6 +25,20 @@ use Illuminate\Validation\ValidationException;
  */
 class AuthService
 {
+    /**
+     * Faz 5 / B - session_logs (login/logout/failed_login/locked_out) audit
+     * trail writers. Injected (not resolved ad-hoc) so the container wires
+     * their own UserAgentParser dependency once. See each listener's
+     * docblock for why it is called directly here instead of through
+     * Illuminate's event dispatcher.
+     */
+    public function __construct(
+        private readonly LogSuccessfulLogin $logSuccessfulLogin,
+        private readonly LogSuccessfulLogout $logSuccessfulLogout,
+        private readonly LogFailedLogin $logFailedLogin,
+        private readonly LogLockout $logLockout,
+    ) {}
+
     /**
      * Name of the named rate limiter registered in AppServiceProvider and
      * referenced by the `throttle:login` middleware on POST /api/login.
@@ -116,7 +135,12 @@ class AuthService
         // validate() checks the credentials WITHOUT establishing a session, so a
         // deactivated account is never signed in - not even for a single request.
         if (! $guard->validate($credentials)) {
-            $this->registerFailedAttempt($throttleKey, $credentials['email'], $request);
+            // getLastAttempted() is populated by validate() even on failure -
+            // it is the user matched by e-mail (null if the e-mail is
+            // unknown). Used ONLY to fill session_logs.user_id; see
+            // LogFailedLogin's docblock for why that never leaks into the
+            // response and cannot be used to enumerate accounts.
+            $this->registerFailedAttempt($throttleKey, $credentials['email'], $request, $guard->getLastAttempted());
 
             throw ValidationException::withMessages([
                 // Never reveal whether the e-mail exists: an unknown account and
@@ -131,6 +155,7 @@ class AuthService
 
         if (! $user->is_active) {
             $this->logAuthFailure('deactivated_account', $credentials['email'], $request);
+            $this->logFailedLogin->log($user, $credentials['email'], $request);
 
             throw new HttpResponseException(static::deactivatedResponse());
         }
@@ -145,6 +170,15 @@ class AuthService
 
         $user->forceFill(['last_login_at' => now()])->saveQuietly();
 
+        // Read AFTER regenerate() on purpose - see LogSuccessfulLogin's
+        // docblock: SessionGuard::login() already regenerates the session
+        // once internally and fires its own (real) Login event before this
+        // line runs, so that automatic event would carry a session id this
+        // second, explicit regenerate() immediately invalidates. Building our
+        // own Login event object here and handing it straight to the
+        // listener guarantees the id we persist is the one that survives.
+        $this->logSuccessfulLogin->log(new Login('web', $user, $request->remember()), $request);
+
         return $user->refresh()->load('roles');
     }
 
@@ -153,12 +187,23 @@ class AuthService
      */
     public function logout(Request $request): void
     {
+        // Captured BEFORE guard->logout()/session()->invalidate(): the guard
+        // nulls its cached user on logout(), and invalidate() rotates the
+        // session id, so both would be gone by the time we could otherwise
+        // read them. See LogSuccessfulLogout's docblock for why this is a
+        // direct call rather than an Event::listen(Logout::class, ...).
+        /** @var User|null $user */
+        $user = Auth::guard('web')->user();
+        $sessionId = $request->hasSession() ? $request->session()->getId() : null;
+
         Auth::guard('web')->logout();
 
         if ($request->hasSession()) {
             $request->session()->invalidate();
             $request->session()->regenerateToken();
         }
+
+        $this->logSuccessfulLogout->log($user, $sessionId, $request);
     }
 
     /**
@@ -266,9 +311,10 @@ class AuthService
      * The throttle:login middleware already performed the hit() for this
      * request, so attempts() is authoritative at this point.
      */
-    protected function registerFailedAttempt(string $throttleKey, string $email, Request $request): void
+    protected function registerFailedAttempt(string $throttleKey, string $email, Request $request, ?User $matchedUser = null): void
     {
         $this->logAuthFailure('invalid_credentials', $email, $request);
+        $this->logFailedLogin->log($matchedUser, $email, $request);
 
         if (RateLimiter::attempts(static::limiterKey($throttleKey)) < static::MAX_LOGIN_ATTEMPTS) {
             return;
@@ -285,6 +331,14 @@ class AuthService
             'consecutive_lockouts' => $lockouts,
             'next_window_minutes' => static::lockoutMinutes($throttleKey),
         ]);
+
+        // This branch runs exactly once per lockout - see LogLockout's
+        // docblock for why the named rate limiter never dispatches the real
+        // Illuminate\Auth\Events\Lockout event and why "attempts() just
+        // reached MAX_LOGIN_ATTEMPTS" is the correct, single-shot detection
+        // point (every subsequent request for this key is rejected by the
+        // throttle:login middleware before it reaches AuthService again).
+        $this->logLockout->log($email, $request);
     }
 
     /**
@@ -297,10 +351,11 @@ class AuthService
     }
 
     /**
-     * Failed sign-in attempts are logged for now.
+     * File-based warning log for a failed sign-in attempt.
      *
-     * NOTE: the durable session_logs table (a queryable audit trail surfaced in
-     * the UI) is Phase 5 work; the application log is sufficient at this stage.
+     * Kept alongside (not replaced by) the session_logs DB row written via
+     * logFailedLogin/logLockout below: this is the security team's grep-able
+     * safety net that survives even if the DB write itself fails.
      */
     protected function logAuthFailure(string $reason, string $email, Request $request): void
     {

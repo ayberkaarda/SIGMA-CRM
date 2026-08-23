@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Support\ActivityLogging\LogsCrmActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 // Sistem ayarı — key/value, type alanına göre cast edilir (string, integer, boolean, json).
 class Setting extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsCrmActivity;
 
     /**
      * The attributes that are mass assignable.

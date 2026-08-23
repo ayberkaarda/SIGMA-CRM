@@ -32,6 +32,7 @@ SIGMA-CRM, kapalı devre (yalnızca davetle erişilen) bir kurumsal CRM sistemid
 | Realtime | Laravel Reverb + Laravel Echo | WebSocket sunucusu ve istemci kütüphanesi |
 | Queue / Cache | Redis | 8.0.5 (WSL2 üzerinde) |
 | Araç | Node.js | 26.7.0 |
+| Loglama | spatie/laravel-activitylog ^4.12 + maatwebsite/excel ^3.1 | audit trail, CSV/XLSX export |
 
 > **Not:** Proje başlangıçta Laravel 11 hedefliyordu. Laravel 11.x'te yamalanmamış güvenlik açıkları (CVE-2026-48019 dahil) bulunduğu ve 11.x hattında düzeltme olmadığı için Laravel 12'ye geçildi. Ayrıntı: `docs/PROGRESS.md` karar günlüğü.
 
@@ -113,6 +114,8 @@ Uygulamanın tam çalışması için dört süreç, dört ayrı terminalde çal�
 
 Alternatif olarak, kök dizindeki **`dev.bat`** dosyası çalıştırılarak dört süreç de tek komutla, ayrı pencerelerde başlatılabilir.
 
+Zamanlanmış görevler için `php artisan schedule:work` gerekir — `logs:prune` her gün 03:17'de eski log kayıtlarını budar (page_visit_logs 90 gün, session_logs ve activity_log 365 gün).
+
 ## Sorun Giderme
 
 - **`php` komutu bulunamıyor:** PATH değişikliği yalnızca yeni açılan terminallere yansır — yeni bir terminal açın veya `C:\xampp\php\php.exe` tam yolunu kullanın.
@@ -123,10 +126,12 @@ Alternatif olarak, kök dizindeki **`dev.bat`** dosyası çalıştırılarak dö
 - **`composer install` güvenlik uyarısıyla duruyor** → Composer 2.10+ güvenlik açığı olan sürümlerin kurulumunu engeller. Bu doğru davranıştır; bloğu kapatmak yerine paketi güvenli sürüme yükseltin (`composer audit` ile kontrol edin).
 - **Giriş yaptım ama her sayfa 403 PASSWORD_CHANGE_REQUIRED veriyor** → Hesabınız geçici şifreyle oluşturulmuş; /change-password ekranından şifrenizi değiştirin. Bu kasıtlı bir güvenlik davranışıdır, bkz. docs/AUTH-FLOWS.md
 - **WebSocket bağlanmıyor / private kanal aboneliği reddediliyor** → (1) `php artisan reverb:start` çalışıyor mu, (2) `backend/.env` içinde tek bir `REVERB_APP_ID` var mı (`reverb:install` ikinci blok ekleyebiliyor), (3) `backend/.env` ile `frontend/.env` içindeki anahtarlar eşleşiyor mu, (4) `config/cors.php`'de `broadcasting/auth` yolu tanımlı mı.
+- **Yeni eklediğim klasör git'te görünmüyor** → `.gitignore`'daki çıplak dizin kuralları (`logs`, `dist`) her derinlikte eşleşir. `git check-ignore -v <dosya>` ile hangi kuralın engellediğini bulun.
+- **CSV export'ta Türkçe karakterler bozuk** → Dosya UTF-8 BOM ile üretiliyor; Excel'de "Veri → Metinden" yerine dosyayı doğrudan açın.
 
 ## API Endpoint Listesi
 
-_Faz 2 uçları eklendi; kalanı Faz 13'te tamamlanacak._
+_Faz 2, 4 ve 5 uçları eklendi; kalanı Faz 13'te tamamlanacak._
 
 | Metot | Yol | İzin / Koruma | Açıklama |
 | --- | --- | --- | --- |
@@ -146,6 +151,12 @@ _Faz 2 uçları eklendi; kalanı Faz 13'te tamamlanacak._
 | GET | `/api/roles` | `users.manage` | Rol listesini döner |
 | POST | `/broadcasting/auth` | Kimlik doğrulama gerekli (`auth:sanctum` + `EnsureUserIsActive`) | Private/presence kanal aboneliğini yetkilendirir |
 | GET | `/api/presence/online` | Kimlik doğrulama gerekli (`auth:sanctum` + `EnsureUserIsActive` + `EnsurePasswordIsChanged`) | O an online olan kullanıcıları döner (Reverb API kaynaklı) |
+| GET | `/api/logs/sessions` | `logs.view` | Oturum loglarını (login/logout/failed_login/locked_out) sayfalı/sıralı/filtreli listeler |
+| GET | `/api/logs/page-visits` | `logs.view` | Sayfa ziyareti loglarını sayfalı/sıralı/filtreli listeler |
+| GET | `/api/logs/activities` | `logs.view` | Audit trail (activity log) kayıtlarını sayfalı/sıralı/filtreli listeler |
+| GET | `/api/logs/export` | `logs.export` | Log kayıtlarını CSV veya XLSX olarak dışa aktarır (`?format=csv|xlsx`, tavan 50.000 satır) |
+| POST | `/api/page-visits` | Kimlik doğrulama gerekli | Yeni bir sayfa ziyareti kaydı açar (önceki açık ziyareti otomatik kapatır) |
+| PATCH | `/api/page-visits/{id}/heartbeat` | Kimlik doğrulama gerekli (yalnız kendi ziyareti — IDOR korumalı) | Açık ziyaretin birikimli süresini günceller (30 sn aralıkla) |
 
 ## ER Diyagramı
 

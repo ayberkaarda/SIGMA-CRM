@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ActivityLogging\LogsCrmActivity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 // Teklif — bir deal/company/contact'a bağlı, kalemleri (QuoteItem) olan belge.
 class Quote extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, LogsCrmActivity, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.

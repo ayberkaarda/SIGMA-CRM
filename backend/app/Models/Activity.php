@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ActivityLogging\LogsCrmActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 // Aktivite (Activity) modeli — çağrı, toplantı, e-posta veya not gibi geçmiş etkileşim kayıtları.
 class Activity extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, LogsCrmActivity, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.

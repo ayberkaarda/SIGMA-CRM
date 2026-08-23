@@ -199,24 +199,45 @@ class DemoDataSeeder extends Seeder
 
         $started = microtime(true);
 
-        DB::transaction(function (): void {
-            $this->loadStages();
-            $this->seedUsers();
-            $this->seedCompanies();
-            $this->seedContacts();
-            $this->seedDeals();
-            $this->seedLeads();
-            $this->seedProducts();
-            $this->seedQuotes();
-            $this->seedTickets();
-            $this->seedTasks();
-            $this->seedActivities();
-            $this->seedTags();
-            $this->seedAttachments();
-            $this->seedConversations();
-            $this->seedCustomFieldValues();
-            $this->seedLogs();
-            $this->assertConsistency();
+        // Audit trail susturması: demo veri üretimi ~600 modeli create ettiği için
+        // spatie/laravel-activitylog her biri için bir `created` satırı yazar ve
+        // Loglar sayfası daha ilk açılışta çöple dolardı. Bu kayıtlar gerçek bir
+        // kullanıcı eylemini temsil etmediği için susturuluyor.
+        //
+        // SIRALAMA — `withoutLogs` EN DIŞTA, `DB::transaction` onun İÇİNDE:
+        //  1) Log durumu bir PHP bellek bayrağıdır, veritabanı durumu değil; bir
+        //     rollback onu geri almaz. Geri açma işini en dıştaki `finally`ye
+        //     bırakmak, transaction başarısız olsa bile bayrağın kesinlikle
+        //     eski haline dönmesini garanti eder.
+        //  2) `DB::transaction` deadlock'ta closure'ı yeniden dener; dıştaki
+        //     sarmalayıcı her denemeyi kapsar, içerideki olsaydı her denemede
+        //     bayrak açılıp kapanırdı.
+        //  3) Commit anında tetiklenen `afterCommit` model event'leri
+        //     transaction closure'ının DIŞINDA çalışır; `withoutLogs` içeride
+        //     olsaydı bu event'lerden doğan audit satırları kaçardı.
+        // Çekirdek seeder'lar (roller, süper admin, pipeline, ayarlar, özel
+        // alanlar) bilerek sarmalanmadı — ürettikleri birkaç satır kurulum izi
+        // olarak faydalıdır.
+        activity()->withoutLogs(function (): void {
+            DB::transaction(function (): void {
+                $this->loadStages();
+                $this->seedUsers();
+                $this->seedCompanies();
+                $this->seedContacts();
+                $this->seedDeals();
+                $this->seedLeads();
+                $this->seedProducts();
+                $this->seedQuotes();
+                $this->seedTickets();
+                $this->seedTasks();
+                $this->seedActivities();
+                $this->seedTags();
+                $this->seedAttachments();
+                $this->seedConversations();
+                $this->seedCustomFieldValues();
+                $this->seedLogs();
+                $this->assertConsistency();
+            });
         });
 
         $this->summary(microtime(true) - $started);

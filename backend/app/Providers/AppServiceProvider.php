@@ -3,12 +3,14 @@
 namespace App\Providers;
 
 use App\Http\Resources\UserResource;
+use App\Observers\ActivityLogObserver;
 use App\Services\Auth\AuthService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Spatie\Activitylog\ActivitylogServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,6 +29,60 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->registerSuperAdminGate();
         $this->registerLoginRateLimiter();
+        $this->registerActivityLogObserver();
+    }
+
+    /*
+     * ---------------------------------------------------------------------
+     * Faz 5 / B - session_logs listeners are intentionally NOT registered
+     * here via Event::listen(...).
+     * ---------------------------------------------------------------------
+     * App\Listeners\{LogSuccessfulLogin,LogSuccessfulLogout,LogFailedLogin,
+     * LogLockout} exist, but AuthService (app/Services/Auth/AuthService.php)
+     * calls their log() methods directly instead of relying on Laravel's
+     * automatic auth event dispatch, because none of the four events behave
+     * the way an auto-registered listener would need. (Their public methods
+     * are named `log()`, not `handle()`, specifically so Laravel's automatic
+     * event discovery - which auto-wires any `handle*`/`__invoke` method
+     * under app/Listeners to the event type-hinted as its first parameter,
+     * with no Event::listen() call needed - does not pick them up too.)
+     *   - Login:   SessionGuard::login() regenerates the session AND fires
+     *              the real Login event BEFORE AuthService's own, second,
+     *              explicit session()->regenerate() call - an automatic
+     *              listener would capture a session id that gets
+     *              invalidated one line later.
+     *   - Logout:  fires at a safe point, but is called directly anyway for
+     *              wiring symmetry with the other three (see
+     *              LogSuccessfulLogout's docblock).
+     *   - Failed:  never fires - AuthService uses guard->validate(), and
+     *              SessionGuard::validate() does not call fireFailedEvent()
+     *              (only attempt()/attemptWhen()/once() do).
+     *   - Lockout: never fires - it is only dispatched by the
+     *              Illuminate\Foundation\Auth\ThrottlesLogins trait, and
+     *              this app throttles logins via the NAMED rate limiter
+     *              below (registerLoginRateLimiter()) instead.
+     * Adding Event::listen() mappings here as well would either do nothing
+     * (Failed/Lockout never fire) or double-write a row per request
+     * (Login/Logout), so this provider deliberately registers none.
+     */
+
+    /**
+     * Audit trail (Phase 5).
+     *
+     * Registered here rather than in an EventServiceProvider $observers map
+     * because the observed class is not ours: it is whatever
+     * `config('activitylog.activity_model')` resolves to. Asking the package
+     * keeps this correct if that config key is ever pointed at a custom model.
+     *
+     * What the observer does - diff truncation (ROADMAP R6), execution-context
+     * stamping and the `private-logs` broadcast - is documented on
+     * App\Observers\ActivityLogObserver.
+     */
+    protected function registerActivityLogObserver(): void
+    {
+        $activityModel = ActivitylogServiceProvider::determineActivityModel();
+
+        $activityModel::observe(ActivityLogObserver::class);
     }
 
     /**

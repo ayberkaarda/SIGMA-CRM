@@ -6,6 +6,7 @@ import { registerUnauthorizedHandler, registerPasswordChangeHandler } from './li
 import { useAuthStore } from './features/auth/store'
 import { AppLayout } from './components/layout/AppLayout'
 import { UsersPage } from './features/users/pages/UsersPage'
+import { LogsPage } from './features/logs/pages/LogsPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import Showcase from './pages/Showcase'
@@ -37,6 +38,14 @@ export const router = createBrowserRouter([
         element: (
           <RequireAuth permission="users.view">
             <UsersPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'logs',
+        element: (
+          <RequireAuth permission="logs.view">
+            <LogsPage />
           </RequireAuth>
         ),
       },

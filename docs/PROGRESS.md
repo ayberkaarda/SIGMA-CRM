@@ -1,7 +1,7 @@
 # SIGMA-CRM — İlerleme Durumu (PROGRESS)
 
 **Son güncelleme:** 2026-08-23
-**Durum özeti:** Faz 0-3 tamamlandı, Faz 4 (Realtime Altyapı) backend tarafı hazır — Reverb Windows'ta doğrulandı. Frontend bağlantısı devam ediyor.
+**Durum özeti:** Faz 0-5 tamamlandı — iskelet, design system, kapalı devre auth/RBAC, veri katmanı, realtime altyapı ve log/audit sistemi hazır. Sıradaki: Faz 6 (Leads + Contacts/Companies).
 
 > Ayrıntılı plan: `docs/ROADMAP.md`. Bu dosya her oturum başında okunur (docs/ENGINEERING-RULES.md kuralı).
 
@@ -15,8 +15,8 @@
 | 1 | Design System | ✅ Bitti | Token'lar + tema yönetimi + 15 UI primitive'i + /showcase (2026-08-23). Görsel doğrulama yapıldı ve onaylandı (2026-08-23) |
 | 2 | Auth & RBAC & Kullanıcı Yönetimi | ✅ Bitti | 63 izin, 6 rol, 12 endpoint, zorunlu şifre değişimi. 50 test / 221 assertion (2026-08-23) |
 | 3 | Veri Katmanı | ✅ Bitti | 39 tablo, 40 FK, 20 factory, 5 seeder, tutarlı demo veri. 24/24 tutarlılık kontrolü temiz (2026-08-23) |
-| 4 | Realtime Altyapı | 🟨 Devam | Backend tamam: Reverb v1.11.1 Windows'ta çalışıyor (R2 kapandı), 6 kanallı mimari, presence + online kullanıcı ucu, 88 test. Frontend Echo bağlantısı sürüyor |
-| 5 | Log & Audit | ⬜ Bekliyor | Faz 3 + 4 sonrası |
+| 4 | Realtime Altyapı | ✅ Bitti | Reverb v1.11.1 Windows'ta çalışıyor (R2 kapandı), 6 kanallı mimari, presence + online kullanıcı ucu, frontend Echo bağlantısı ve UI cilası tamamlandı |
+| 5 | Log & Audit | ✅ Bitti | Oturum/gezinme/audit logları, canlı akış, 4 sekmeli Loglar sayfası, CSV/XLSX export, logs:prune. 162 test (2026-08-23) |
 | 6 | Leads + Contacts/Companies | ⬜ Bekliyor | — |
 | 7 | Deals & Kanban Pipeline | ⬜ Bekliyor | — |
 | 8 | Tasks/Activities + Tickets | ⬜ Bekliyor | — |
@@ -49,7 +49,7 @@ Durum simgeleri: ⬜ Bekliyor · 🟨 Devam · ✅ Bitti · 🚫 Bloke
 
 ## Şu Anki Odak
 
-Faz 4 frontend: Echo istemcisi, presence hook'u, anlık oturum sonlandırma (UX katmanı), topbar online göstergesi.
+Faz 6 — Leads + Contacts/Companies: kaynak takibi, lead skorlama, CSV toplu import, lead→müşteri dönüştürme, duplicate tespiti, iletişim geçmişi timeline, etiketleme, özel alanlar.
 
 ## Açık Bloklar
 
@@ -57,8 +57,8 @@ Faz 4 frontend: Echo istemcisi, presence hook'u, anlık oturum sonlandırma (UX 
 
 ## Bir Sonraki Adım
 
-1. **Faz 4 — Realtime Altyapı:** `laravel/reverb` kurulumu, `config/broadcasting.php` default `reverb`, kanal sözlüğü (`routes/channels.php`): `private-user.{id}`, `presence-online`, `presence-record.{type}.{id}`; `frontend/src/lib/echo.ts` + `usePresence` hook'u.
-2. **Faz 5 — Log & Audit:** `session_logs`/`page_visit_logs` doldurma mantığı, `spatie/laravel-activitylog` ile audit trail (`LogsActivity` trait, JSON diff), Loglar sayfası (canlı akış + online panel + CSV/Excel export).
+1. **Faz 6 — Leads + Contacts/Companies:** kaynak takibi (`source` alanı + raporlanabilir kırılım), lead skorlama, CSV toplu import (kuyruklu `ImportLeadsJob` + satır bazlı hata raporu), lead→müşteri dönüştürme (`LeadConversionService`: lead → contact + company + opsiyonel deal, tek transaction), duplicate tespiti (e-posta/telefon/isim benzerliği), Contacts/Companies iletişim geçmişi timeline, etiketleme, özel alanlar (`custom_fields` + `custom_field_values`).
+2. Demo veride Faz 6 için hazır test verisi var: 4 kasıtlı duplicate lead (2 aynı e-posta + 2 aynı ad/telefon), 10 dönüşmüş lead.
 3. Demo hesaplarla giriş: demo kullanıcıların şifresi Demo!2026Sigma, must_change_password=false — farklı rollerin UI'da ne gördüğünü test etmek için kullanılabilir.
 
 **Uyarı:** Faz 3+ endpoint'leri `routes/api.php` içinde `password.changed` grubunun İÇİNE yazılmalı — dışına yazılan uç zorunlu şifre değişimini atlar.
@@ -94,6 +94,10 @@ Faz 4 frontend: Echo istemcisi, presence hook'u, anlık oturum sonlandırma (UX 
 | 2026-08-23 | Online kullanıcı listesi Reverb API'sinden okunuyor, DB'den değil | Soketlerin sahibi Reverb; soket kapanınca üye anında düşer. DB'de `is_online` kolonu tutmak süpürücü job gerektirir ve çökme/ağ kopması durumunda kalıcı yalan söyler. Redis yalnızca önbellek (5 sn) ve Reverb erişilemezken bayat anlık görüntü (5 dk) için |
 | 2026-08-23 | `/broadcasting/auth` ucuna `password.changed` middleware'i uygulanmadı | Zorunlu şifre değişimi ekranındaki kullanıcının da canlı sokete ihtiyacı var — UserDeactivated'ın ulaşması gereken oturum tam olarak odur. Kanal callback'leri kullanıcının zaten sahip olmadığı veriyi açmıyor. `/api/presence/online` ise grubun İÇİNDE |
 | 2026-08-23 | Broadcasting testleri `reverb` sürücüsünü zorluyor, `null` değil | `NullBroadcaster::auth()` her isteğe 200 döner; `BROADCAST_CONNECTION=null` ile çalışan testler her kanalı yetkilendiren bir broadcaster'a karşı yeşil olur ve hiçbir şey doğrulamaz |
+| 2026-08-23 | Oturum logları Laravel auth event'leriyle DEĞİL, AuthService'ten doğrudan yazılıyor | Vendor kaynağı okunarak doğrulandı: Login event'i ikinci regenerate()'ten önce fırlıyor (session_id geçersiz oluyor), Failed ve Lockout event'leri bizim akışımızda hiç fırlamıyor. Event'lere güvenmek sessizce boş log tablosu üretirdi |
+| 2026-08-23 | Audit kırpması tek katmanda: DB'de 1024 karakter | İki şerit bağımsız olarak kırpma üstlenmişti (DB 1024 + API 200); API katmanı DB'nin alan bazlı bilgisini boolean'a çevirip yok ediyordu. Kırpma DB katmanının işi, API sadece geçirir |
+| 2026-08-23 | Message ve Conversation audit'e alınmadı | Chat, üründeki en yüksek hacimli tablo; audit'e aynalanırsa "kim fırsat tutarını değiştirdi" satırı binlerce "mesaj gönderdi" altında kaybolur. Sohbet geçmişi kendi tablosunda edited_at + soft delete ile zaten tam duruyor |
+| 2026-08-23 | Sayfa ziyareti loglama hataları kullanıcıya gösterilmiyor | İkincil bir iş; 403/500/ağ hatası hepsi sessiz. Kullanıcıya "log toplayamadık" demek anlamsız, üstelik must_change_password durumunda 403 beklenen davranış |
 
 ---
 

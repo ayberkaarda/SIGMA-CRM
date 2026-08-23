@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ActivityLogging\LogsCrmActivity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 // Pipeline aşaması (PipelineStage) — Kanban sütunları. Kasıtlı olarak SoftDeletes yok, silme yerine is_active=false kullanılır.
 class PipelineStage extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsCrmActivity;
 
     /**
      * The attributes that are mass assignable.

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ActivityLogging\LogsCrmActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 // Etiket — taggables pivot tablosu üzerinden çeşitli kayıt tiplerine (contact, company, deal, lead ...) bağlanır.
 class Tag extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsCrmActivity;
 
     /**
      * The attributes that are mass assignable.

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ActivityLogging\LogsCrmActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 // Teklif kalemi — ürün adının anlık kopyasını tutar, teklifle birlikte cascade silinir.
 class QuoteItem extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsCrmActivity;
 
     /**
      * The attributes that are mass assignable.
