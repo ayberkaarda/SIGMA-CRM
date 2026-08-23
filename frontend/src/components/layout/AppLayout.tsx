@@ -1,0 +1,61 @@
+// Uygulama kabuğu — Sidebar + Topbar + sayfa içeriği (`<Outlet />`).
+// Sidebar açık/kapalı (collapsed) durumu localStorage'a persist edilir.
+// `lg` altında sidebar overlay (backdrop ile kapanan off-canvas panel), `lg` üstünde sabit
+// genişlikte akışa dahil bir panel olarak davranır.
+import { useCallback, useEffect, useState } from 'react'
+import { Outlet } from 'react-router-dom'
+import { Sidebar } from './Sidebar'
+import { Topbar } from './Topbar'
+
+const SIDEBAR_STORAGE_KEY = 'sigma-crm-sidebar'
+const DESKTOP_MEDIA_QUERY = '(min-width: 1024px)' // Tailwind `lg` kırılım noktası
+
+function readStoredCollapsed(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === '1'
+  } catch {
+    // localStorage erişilemiyorsa (gizli sekme/izin kısıtı) varsayılan: açık.
+    return false
+  }
+}
+
+export function AppLayout() {
+  const [collapsed, setCollapsed] = useState<boolean>(readStoredCollapsed)
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(SIDEBAR_STORAGE_KEY, collapsed ? '1' : '0')
+    } catch {
+      // Sessizce yok say — kalıcılık yalnızca bir kolaylık, kritik değil.
+    }
+  }, [collapsed])
+
+  // Hamburger: masaüstünde daralt/genişlet, mobilde overlay'i aç/kapat.
+  const toggleSidebar = useCallback(() => {
+    const isDesktop = typeof window !== 'undefined' && window.matchMedia(DESKTOP_MEDIA_QUERY).matches
+    if (isDesktop) {
+      setCollapsed((prev) => !prev)
+    } else {
+      setMobileOpen((prev) => !prev)
+    }
+  }, [])
+
+  const closeMobileSidebar = useCallback(() => setMobileOpen(false), [])
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-surface-0">
+      <Sidebar collapsed={collapsed} mobileOpen={mobileOpen} onCloseMobile={closeMobileSidebar} />
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <Topbar onToggleSidebar={toggleSidebar} sidebarCollapsed={collapsed} />
+
+        {/* Sayfa gövdesi yatay kaymaz; geniş içerik (tablo vb.) kendi overflow-x-auto sarmalayıcısında kayar. */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-5">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  )
+}

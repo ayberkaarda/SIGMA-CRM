@@ -18,6 +18,11 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
+            $table->boolean('is_active')->default(true)->index();
+            $table->string('department')->nullable();
+            $table->timestamp('last_login_at')->nullable();
+            $table->boolean('must_change_password')->default(false);
+            $table->softDeletes();
             $table->timestamps();
         });
 

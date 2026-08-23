@@ -91,7 +91,7 @@ extension=intl
    php artisan key:generate
    php artisan migrate --seed
    ```
-   (Faz 3'te hazır olacak — şu an migration'lar henüz yazılmadı)
+   Bu komut roller, izinler ve Super Admin hesabını oluşturur.
 6. Frontend kurulumu:
    ```
    cd frontend
@@ -121,10 +121,28 @@ Alternatif olarak, kök dizindeki **`dev.bat`** dosyası çalıştırılarak dö
 - **Reverb'e bağlanılamıyor:** `php artisan reverb:start` sürecinin çalıştığından, `backend/.env` ve `frontend/.env` dosyalarındaki `REVERB_*` / `VITE_REVERB_*` değerlerinin birbiriyle eşleştiğinden ve 8080 portunun boş olduğundan emin olun.
 - **CORS / 419 hatası:** `backend/.env` içindeki `SANCTUM_STATEFUL_DOMAINS` ve `FRONTEND_URL` değerlerinin doğru olduğundan ve frontend isteklerinde `withCredentials: true` kullanıldığından emin olun.
 - **`composer install` güvenlik uyarısıyla duruyor** → Composer 2.10+ güvenlik açığı olan sürümlerin kurulumunu engeller. Bu doğru davranıştır; bloğu kapatmak yerine paketi güvenli sürüme yükseltin (`composer audit` ile kontrol edin).
+- **Giriş yaptım ama her sayfa 403 PASSWORD_CHANGE_REQUIRED veriyor** → Hesabınız geçici şifreyle oluşturulmuş; /change-password ekranından şifrenizi değiştirin. Bu kasıtlı bir güvenlik davranışıdır, bkz. docs/AUTH-FLOWS.md
 
 ## API Endpoint Listesi
 
-_Faz 13'te doldurulacak._
+_Faz 2 uçları eklendi; kalanı Faz 13'te tamamlanacak._
+
+| Metot | Yol | İzin / Koruma | Açıklama |
+| --- | --- | --- | --- |
+| GET | `/sanctum/csrf-cookie` | — (public) | CSRF çerezini alır, login'den önce çağrılır |
+| POST | `/api/login` | — (public, rate limited) | E-posta + şifre ile oturum açar |
+| POST | `/api/password/forgot` | — (public, kapalı devre) | Admin onaylı şifre sıfırlama talebi; her durumda 202 döner |
+| POST | `/api/logout` | Kimlik doğrulama gerekli | Oturumu kapatır |
+| GET | `/api/me` | Kimlik doğrulama gerekli | Oturum açan kullanıcının bilgilerini döner |
+| POST | `/api/password/change` | Kimlik doğrulama gerekli | Şifre değiştirir (`must_change_password` beyaz listesinde) |
+| GET | `/api/users` | `users.manage` | Kullanıcıları sayfalı/sıralı/filtreli listeler |
+| POST | `/api/users` | `users.manage` | Yeni kullanıcı oluşturur |
+| GET | `/api/users/{id}` | `users.manage` | Kullanıcı detayını döner |
+| PATCH | `/api/users/{id}` | `users.manage` | Kullanıcıyı günceller |
+| DELETE | `/api/users/{id}` | `users.manage` | Kullanıcıyı soft-delete yapar |
+| PATCH | `/api/users/{id}/active` | `users.manage` | Kullanıcıyı aktif/pasif yapar (anlık session revoke) |
+| POST | `/api/users/{id}/reset-password` | `users.manage` | Kullanıcının şifresini sıfırlar |
+| GET | `/api/roles` | `users.manage` | Rol listesini döner |
 
 ## ER Diyagramı
 
@@ -132,7 +150,13 @@ _Faz 3'te mermaid diyagramı olarak eklenecek._
 
 ## Varsayılan Hesaplar
 
-_Faz 2'de Super Admin hesap bilgileri yazılacak._
+| E-posta | Şifre | Rol |
+| --- | --- | --- |
+| `admin@sigma-crm.local` | `SigmaAdmin!2026` | Super Admin |
+
+> **Uyarı:** Bu yalnızca yerel geliştirme içindir. Hesap `must_change_password=true` ile gelir; ilk girişte şifre değiştirme ekranı zorunludur ve değiştirilmeden hiçbir modüle erişilemez. Üretimde seeder'daki şifre mutlaka değiştirilmelidir.
+
+Sistem kapalı devredir: public kayıt yoktur, yeni hesapları yalnızca Super Admin oluşturur.
 
 ## Güvenlik Notu
 

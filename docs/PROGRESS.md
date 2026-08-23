@@ -1,7 +1,7 @@
 # SIGMA-CRM — İlerleme Durumu (PROGRESS)
 
 **Son güncelleme:** 2026-08-23
-**Durum özeti:** Faz 0 ve Faz 1 tamamlandı — proje iskeleti kurulu, design system (token'lar + 15 UI primitive'i + /showcase) hazır. Sıradaki: Faz 2 (Auth & RBAC).
+**Durum özeti:** Faz 0, 1 ve 2 tamamlandı — iskelet, design system ve kapalı devre auth/RBAC hazır. Sıradaki: Faz 3 (Veri Katmanı).
 
 > Ayrıntılı plan: `docs/ROADMAP.md`. Bu dosya her oturum başında okunur (docs/ENGINEERING-RULES.md kuralı).
 
@@ -12,8 +12,8 @@
 | Faz | İsim | Durum | Not |
 |---|---|---|---|
 | 0 | Ortam & İskelet | ✅ Bitti | Backend + frontend iskeleti kuruldu ve doğrulandı (2026-08-23). Laravel 12.67.0 (güvenlik kararı — bkz. karar günlüğü), React 18.3.1, Tailwind 4.3.3 |
-| 1 | Design System | ✅ Bitti | Token'lar + tema yönetimi + 15 UI primitive'i + /showcase (2026-08-23). Görsel doğrulama kullanıcıya kaldı — bkz. Açık Bloklar |
-| 2 | Auth & RBAC & Kullanıcı Yönetimi | ⬜ Bekliyor | Faz 0 sonrası |
+| 1 | Design System | ✅ Bitti | Token'lar + tema yönetimi + 15 UI primitive'i + /showcase (2026-08-23). Görsel doğrulama yapıldı ve onaylandı (2026-08-23) |
+| 2 | Auth & RBAC & Kullanıcı Yönetimi | ✅ Bitti | 63 izin, 6 rol, 12 endpoint, zorunlu şifre değişimi. 50 test / 221 assertion (2026-08-23) |
 | 3 | Veri Katmanı | ⬜ Bekliyor | Faz 2 sonrası; Faz 4 ile paralel yürütülebilir |
 | 4 | Realtime Altyapı | ⬜ Bekliyor | Faz 2 sonrası; Faz 3 ile paralel yürütülebilir |
 | 5 | Log & Audit | ⬜ Bekliyor | Faz 3 + 4 sonrası |
@@ -42,22 +42,25 @@ Durum simgeleri: ⬜ Bekliyor · 🟨 Devam · ✅ Bitti · 🚫 Bloke
 | PHP `redis` eklentisi | — | ❌ yok | `predis/predis` (saf PHP) kullanılacak |
 | PATH | — | ✅ | `C:\xampp\php` kullanıcı PATH'inde (3 kez tekrarlı — zararsız). Açık terminaller oturum başındaki eski PATH'i taşır; `php`/`composer` bulunamazsa yeni terminal aç |
 | UI bağımlılıkları | — | ✅ | @fontsource/poppins (self-host), clsx, tailwind-merge, lucide-react, sonner |
+| Veritabanı | sigma_crm | ✅ | utf8mb4_unicode_ci. Test DB'si ayrı: sigma_crm_test (phpunit.xml'de sabit) |
 
 ---
 
 ## Şu Anki Odak
 
-Faz 2 — Auth & RBAC: Sanctum SPA + CSRF akışı, login ekranı, rate limiting, roller ve granüler izinler, Super Admin seeder, Kullanıcı Yönetimi CRUD, aktif/pasif + anlık session revoke.
+Faz 3 — Veri Katmanı: kalan 20+ CRM tablosunun migration/factory/seeder'ları, FK + index + soft delete, mermaid ER diyagramı.
 
 ## Açık Bloklar
 
-- **`/showcase` görsel doğrulaması bekliyor:** Kod, token ve build denetimleri geçti ama sayfa hiçbir tarayıcıda gözle kontrol edilmedi (oturumda tarayıcı otomasyon aracı yoktu). Kullanıcı `npm run dev` → `http://localhost:5173/showcase` adresinde her iki temayı kontrol etmeli.
+- Şu an açık blok yok.
 
 ## Bir Sonraki Adım
 
-1. `/showcase` sayfasını her iki temada gözle kontrol et (`cd frontend && npm run dev` → http://localhost:5173/showcase).
-2. **Faz 2 — Auth & RBAC:** Sanctum SPA + CSRF akışı, login ekranı, rate limiting (5/dk + artan bekleme), roller + granüler izinler, Super Admin seeder, Kullanıcı Yönetimi CRUD, aktif/pasif + anlık session revoke.
-3. **Faz 3 — Veri Katmanı** Faz 2 sonrası; `sigma_crm` veritabanı HENÜZ OLUŞTURULMADI ve hiçbir migration çalıştırılmadı, ayrı onay gerektirir.
+1. **Faz 3 — Veri Katmanı:** Kalan tabloların (leads, contacts, companies, deals, pipeline_stages, tasks, activities, tickets, products, quotes, quote_items, messages, conversations, conversation_user, notifications, activity_logs, page_visit_logs, session_logs, custom_fields, custom_field_values, tags, taggables, attachments, settings) migration + factory + seeder'ları; FK + index + soft delete.
+2. Mermaid `erDiagram` diyagramının README'ye eklenmesi.
+3. Gerçekçi Türkçe demo veri seeder'ı — `DatabaseSeeder` sıralaması FK bağımlılığına göre.
+
+**Uyarı:** Faz 3+ endpoint'leri `routes/api.php` içinde `password.changed` grubunun İÇİNE yazılmalı — dışına yazılan uç zorunlu şifre değişimini atlar.
 
 ---
 
@@ -80,6 +83,10 @@ Faz 2 — Auth & RBAC: Sanctum SPA + CSRF akışı, login ekranı, rate limiting
 | 2026-08-23 | Toast için Sonner kullanılacak | Projede kurulu `ask-sonner` skill'i ile API'si doğrulandı; erişilebilir, hafif, tema desteği var. Tokenlarımızla sarmalandı (`Toast.tsx`) |
 | 2026-08-23 | İkon seti: lucide-react (Font Awesome 5 değil) | Tasarım FA5 kullanıyor ama React projesinde lucide tree-shake edilebilir ve tip güvenli; ikon isimleri eşlenerek kullanılıyor |
 | 2026-08-23 | Poppins self-host (@fontsource/poppins) | Kapalı devre sistemde Google Fonts CDN bağımlılığı istenmiyor; 400/500/600/700 ağırlıkları bundle'a dahil |
+| 2026-08-23 | Faz 1 görsel kabul verildi | Kullanıcı `/showcase` sayfasını açık ve koyu temada gözden geçirdi, düzeltme gerektiren bir sorun bulunmadı |
+| 2026-08-23 | Zorunlu şifre değişimi sunucuda dayatılıyor (EnsurePasswordIsChanged) | must_change_password yazılıyordu ama dayatılmıyordu; geçici şifre kalıcılaşıyordu. Frontend guard'ı yetersiz — geçerli cookie ile curl/Postman API'ye doğrudan erişebilir. Muafiyet beyaz liste (fail-safe). Tasarım: docs/AUTH-FLOWS.md |
+| 2026-08-23 | Diğer oturumların şifre değişiminde düşmesi için ek kod yazılmadı | config/sanctum.php'deki authenticate_session zinciri, session'daki password_hash_web ile güncel hash'i karşılaştırıp uyuşmazlıkta 401 veriyor. Garanti config'den geldiği için feature testiyle sabitlendi (config regresyonunda test alarm verir) |
+| 2026-08-23 | Login rate limiting: e-posta+IP anahtarı, artan bekleme | Sadece IP: NAT arkasındaki kullanıcılar birbirini kilitler. Sadece e-posta: dağıtık deneme engellenmez. Artan bekleme 1→2→4→8→16→32→60 dk |
 
 ---
 
