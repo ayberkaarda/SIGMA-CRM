@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 // Destek talebi (Ticket) modeli — SLA takibi ile müşteri destek kaydı.
@@ -80,6 +81,17 @@ class Ticket extends Model
     public function activities(): MorphMany
     {
         return $this->morphMany(Activity::class, 'activityable');
+    }
+
+    // taggables pivotunda timestamps yok — withTimestamps() ÇAĞIRMA (kolonlar mevcut değil).
+    public function tags(): MorphToMany
+    {
+        return $this->morphToMany(Tag::class, 'taggable');
+    }
+
+    public function customFieldValues(): MorphMany
+    {
+        return $this->morphMany(CustomFieldValue::class, 'customizable');
     }
 
     public function scopeOpen(Builder $query): Builder

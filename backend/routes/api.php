@@ -1,10 +1,16 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CompanyController;
+use App\Http\Controllers\Api\ContactController;
+use App\Http\Controllers\Api\CustomFieldController;
+use App\Http\Controllers\Api\LeadController;
+use App\Http\Controllers\Api\LeadImportController;
 use App\Http\Controllers\Api\LogController;
 use App\Http\Controllers\Api\PageVisitController;
 use App\Http\Controllers\Api\PresenceController;
 use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -118,5 +124,56 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
          */
         Route::post('/page-visits', [PageVisitController::class, 'store'])->name('page-visits.store');
         Route::patch('/page-visits/{pageVisit}/heartbeat', [PageVisitController::class, 'heartbeat'])->name('page-visits.heartbeat');
+
+        /*
+         * Leads (Faz 6 / B) — route sırası KASITLIDIR: sabit segmentli
+         * uçlar (`check-duplicates`, `import`, `import/template`) parametreli
+         * `{lead}` rotasından ÖNCE tanımlanmalı, yoksa Laravel bu segmentleri
+         * `{lead}` route-model-binding parametresi sanıp 404 üretir.
+         *
+         * `import/{batch}` da `import/template`'ten SONRA gelmeli — aksi
+         * halde `template` kelimesi `{batch}` parametresi sanılır.
+         */
+        Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
+        Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
+        Route::post('/leads/check-duplicates', [LeadController::class, 'checkDuplicates'])->name('leads.check-duplicates');
+        Route::post('/leads/import', [LeadImportController::class, 'store'])->name('leads.import.store');
+        Route::get('/leads/import/template', [LeadImportController::class, 'template'])->name('leads.import.template');
+        Route::get('/leads/import/{batch}', [LeadImportController::class, 'status'])->name('leads.import.status');
+        Route::get('/leads/{lead}', [LeadController::class, 'show'])->name('leads.show');
+        Route::patch('/leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
+        Route::delete('/leads/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
+        Route::post('/leads/{lead}/convert', [LeadController::class, 'convert'])->name('leads.convert');
+        Route::patch('/leads/{lead}/assign', [LeadController::class, 'assign'])->name('leads.assign');
+
+        /*
+         * Contacts (Faz 6 / C) — controller C şeridinin; route sözleşmesi
+         * burada sabitlenir. `timeline` sabit segmenti `{contact}`'tan
+         * ÖNCE gelmez çünkü kendisi zaten `{contact}`'a bağlı bir alt-yol.
+         */
+        Route::get('/contacts', [ContactController::class, 'index'])->name('contacts.index');
+        Route::post('/contacts', [ContactController::class, 'store'])->name('contacts.store');
+        Route::get('/contacts/{contact}', [ContactController::class, 'show'])->name('contacts.show');
+        Route::patch('/contacts/{contact}', [ContactController::class, 'update'])->name('contacts.update');
+        Route::delete('/contacts/{contact}', [ContactController::class, 'destroy'])->name('contacts.destroy');
+        Route::get('/contacts/{contact}/timeline', [ContactController::class, 'timeline'])->name('contacts.timeline');
+
+        /*
+         * Companies (Faz 6 / C) — controller C şeridinin; route sözleşmesi
+         * burada sabitlenir.
+         */
+        Route::get('/companies', [CompanyController::class, 'index'])->name('companies.index');
+        Route::post('/companies', [CompanyController::class, 'store'])->name('companies.store');
+        Route::get('/companies/{company}', [CompanyController::class, 'show'])->name('companies.show');
+        Route::patch('/companies/{company}', [CompanyController::class, 'update'])->name('companies.update');
+        Route::delete('/companies/{company}', [CompanyController::class, 'destroy'])->name('companies.destroy');
+        Route::get('/companies/{company}/timeline', [CompanyController::class, 'timeline'])->name('companies.timeline');
+
+        /*
+         * Ortak (Faz 6 / B) — etiketler ve özel alan tanımları.
+         */
+        Route::get('/tags', [TagController::class, 'index'])->name('tags.index');
+        Route::post('/tags', [TagController::class, 'store'])->name('tags.store');
+        Route::get('/custom-fields', [CustomFieldController::class, 'index'])->name('custom-fields.index');
     });
 });

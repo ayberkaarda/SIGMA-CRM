@@ -1,7 +1,7 @@
 # SIGMA-CRM — İlerleme Durumu (PROGRESS)
 
-**Son güncelleme:** 2026-08-23
-**Durum özeti:** Faz 0-5 tamamlandı — iskelet, design system, kapalı devre auth/RBAC, veri katmanı, realtime altyapı ve log/audit sistemi hazır. Sıradaki: Faz 6 (Leads + Contacts/Companies).
+**Son güncelleme:** 2026-08-24
+**Durum özeti:** Faz 0-6 tamamlandı — iskelet, design system, auth/RBAC, veri katmanı, realtime, log/audit ve Leads+Kişiler/Firmalar hazır. Sıradaki: Faz 7 (Deals & Kanban Pipeline).
 
 > Ayrıntılı plan: `docs/ROADMAP.md`. Bu dosya her oturum başında okunur (docs/ENGINEERING-RULES.md kuralı).
 
@@ -17,7 +17,7 @@
 | 3 | Veri Katmanı | ✅ Bitti | 39 tablo, 40 FK, 20 factory, 5 seeder, tutarlı demo veri. 24/24 tutarlılık kontrolü temiz (2026-08-23) |
 | 4 | Realtime Altyapı | ✅ Bitti | Reverb v1.11.1 Windows'ta çalışıyor (R2 kapandı), 6 kanallı mimari, presence + online kullanıcı ucu, frontend Echo bağlantısı ve UI cilası tamamlandı |
 | 5 | Log & Audit | ✅ Bitti | Oturum/gezinme/audit logları, canlı akış, 4 sekmeli Loglar sayfası, CSV/XLSX export, logs:prune. 162 test (2026-08-23) |
-| 6 | Leads + Contacts/Companies | ⬜ Bekliyor | — |
+| 6 | Leads + Contacts/Companies | ✅ Bitti | Duplicate tespiti (4/4 gerçek veride doğrulandı), lead dönüşümü, CSV import, timeline. 279 test (2026-08-24) |
 | 7 | Deals & Kanban Pipeline | ⬜ Bekliyor | — |
 | 8 | Tasks/Activities + Tickets | ⬜ Bekliyor | — |
 | 9 | Products & Quotes | ⬜ Bekliyor | — |
@@ -49,7 +49,7 @@ Durum simgeleri: ⬜ Bekliyor · 🟨 Devam · ✅ Bitti · 🚫 Bloke
 
 ## Şu Anki Odak
 
-Faz 6 — Leads + Contacts/Companies: kaynak takibi, lead skorlama, CSV toplu import, lead→müşteri dönüştürme, duplicate tespiti, iletişim geçmişi timeline, etiketleme, özel alanlar.
+Faz 7 — Deals & Kanban Pipeline: dnd-kit sürükle-bırak, aşama bazlı olasılık/tutar, kazanma-kaybetme nedenleri, WebSocket ile anlık senkron (optimistic update + version çakışma çözümü).
 
 ## Açık Bloklar
 
@@ -57,9 +57,11 @@ Faz 6 — Leads + Contacts/Companies: kaynak takibi, lead skorlama, CSV toplu im
 
 ## Bir Sonraki Adım
 
-1. **Faz 6 — Leads + Contacts/Companies:** kaynak takibi (`source` alanı + raporlanabilir kırılım), lead skorlama, CSV toplu import (kuyruklu `ImportLeadsJob` + satır bazlı hata raporu), lead→müşteri dönüştürme (`LeadConversionService`: lead → contact + company + opsiyonel deal, tek transaction), duplicate tespiti (e-posta/telefon/isim benzerliği), Contacts/Companies iletişim geçmişi timeline, etiketleme, özel alanlar (`custom_fields` + `custom_field_values`).
-2. Demo veride Faz 6 için hazır test verisi var: 4 kasıtlı duplicate lead (2 aynı e-posta + 2 aynı ad/telefon), 10 dönüşmüş lead.
-3. Demo hesaplarla giriş: demo kullanıcıların şifresi Demo!2026Sigma, must_change_password=false — farklı rollerin UI'da ne gördüğünü test etmek için kullanılabilir.
+1. **Faz 7 — Deals & Kanban Pipeline:** dnd-kit sürükle-bırak Kanban, aşama bazlı olasılık/tutar, kazanma-kaybetme nedenleri, tahmini kapanış tarihi, `DealMoved` WebSocket eventi ile anlık senkron (optimistic update + stale `version`'da 409 ile geri alma).
+2. Faz 7 için hazır: deals tablosunda position (fractional index) ve version (optimistic lock) kolonları, deals(pipeline_stage_id, position) composite index'i, presence-record.deal.{id} kanalı, 7 aşamalı seed'li pipeline, 50 demo fırsat.
+3. Deal position hesaplama mantığı şu an LeadConversionService içinde; Faz 7'de ortak bir Support sınıfına çıkarılmalı (iki yerde kopyalanmasın).
+4. Etiket/aşama renkleri için components/shared/tokenBadgeVariant.ts hazır — pipeline_stages.color aynı token adlarını taşıyor.
+5. Demo hesaplarla giriş: demo kullanıcıların şifresi Demo!2026Sigma, must_change_password=false — farklı rollerin UI'da ne gördüğünü test etmek için kullanılabilir.
 
 **Uyarı:** Faz 3+ endpoint'leri `routes/api.php` içinde `password.changed` grubunun İÇİNE yazılmalı — dışına yazılan uç zorunlu şifre değişimini atlar.
 
@@ -98,6 +100,10 @@ Faz 6 — Leads + Contacts/Companies: kaynak takibi, lead skorlama, CSV toplu im
 | 2026-08-23 | Audit kırpması tek katmanda: DB'de 1024 karakter | İki şerit bağımsız olarak kırpma üstlenmişti (DB 1024 + API 200); API katmanı DB'nin alan bazlı bilgisini boolean'a çevirip yok ediyordu. Kırpma DB katmanının işi, API sadece geçirir |
 | 2026-08-23 | Message ve Conversation audit'e alınmadı | Chat, üründeki en yüksek hacimli tablo; audit'e aynalanırsa "kim fırsat tutarını değiştirdi" satırı binlerce "mesaj gönderdi" altında kaybolur. Sohbet geçmişi kendi tablosunda edited_at + soft delete ile zaten tam duruyor |
 | 2026-08-23 | Sayfa ziyareti loglama hataları kullanıcıya gösterilmiyor | İkincil bir iş; 403/500/ağ hatası hepsi sessiz. Kullanıcıya "log toplayamadık" demek anlamsız, üstelik must_change_password durumunda 403 beklenen davranış |
+| 2026-08-24 | Duplicate skorları toplanmaz, en yüksek kural kazanır | Hem e-posta hem telefon eşleşen bir kayıt 190 değil 100 alır. Toplama, "iki zayıf sinyal bir güçlü sinyale eşittir" gibi yanlış bir denklik kurardı ve eşik anlamını yitirirdi |
+| 2026-08-24 | Duplicate uyarısı kaydetmeyi engellemez | Tespit bir yargıdır, kesinlik değil. Aynı isimde iki gerçek kişi olabilir. Kullanıcıyı kendi verisi üzerinde kilitlemek yerine neden eşleştiği gösterilip karar ona bırakılır |
+| 2026-08-24 | Dönüşümde morph kayıtları contact'a taşınır | Aksi halde dönüşüm teknik olarak başarılı görünür ama iletişim geçmişi lead'de kalır ve müşteri kartı boş açılır — dönüşümün amacı sessizce kaybolur |
+| 2026-08-24 | CSV import'ta duplicate contact GÜNCELLENMEZ, atlanır | Contact canlı müşteri kaydı; import dosyasından gelen eksik/eski verilerle üzerine yazmak veri kaybıdır. Lead güncellenebilir (henüz nitelendirilmemiş aday) |
 
 ---
 

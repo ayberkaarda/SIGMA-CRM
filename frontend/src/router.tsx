@@ -7,6 +7,8 @@ import { useAuthStore } from './features/auth/store'
 import { AppLayout } from './components/layout/AppLayout'
 import { UsersPage } from './features/users/pages/UsersPage'
 import { LogsPage } from './features/logs/pages/LogsPage'
+import { LeadsPage } from './features/leads/pages/LeadsPage'
+import { LeadDetailPage } from './features/leads/pages/LeadDetailPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import Showcase from './pages/Showcase'
@@ -46,6 +48,22 @@ export const router = createBrowserRouter([
         element: (
           <RequireAuth permission="logs.view">
             <LogsPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'leads',
+        element: (
+          <RequireAuth permission="leads.view">
+            <LeadsPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'leads/:id',
+        element: (
+          <RequireAuth permission="leads.view">
+            <LeadDetailPage />
           </RequireAuth>
         ),
       },

@@ -128,10 +128,12 @@ Zamanlanmış görevler için `php artisan schedule:work` gerekir — `logs:prun
 - **WebSocket bağlanmıyor / private kanal aboneliği reddediliyor** → (1) `php artisan reverb:start` çalışıyor mu, (2) `backend/.env` içinde tek bir `REVERB_APP_ID` var mı (`reverb:install` ikinci blok ekleyebiliyor), (3) `backend/.env` ile `frontend/.env` içindeki anahtarlar eşleşiyor mu, (4) `config/cors.php`'de `broadcasting/auth` yolu tanımlı mı.
 - **Yeni eklediğim klasör git'te görünmüyor** → `.gitignore`'daki çıplak dizin kuralları (`logs`, `dist`) her derinlikte eşleşir. `git check-ignore -v <dosya>` ile hangi kuralın engellediğini bulun.
 - **CSV export'ta Türkçe karakterler bozuk** → Dosya UTF-8 BOM ile üretiliyor; Excel'de "Veri → Metinden" yerine dosyayı doğrudan açın.
+- **CSV import'ta Türkçe karakterler bozuk** → Şablonu `/api/leads/import/template` adresinden indirin; UTF-8 BOM ile üretiliyor. Kendi dosyanızı UTF-8 olarak kaydedin.
+- **Duplicate uyarısı çıkmıyor** → Kontrol en az bir alan (e-posta, telefon, ad veya soyad) dolduğunda ve 500ms yazma duraklamasından sonra çalışır. Hiçbir alan doluysa değilse istek gönderilmez (sunucu 422 döner).
 
 ## API Endpoint Listesi
 
-_Faz 2, 4 ve 5 uçları eklendi; kalanı Faz 13'te tamamlanacak._
+_Faz 2, 4, 5 ve 6 uçları eklendi; kalanı Faz 13'te tamamlanacak._
 
 | Metot | Yol | İzin / Koruma | Açıklama |
 | --- | --- | --- | --- |
@@ -157,6 +159,32 @@ _Faz 2, 4 ve 5 uçları eklendi; kalanı Faz 13'te tamamlanacak._
 | GET | `/api/logs/export` | `logs.export` | Log kayıtlarını CSV veya XLSX olarak dışa aktarır (`?format=csv|xlsx`, tavan 50.000 satır) |
 | POST | `/api/page-visits` | Kimlik doğrulama gerekli | Yeni bir sayfa ziyareti kaydı açar (önceki açık ziyareti otomatik kapatır) |
 | PATCH | `/api/page-visits/{id}/heartbeat` | Kimlik doğrulama gerekli (yalnız kendi ziyareti — IDOR korumalı) | Açık ziyaretin birikimli süresini günceller (30 sn aralıkla) |
+| GET | `/api/leads` | `leads.view` | Lead'leri sayfalı/sıralı/filtreli/aramalı listeler |
+| POST | `/api/leads` | `leads.create` | Yeni lead oluşturur |
+| GET | `/api/leads/{id}` | `leads.view` | Lead detayını döner |
+| PATCH | `/api/leads/{id}` | `leads.update` | Lead'i günceller (dönüşmüş lead 403) |
+| DELETE | `/api/leads/{id}` | `leads.delete` | Lead'i soft-delete yapar (dönüşmüş lead 403) |
+| POST | `/api/leads/check-duplicates` | `leads.view` | E-posta/telefon/isim üzerinden duplicate aday kontrolü yapar |
+| POST | `/api/leads/{id}/convert` | `leads.convert` | Lead'i contact + (varsa) company + (opsiyonel) deal'e dönüştürür |
+| PATCH | `/api/leads/{id}/assign` | `leads.update` | Lead'i bir kullanıcıya atar |
+| POST | `/api/leads/import` | `leads.import` | CSV toplu import başlatır (500 satır altı senkron, üstü kuyruklu — 202 + `batch_id`) |
+| GET | `/api/leads/import/template` | `leads.import` | Import için boş CSV şablonunu indirir (UTF-8 BOM) |
+| GET | `/api/leads/import/{batch}` | `leads.import` (yalnız batch'i başlatan kullanıcı) | Kuyruklu import'un durumunu/sonuç raporunu döner |
+| GET | `/api/contacts` | `contacts.view` | Kişileri sayfalı/sıralı/filtreli/aramalı listeler |
+| POST | `/api/contacts` | `contacts.create` | Yeni kişi oluşturur |
+| GET | `/api/contacts/{id}` | `contacts.view` | Kişi detayını döner |
+| PATCH | `/api/contacts/{id}` | `contacts.update` | Kişiyi günceller |
+| DELETE | `/api/contacts/{id}` | `contacts.delete` | Kişiyi soft-delete yapar (açık fırsatı varsa 422) |
+| GET | `/api/contacts/{id}/timeline` | `contacts.view` | Kişinin birleşik iletişim geçmişi timeline'ını döner |
+| GET | `/api/companies` | `companies.view` | Firmaları sayfalı/sıralı/filtreli/aramalı listeler |
+| POST | `/api/companies` | `companies.create` | Yeni firma oluşturur |
+| GET | `/api/companies/{id}` | `companies.view` | Firma detayını döner |
+| PATCH | `/api/companies/{id}` | `companies.update` | Firmayı günceller |
+| DELETE | `/api/companies/{id}` | `companies.delete` | Firmayı soft-delete yapar (açık fırsatı varsa 422) |
+| GET | `/api/companies/{id}/timeline` | `companies.view` | Firmanın (bağlı kişiler dahil) birleşik timeline'ını döner |
+| GET | `/api/tags` | Kimlik doğrulama gerekli | Etiket listesini döner |
+| POST | `/api/tags` | Kimlik doğrulama gerekli | Yeni etiket oluşturur |
+| GET | `/api/custom-fields` | Kimlik doğrulama gerekli | Tanımlı özel alanları döner |
 
 ## ER Diyagramı
 

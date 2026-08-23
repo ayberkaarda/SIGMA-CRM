@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 // Ürün/hizmet kataloğu — teklif kalemlerinde referans alınır.
@@ -50,6 +52,17 @@ class Product extends Model
     public function quoteItems(): HasMany
     {
         return $this->hasMany(QuoteItem::class);
+    }
+
+    public function tags(): MorphToMany
+    {
+        // taggables saf pivot tablo (timestamps yok) — withTimestamps() KULLANMA, olmayan created_at/updated_at kolonlarını seçmeye çalışıp SQL hatası verir.
+        return $this->morphToMany(Tag::class, 'taggable');
+    }
+
+    public function customFieldValues(): MorphMany
+    {
+        return $this->morphMany(CustomFieldValue::class, 'customizable');
     }
 
     /**
