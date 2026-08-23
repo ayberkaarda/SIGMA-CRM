@@ -1,0 +1,26 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editör
+.vscode/
+.idea/
+*.swp
+
+# Loglar
+*.log
+npm-debug.log*
+
+# Ortam dosyaları (alt projelerde de ignore edilir, burada güvenlik ağı)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Geçici
+/tmp/
+*.tmp
+
+# Editör / IDE yerel ayarları
+.vscode/settings.json
+.idea/
