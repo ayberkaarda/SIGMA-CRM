@@ -56,6 +56,39 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    /*
+     * Channel authorization endpoint: GET|POST /broadcasting/auth
+     *
+     * Registered explicitly instead of through withRouting(channels: ...),
+     * because that helper falls back to Broadcast::routes() with the `web`
+     * middleware group ONLY - no auth guard, no active check. What this route
+     * decides is who may listen on a channel, so it gets the same gate as the
+     * REST surface:
+     *
+     *   web          the session cookie stack. Sanctum SPA mode authenticates
+     *                from the session, so the cookie is the credential here
+     *                too. Broadcast::routes() already exempts this route from
+     *                VerifyCsrfToken, which is what lets Echo POST to it.
+     *   auth:sanctum anonymous callers get 401 UNAUTHENTICATED instead of the
+     *                bare 403 a channel callback would produce; the SPA needs
+     *                to tell "logged out" from "not allowed on this channel".
+     *   active       an account deactivated mid-session cannot open NEW
+     *                subscriptions. Sockets already open are torn down
+     *                separately by UserDeactivated on private-user.{id}.
+     *
+     * DELIBERATELY ABSENT: `password.changed`. A user under a forced password
+     * change still needs a live socket - that is precisely the session in
+     * which UserDeactivated has to reach them, and the change-password screen
+     * shows connection state. The trade-off is safe because no channel
+     * callback grants data beyond identity plus the module permissions the
+     * user already holds; the password gate protects the REST endpoints that
+     * actually return records, and those stay behind `password.changed` in
+     * routes/api.php.
+     */
+    ->withBroadcasting(
+        __DIR__.'/../routes/channels.php',
+        ['middleware' => ['web', 'auth:sanctum', 'active']],
+    )
     ->withMiddleware(function (Middleware $middleware) {
         // Sanctum SPA cookie mode: requests whose Origin/Referer matches
         // config('sanctum.stateful') get the full session stack (cookies,

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { changePassword, forgotPassword, login, logout, me } from '../api/authApi'
 import { useAuthStore } from '../store'
 import type { LoginPayload } from '../types'
+import { connectEcho, disconnectEcho } from '../../../lib/echo'
 
 const ME_QUERY_KEY = ['auth', 'me'] as const
 
@@ -43,6 +44,19 @@ export function useAuth() {
       setStatus('unauthenticated')
     }
   }, [meQuery.isLoading, meQuery.isSuccess, meQuery.isError, meQuery.data, setUser, setStatus])
+
+  // Realtime bağlantının yaşam döngüsü auth durumuna bağlanır: kimlik
+  // doğrulandığında (ilk `/api/me`, login, ya da forced-logout sonrası tekrar
+  // login) bağlan; oturum kapandığında (logout, 401, hesap pasifleştirme)
+  // bağlantıyı kapat. Tek kaynak `status` olduğu için login/logout
+  // mutasyonlarının ayrıca connectEcho/disconnectEcho çağırmasına gerek yok.
+  useEffect(() => {
+    if (status === 'authenticated') {
+      connectEcho()
+    } else if (status === 'unauthenticated') {
+      disconnectEcho()
+    }
+  }, [status])
 
   const loginMutation = useMutation({
     mutationFn: (payload: LoginPayload) => login(payload),

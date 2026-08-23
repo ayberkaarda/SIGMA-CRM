@@ -2,12 +2,14 @@
 // kullanıcı menüsü. ~56px yükseklik (bkz. docs/DESIGN-SYSTEM.md §6/§7).
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { Bell, LogOut, Menu, Monitor, Moon, Search, Sun, User as UserIcon } from 'lucide-react'
+import { Bell, LogOut, Menu, Monitor, Moon, Search, Sun, User as UserIcon, WifiOff } from 'lucide-react'
 import { Avatar, Input } from '../ui'
 import { cn } from '../../lib/cn'
 import { useAuth } from '../../features/auth/hooks/useAuth'
 import { useTheme } from '../../hooks/useTheme'
 import type { Theme } from '../../stores/themeStore'
+import { onConnectionStateChange } from '../../lib/echo'
+import { OnlineUsersPopover } from '../../features/presence/components/OnlineUsersPopover'
 
 const THEME_SEQUENCE: Theme[] = ['light', 'dark', 'system']
 
@@ -26,11 +28,16 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed }: TopbarProps) {
   const { user, logout } = useAuth()
   const { theme, setTheme } = useTheme()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [realtimeConnected, setRealtimeConnected] = useState(false)
   const menuRef = useRef<HTMLDivElement | null>(null)
   const menuButtonRef = useRef<HTMLButtonElement | null>(null)
   const logoutButtonRef = useRef<HTMLButtonElement | null>(null)
 
   const ThemeIcon = THEME_META[theme].icon
+
+  // Bağlantı durumu sessiz kalır (yeşil nokta spam'i yok) — yalnızca Echo
+  // bağlı DEĞİLKEN küçük bir uyarı gösterir.
+  useEffect(() => onConnectionStateChange((state) => setRealtimeConnected(state === 'connected')), [])
 
   function cycleTheme() {
     const currentIndex = THEME_SEQUENCE.indexOf(theme)
@@ -117,6 +124,19 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed }: TopbarProps) {
         >
           <ThemeIcon className="size-4" aria-hidden="true" />
         </button>
+
+        {!realtimeConnected && (
+          <span
+            title="Gerçek zamanlı bağlantı kesildi"
+            aria-label="Gerçek zamanlı bağlantı kesildi"
+            role="status"
+            className="inline-flex size-9 shrink-0 items-center justify-center text-warning"
+          >
+            <WifiOff className="size-4" aria-hidden="true" />
+          </span>
+        )}
+
+        <OnlineUsersPopover />
 
         {/* Bildirim zili — yer tutucu, Faz 10'da bildirim merkezine bağlanacak. */}
         <button

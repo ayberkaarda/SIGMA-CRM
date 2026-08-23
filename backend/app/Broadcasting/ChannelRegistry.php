@@ -1,0 +1,80 @@
+<?php
+
+namespace App\Broadcasting;
+
+use App\Models\Company;
+use App\Models\Contact;
+use App\Models\Deal;
+use App\Models\Lead;
+use App\Models\Ticket;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
+
+/**
+ * Shared vocabulary for routes/channels.php.
+ *
+ * These live in a class rather than at the top of the routes file on purpose:
+ * Laravel `require`s (not `require_once`) the channel routes on every
+ * application boot, and PHPUnit boots a fresh application per test inside one
+ * PHP process - a file-scope `const` or `function` there would blow up on the
+ * second test with a redeclaration error.
+ */
+final class ChannelRegistry
+{
+    /**
+     * The ONLY record types accepted in `presence-record.{type}.{id}`.
+     *
+     * `{type}` is caller-supplied. Resolving it as "App\Models\{$type}" would
+     * be class injection - any autoloadable class could be reached through a
+     * websocket subscribe frame. This fixed map is the whitelist: a `{type}`
+     * that is not a key here is refused before any query runs.
+     *
+     * Each entry pairs the model with the permission required to watch it, so
+     * `presence-record` can never grant visibility a user does not already
+     * have on the module itself.
+     *
+     * @var array<string, array{model: class-string<Model>, permission: string}>
+     */
+    public const RECORDS = [
+        'deal' => ['model' => Deal::class, 'permission' => 'deals.view'],
+        'ticket' => ['model' => Ticket::class, 'permission' => 'tickets.view'],
+        'contact' => ['model' => Contact::class, 'permission' => 'contacts.view'],
+        'company' => ['model' => Company::class, 'permission' => 'companies.view'],
+        'lead' => ['model' => Lead::class, 'permission' => 'leads.view'],
+    ];
+
+    /**
+     * Resolve a client-supplied record type, or null when it is not whitelisted.
+     *
+     * @return array{model: class-string<Model>, permission: string}|null
+     */
+    public static function record(string $type): ?array
+    {
+        // Deliberately a plain array lookup: no string concatenation, no
+        // class_exists(), no case folding. What is not literally a key is not
+        // a channel.
+        return self::RECORDS[$type] ?? null;
+    }
+
+    /**
+     * The member payload published to every OTHER subscriber of a presence
+     * channel.
+     *
+     * Presence membership is readable by everyone inside the channel, so this
+     * carries only what colleagues are meant to see. No `is_active`, no
+     * `must_change_password`, no permission list - a presence roster is not an
+     * account dump.
+     *
+     * @return array<string, mixed>
+     */
+    public static function payload(User $user): array
+    {
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->getRoleNames()->first(),
+            'department' => $user->department,
+        ];
+    }
+}

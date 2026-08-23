@@ -15,7 +15,10 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    // `broadcasting/auth` is here because Echo calls it from the SPA origin
+    // (localhost:5173) exactly like any /api/* call - without it the browser
+    // preflight fails and every private/presence subscription is refused.
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'broadcasting/auth'],
 
     'allowed_methods' => ['*'],
 

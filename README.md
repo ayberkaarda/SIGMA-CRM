@@ -107,7 +107,7 @@ Uygulamanın tam çalışması için dört süreç, dört ayrı terminalde çal�
 | Süreç | Komut | Port |
 | --- | --- | --- |
 | API | `cd backend && php artisan serve` | 8000 |
-| WebSocket (Reverb) | `cd backend && php artisan reverb:start` | 8080 |
+| WebSocket (Reverb) | `cd backend && php artisan reverb:start` (ws://localhost:8080) | 8080 |
 | Queue worker | `cd backend && php artisan queue:work` | — |
 | Frontend | `cd frontend && npm run dev` | 5173 |
 
@@ -122,6 +122,7 @@ Alternatif olarak, kök dizindeki **`dev.bat`** dosyası çalıştırılarak dö
 - **CORS / 419 hatası:** `backend/.env` içindeki `SANCTUM_STATEFUL_DOMAINS` ve `FRONTEND_URL` değerlerinin doğru olduğundan ve frontend isteklerinde `withCredentials: true` kullanıldığından emin olun.
 - **`composer install` güvenlik uyarısıyla duruyor** → Composer 2.10+ güvenlik açığı olan sürümlerin kurulumunu engeller. Bu doğru davranıştır; bloğu kapatmak yerine paketi güvenli sürüme yükseltin (`composer audit` ile kontrol edin).
 - **Giriş yaptım ama her sayfa 403 PASSWORD_CHANGE_REQUIRED veriyor** → Hesabınız geçici şifreyle oluşturulmuş; /change-password ekranından şifrenizi değiştirin. Bu kasıtlı bir güvenlik davranışıdır, bkz. docs/AUTH-FLOWS.md
+- **WebSocket bağlanmıyor / private kanal aboneliği reddediliyor** → (1) `php artisan reverb:start` çalışıyor mu, (2) `backend/.env` içinde tek bir `REVERB_APP_ID` var mı (`reverb:install` ikinci blok ekleyebiliyor), (3) `backend/.env` ile `frontend/.env` içindeki anahtarlar eşleşiyor mu, (4) `config/cors.php`'de `broadcasting/auth` yolu tanımlı mı.
 
 ## API Endpoint Listesi
 
@@ -143,6 +144,8 @@ _Faz 2 uçları eklendi; kalanı Faz 13'te tamamlanacak._
 | PATCH | `/api/users/{id}/active` | `users.manage` | Kullanıcıyı aktif/pasif yapar (anlık session revoke) |
 | POST | `/api/users/{id}/reset-password` | `users.manage` | Kullanıcının şifresini sıfırlar |
 | GET | `/api/roles` | `users.manage` | Rol listesini döner |
+| POST | `/broadcasting/auth` | Kimlik doğrulama gerekli (`auth:sanctum` + `EnsureUserIsActive`) | Private/presence kanal aboneliğini yetkilendirir |
+| GET | `/api/presence/online` | Kimlik doğrulama gerekli (`auth:sanctum` + `EnsureUserIsActive` + `EnsurePasswordIsChanged`) | O an online olan kullanıcıları döner (Reverb API kaynaklı) |
 
 ## ER Diyagramı
 

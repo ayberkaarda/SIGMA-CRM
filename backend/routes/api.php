@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\PresenceController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
@@ -82,5 +83,18 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
 
         Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
+
+        /*
+         * Presence — the polled/first-paint view of `presence-online`.
+         *
+         * Inside the `password.changed` group like every other data endpoint.
+         * Note the deliberate asymmetry with /broadcasting/auth, which is NOT
+         * behind that gate (see bootstrap/app.php): opening a socket during a
+         * forced password change is allowed, reading the roster of colleagues
+         * is not. The socket is a delivery channel for the user's own
+         * security events; this is other people's data.
+         */
+        Route::get('/presence/online', [PresenceController::class, 'online'])
+            ->name('presence.online');
     });
 });

@@ -1,7 +1,7 @@
 # SIGMA-CRM — İlerleme Durumu (PROGRESS)
 
 **Son güncelleme:** 2026-08-23
-**Durum özeti:** Faz 0-3 tamamlandı — iskelet, design system, kapalı devre auth/RBAC ve tam veri katmanı (39 tablo, demo veri) hazır. Sıradaki: Faz 4 (Realtime Altyapı) ve Faz 5 (Log & Audit).
+**Durum özeti:** Faz 0-3 tamamlandı, Faz 4 (Realtime Altyapı) backend tarafı hazır — Reverb Windows'ta doğrulandı. Frontend bağlantısı devam ediyor.
 
 > Ayrıntılı plan: `docs/ROADMAP.md`. Bu dosya her oturum başında okunur (docs/ENGINEERING-RULES.md kuralı).
 
@@ -15,7 +15,7 @@
 | 1 | Design System | ✅ Bitti | Token'lar + tema yönetimi + 15 UI primitive'i + /showcase (2026-08-23). Görsel doğrulama yapıldı ve onaylandı (2026-08-23) |
 | 2 | Auth & RBAC & Kullanıcı Yönetimi | ✅ Bitti | 63 izin, 6 rol, 12 endpoint, zorunlu şifre değişimi. 50 test / 221 assertion (2026-08-23) |
 | 3 | Veri Katmanı | ✅ Bitti | 39 tablo, 40 FK, 20 factory, 5 seeder, tutarlı demo veri. 24/24 tutarlılık kontrolü temiz (2026-08-23) |
-| 4 | Realtime Altyapı | ⬜ Bekliyor | Faz 2 sonrası; Faz 3 ile paralel yürütülebilir |
+| 4 | Realtime Altyapı | 🟨 Devam | Backend tamam: Reverb v1.11.1 Windows'ta çalışıyor (R2 kapandı), 6 kanallı mimari, presence + online kullanıcı ucu, 88 test. Frontend Echo bağlantısı sürüyor |
 | 5 | Log & Audit | ⬜ Bekliyor | Faz 3 + 4 sonrası |
 | 6 | Leads + Contacts/Companies | ⬜ Bekliyor | — |
 | 7 | Deals & Kanban Pipeline | ⬜ Bekliyor | — |
@@ -43,12 +43,13 @@ Durum simgeleri: ⬜ Bekliyor · 🟨 Devam · ✅ Bitti · 🚫 Bloke
 | PATH | — | ✅ | `C:\xampp\php` kullanıcı PATH'inde (3 kez tekrarlı — zararsız). Açık terminaller oturum başındaki eski PATH'i taşır; `php`/`composer` bulunamazsa yeni terminal aç |
 | UI bağımlılıkları | — | ✅ | @fontsource/poppins (self-host), clsx, tailwind-merge, lucide-react, sonner |
 | Veritabanı | sigma_crm | ✅ | utf8mb4_unicode_ci. Test DB'si ayrı: sigma_crm_test (phpunit.xml'de sabit). 39 tablo, 40 FK, demo veri yüklü |
+| Reverb | v1.11.1 | ✅ | Windows'ta yerel çalışıyor, ws://127.0.0.1:8080. WSL/pcntl gerekmedi |
 
 ---
 
 ## Şu Anki Odak
 
-Faz 4 — Realtime Altyapı: Reverb + Echo + Redis, kanal mimarisi (private/presence/whisper), presence tabanlı "online kullanıcılar".
+Faz 4 frontend: Echo istemcisi, presence hook'u, anlık oturum sonlandırma (UX katmanı), topbar online göstergesi.
 
 ## Açık Bloklar
 
@@ -90,6 +91,9 @@ Faz 4 — Realtime Altyapı: Reverb + Echo + Redis, kanal mimarisi (private/pres
 | 2026-08-23 | spatie/laravel-activitylog ^4.12 Faz 3'te kuruldu (Faz 5 yerine) | activity_log tablosu Faz 3 şema listesindeydi; paketi sonra kurmak şema değişikliği gerektirirdi. 5.x PHP 8.4 istiyor, ortamda 8.2 var |
 | 2026-08-23 | Demo veri DemoDataSeeder'da izole, üretimde atlanıyor | migrate --seed tek komutla dolu demo sistem vermeli (ürün gereksinimi) ama üretimde sahte veri felaket olur. DatabaseSeeder app()->environment('production') kontrolüyle atlıyor |
 | 2026-08-23 | Demo veri tutarlılığı seeder içinde assert ediliyor | 24 kontrol DemoDataSeeder::assertConsistency() içinde çalışıyor; ihlalde RuntimeException ile transaction geri alınıyor. Bozuk demo veri Faz 7/9/12'de teşhisi zor hatalara dönüşürdü |
+| 2026-08-23 | Online kullanıcı listesi Reverb API'sinden okunuyor, DB'den değil | Soketlerin sahibi Reverb; soket kapanınca üye anında düşer. DB'de `is_online` kolonu tutmak süpürücü job gerektirir ve çökme/ağ kopması durumunda kalıcı yalan söyler. Redis yalnızca önbellek (5 sn) ve Reverb erişilemezken bayat anlık görüntü (5 dk) için |
+| 2026-08-23 | `/broadcasting/auth` ucuna `password.changed` middleware'i uygulanmadı | Zorunlu şifre değişimi ekranındaki kullanıcının da canlı sokete ihtiyacı var — UserDeactivated'ın ulaşması gereken oturum tam olarak odur. Kanal callback'leri kullanıcının zaten sahip olmadığı veriyi açmıyor. `/api/presence/online` ise grubun İÇİNDE |
+| 2026-08-23 | Broadcasting testleri `reverb` sürücüsünü zorluyor, `null` değil | `NullBroadcaster::auth()` her isteğe 200 döner; `BROADCAST_CONNECTION=null` ile çalışan testler her kanalı yetkilendiren bir broadcaster'a karşı yeşil olur ve hiçbir şey doğrulamaz |
 
 ---
 
