@@ -1,0 +1,97 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+// Teklif — bir deal/company/contact'a bağlı, kalemleri (QuoteItem) olan belge.
+class Quote extends Model
+{
+    use HasFactory, SoftDeletes;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'quote_number',
+        'title',
+        'deal_id',
+        'company_id',
+        'contact_id',
+        'status',
+        'valid_until',
+        'subtotal',
+        'discount_amount',
+        'tax_amount',
+        'total',
+        'currency',
+        'notes',
+        'terms',
+        'sent_at',
+        'accepted_at',
+        'rejected_at',
+        'created_by',
+    ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'valid_until' => 'date',
+            'subtotal' => 'decimal:2',
+            'discount_amount' => 'decimal:2',
+            'tax_amount' => 'decimal:2',
+            'total' => 'decimal:2',
+            'sent_at' => 'datetime',
+            'accepted_at' => 'datetime',
+            'rejected_at' => 'datetime',
+        ];
+    }
+
+    // M1'in Deal modeli tam nitelikli isimle referans alınıyor (henüz oluşturulmamış olabilir).
+    public function deal(): BelongsTo
+    {
+        return $this->belongsTo(Deal::class);
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function contact(): BelongsTo
+    {
+        return $this->belongsTo(Contact::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(QuoteItem::class)->orderBy('position');
+    }
+
+    public function scopeDraft(Builder $query): Builder
+    {
+        return $query->where('status', 'draft');
+    }
+
+    public function scopeSent(Builder $query): Builder
+    {
+        return $query->where('status', 'sent');
+    }
+}

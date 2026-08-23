@@ -1,7 +1,7 @@
 # SIGMA-CRM — İlerleme Durumu (PROGRESS)
 
 **Son güncelleme:** 2026-08-23
-**Durum özeti:** Faz 0, 1 ve 2 tamamlandı — iskelet, design system ve kapalı devre auth/RBAC hazır. Sıradaki: Faz 3 (Veri Katmanı).
+**Durum özeti:** Faz 0-3 tamamlandı — iskelet, design system, kapalı devre auth/RBAC ve tam veri katmanı (39 tablo, demo veri) hazır. Sıradaki: Faz 4 (Realtime Altyapı) ve Faz 5 (Log & Audit).
 
 > Ayrıntılı plan: `docs/ROADMAP.md`. Bu dosya her oturum başında okunur (docs/ENGINEERING-RULES.md kuralı).
 
@@ -14,7 +14,7 @@
 | 0 | Ortam & İskelet | ✅ Bitti | Backend + frontend iskeleti kuruldu ve doğrulandı (2026-08-23). Laravel 12.67.0 (güvenlik kararı — bkz. karar günlüğü), React 18.3.1, Tailwind 4.3.3 |
 | 1 | Design System | ✅ Bitti | Token'lar + tema yönetimi + 15 UI primitive'i + /showcase (2026-08-23). Görsel doğrulama yapıldı ve onaylandı (2026-08-23) |
 | 2 | Auth & RBAC & Kullanıcı Yönetimi | ✅ Bitti | 63 izin, 6 rol, 12 endpoint, zorunlu şifre değişimi. 50 test / 221 assertion (2026-08-23) |
-| 3 | Veri Katmanı | ⬜ Bekliyor | Faz 2 sonrası; Faz 4 ile paralel yürütülebilir |
+| 3 | Veri Katmanı | ✅ Bitti | 39 tablo, 40 FK, 20 factory, 5 seeder, tutarlı demo veri. 24/24 tutarlılık kontrolü temiz (2026-08-23) |
 | 4 | Realtime Altyapı | ⬜ Bekliyor | Faz 2 sonrası; Faz 3 ile paralel yürütülebilir |
 | 5 | Log & Audit | ⬜ Bekliyor | Faz 3 + 4 sonrası |
 | 6 | Leads + Contacts/Companies | ⬜ Bekliyor | — |
@@ -42,13 +42,13 @@ Durum simgeleri: ⬜ Bekliyor · 🟨 Devam · ✅ Bitti · 🚫 Bloke
 | PHP `redis` eklentisi | — | ❌ yok | `predis/predis` (saf PHP) kullanılacak |
 | PATH | — | ✅ | `C:\xampp\php` kullanıcı PATH'inde (3 kez tekrarlı — zararsız). Açık terminaller oturum başındaki eski PATH'i taşır; `php`/`composer` bulunamazsa yeni terminal aç |
 | UI bağımlılıkları | — | ✅ | @fontsource/poppins (self-host), clsx, tailwind-merge, lucide-react, sonner |
-| Veritabanı | sigma_crm | ✅ | utf8mb4_unicode_ci. Test DB'si ayrı: sigma_crm_test (phpunit.xml'de sabit) |
+| Veritabanı | sigma_crm | ✅ | utf8mb4_unicode_ci. Test DB'si ayrı: sigma_crm_test (phpunit.xml'de sabit). 39 tablo, 40 FK, demo veri yüklü |
 
 ---
 
 ## Şu Anki Odak
 
-Faz 3 — Veri Katmanı: kalan 20+ CRM tablosunun migration/factory/seeder'ları, FK + index + soft delete, mermaid ER diyagramı.
+Faz 4 — Realtime Altyapı: Reverb + Echo + Redis, kanal mimarisi (private/presence/whisper), presence tabanlı "online kullanıcılar".
 
 ## Açık Bloklar
 
@@ -56,9 +56,9 @@ Faz 3 — Veri Katmanı: kalan 20+ CRM tablosunun migration/factory/seeder'ları
 
 ## Bir Sonraki Adım
 
-1. **Faz 3 — Veri Katmanı:** Kalan tabloların (leads, contacts, companies, deals, pipeline_stages, tasks, activities, tickets, products, quotes, quote_items, messages, conversations, conversation_user, notifications, activity_logs, page_visit_logs, session_logs, custom_fields, custom_field_values, tags, taggables, attachments, settings) migration + factory + seeder'ları; FK + index + soft delete.
-2. Mermaid `erDiagram` diyagramının README'ye eklenmesi.
-3. Gerçekçi Türkçe demo veri seeder'ı — `DatabaseSeeder` sıralaması FK bağımlılığına göre.
+1. **Faz 4 — Realtime Altyapı:** `laravel/reverb` kurulumu, `config/broadcasting.php` default `reverb`, kanal sözlüğü (`routes/channels.php`): `private-user.{id}`, `presence-online`, `presence-record.{type}.{id}`; `frontend/src/lib/echo.ts` + `usePresence` hook'u.
+2. **Faz 5 — Log & Audit:** `session_logs`/`page_visit_logs` doldurma mantığı, `spatie/laravel-activitylog` ile audit trail (`LogsActivity` trait, JSON diff), Loglar sayfası (canlı akış + online panel + CSV/Excel export).
+3. Demo hesaplarla giriş: demo kullanıcıların şifresi Demo!2026Sigma, must_change_password=false — farklı rollerin UI'da ne gördüğünü test etmek için kullanılabilir.
 
 **Uyarı:** Faz 3+ endpoint'leri `routes/api.php` içinde `password.changed` grubunun İÇİNE yazılmalı — dışına yazılan uç zorunlu şifre değişimini atlar.
 
@@ -87,6 +87,9 @@ Faz 3 — Veri Katmanı: kalan 20+ CRM tablosunun migration/factory/seeder'ları
 | 2026-08-23 | Zorunlu şifre değişimi sunucuda dayatılıyor (EnsurePasswordIsChanged) | must_change_password yazılıyordu ama dayatılmıyordu; geçici şifre kalıcılaşıyordu. Frontend guard'ı yetersiz — geçerli cookie ile curl/Postman API'ye doğrudan erişebilir. Muafiyet beyaz liste (fail-safe). Tasarım: docs/AUTH-FLOWS.md |
 | 2026-08-23 | Diğer oturumların şifre değişiminde düşmesi için ek kod yazılmadı | config/sanctum.php'deki authenticate_session zinciri, session'daki password_hash_web ile güncel hash'i karşılaştırıp uyuşmazlıkta 401 veriyor. Garanti config'den geldiği için feature testiyle sabitlendi (config regresyonunda test alarm verir) |
 | 2026-08-23 | Login rate limiting: e-posta+IP anahtarı, artan bekleme | Sadece IP: NAT arkasındaki kullanıcılar birbirini kilitler. Sadece e-posta: dağıtık deneme engellenmez. Artan bekleme 1→2→4→8→16→32→60 dk |
+| 2026-08-23 | spatie/laravel-activitylog ^4.12 Faz 3'te kuruldu (Faz 5 yerine) | activity_log tablosu Faz 3 şema listesindeydi; paketi sonra kurmak şema değişikliği gerektirirdi. 5.x PHP 8.4 istiyor, ortamda 8.2 var |
+| 2026-08-23 | Demo veri DemoDataSeeder'da izole, üretimde atlanıyor | migrate --seed tek komutla dolu demo sistem vermeli (ürün gereksinimi) ama üretimde sahte veri felaket olur. DatabaseSeeder app()->environment('production') kontrolüyle atlıyor |
+| 2026-08-23 | Demo veri tutarlılığı seeder içinde assert ediliyor | 24 kontrol DemoDataSeeder::assertConsistency() içinde çalışıyor; ihlalde RuntimeException ile transaction geri alınıyor. Bozuk demo veri Faz 7/9/12'de teşhisi zor hatalara dönüşürdü |
 
 ---
 

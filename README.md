@@ -146,7 +146,84 @@ _Faz 2 uçları eklendi; kalanı Faz 13'te tamamlanacak._
 
 ## ER Diyagramı
 
-_Faz 3'te mermaid diyagramı olarak eklenecek._
+Aşağıda yalnızca ana CRM varlıkları özet olarak gösterilmiştir. Tüm 38 tablonun kolon dökümü, foreign key silme davranışları, index stratejisi ve tasarım kararlarının gerekçeleri için bkz. **[docs/DATABASE.md](docs/DATABASE.md)**.
+
+```mermaid
+erDiagram
+    USERS ||--o{ COMPANIES : "owner_id"
+    USERS ||--o{ CONTACTS : "owner_id"
+    USERS ||--o{ DEALS : "owner_id"
+    USERS ||--o{ TASKS : "assigned_to"
+    USERS ||--o{ TICKETS : "assigned_to"
+
+    COMPANIES ||--o{ CONTACTS : "company_id"
+    COMPANIES ||--o{ DEALS : "company_id"
+    COMPANIES ||--o{ TICKETS : "company_id"
+    CONTACTS ||--o{ DEALS : "contact_id"
+
+    PIPELINE_STAGES ||--o{ DEALS : "pipeline_stage_id (restrict)"
+    DEALS ||--o{ QUOTES : "deal_id"
+
+    LEADS }o--o| CONTACTS : "converted_contact_id"
+    LEADS }o--o| DEALS : "converted_deal_id"
+
+    DEALS ||--o{ TASKS : "taskable (morph)"
+
+    USERS {
+        bigint id PK
+        string email UK
+        boolean is_active
+    }
+    COMPANIES {
+        bigint id PK
+        string name
+        bigint owner_id FK
+    }
+    CONTACTS {
+        bigint id PK
+        string first_name
+        string last_name
+        bigint company_id FK
+    }
+    LEADS {
+        bigint id PK
+        string email
+        string status
+        bigint converted_deal_id FK
+    }
+    PIPELINE_STAGES {
+        bigint id PK
+        string slug UK
+        int position
+        boolean is_active
+    }
+    DEALS {
+        bigint id PK
+        string title
+        decimal amount
+        bigint pipeline_stage_id FK
+        string position
+        int version
+    }
+    QUOTES {
+        bigint id PK
+        string quote_number UK
+        bigint deal_id FK
+        string status
+    }
+    TICKETS {
+        bigint id PK
+        string ticket_number UK
+        string status
+        bigint contact_id FK
+    }
+    TASKS {
+        bigint id PK
+        string title
+        string status
+        bigint assigned_to FK
+    }
+```
 
 ## Varsayılan Hesaplar
 
