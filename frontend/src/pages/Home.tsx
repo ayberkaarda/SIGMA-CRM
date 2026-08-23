@@ -1,8 +1,21 @@
+// Karşılama sayfası — kapalı devre kurumsal CRM'e giriş noktası, bileşen vitrinine bağlantı verir.
+import { useNavigate } from 'react-router-dom'
+import { Button, Card, CardBody } from '../components/ui'
+
 export default function Home() {
+  const navigate = useNavigate()
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-slate-950 text-slate-100">
-      <h1 className="text-5xl font-bold tracking-tight">SIGMA-CRM</h1>
-      <p className="mt-3 text-slate-400">Frontend scaffold is up and running.</p>
+    <main className="flex min-h-screen flex-col items-center justify-center bg-surface-0 px-6">
+      <Card className="max-w-md text-center">
+        <CardBody className="flex flex-col items-center gap-4">
+          <h1 className="text-2xl font-semibold text-fg">SIGMA-CRM</h1>
+          <p className="text-sm text-fg-muted">
+            Kuruluşunuza özel, kapalı devre çalışan kurumsal CRM platformu.
+          </p>
+          <Button onClick={() => navigate('/showcase')}>Bileşen Vitrinine Git</Button>
+        </CardBody>
+      </Card>
     </main>
   )
 }

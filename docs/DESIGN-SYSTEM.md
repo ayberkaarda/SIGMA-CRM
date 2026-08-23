@@ -31,6 +31,8 @@
 | `danger-subtle` | `#FF5E5E` (%5 opaklık) | 5 |
 | `warning` | `#FF9F00` | 2 dolgu, 1 metin, 3 kenarlık |
 
+> Not: Figma'da warning için ayrı bir tint (soft) ölçümü yok. primary ve success tint'leriyle tutarlı olacak şekilde %10 opaklık varsayıldı.
+
 ### 1.3 Koyu Tema Yüzeyleri
 
 Not: Rol ataması (surface-0/1/2/3 isimlendirmesi) teknik lider tarafından yapıldı; hex değerlerin kendisi ölçüldü.
@@ -46,6 +48,7 @@ Not: Rol ataması (surface-0/1/2/3 isimlendirmesi) teknik lider tarafından yap�
 | — | `#464646` | 2 | Dosyada ek koyu ton |
 | `border` | `#444444` | 174 | En yaygın kenarlık rengi |
 | `border-subtle` | `#2C2C2C` | — | İkincil kenarlık |
+- `border-strong` (form kontrolü kenarlığı) `#888888` — Figma'da 50 kenarlık kullanımı. surface-1'e karşı **4.70:1**, surface-2'ye karşı **4.38:1** → WCAG AA UI bileşeni eşiğini (3:1) geçer. **`border` (#444444) form kontrollerinde kullanılamaz** — surface-1'e karşı yalnızca 1.71:1, dekoratif ayırıcı olarak sınırlıdır.
 
 ### 1.4 Metin
 

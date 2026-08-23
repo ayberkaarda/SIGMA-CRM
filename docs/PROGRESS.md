@@ -1,7 +1,7 @@
 # SIGMA-CRM — İlerleme Durumu (PROGRESS)
 
 **Son güncelleme:** 2026-08-23
-**Durum özeti:** Faz 0 tamamlandı — backend (Laravel 12) ve frontend (React 18 + Vite) iskeletleri kurulu ve doğrulandı. Sıradaki: Faz 1 (Design System) ve Faz 2 (Auth & RBAC).
+**Durum özeti:** Faz 0 ve Faz 1 tamamlandı — proje iskeleti kurulu, design system (token'lar + 15 UI primitive'i + /showcase) hazır. Sıradaki: Faz 2 (Auth & RBAC).
 
 > Ayrıntılı plan: `docs/ROADMAP.md`. Bu dosya her oturum başında okunur (docs/ENGINEERING-RULES.md kuralı).
 
@@ -12,7 +12,7 @@
 | Faz | İsim | Durum | Not |
 |---|---|---|---|
 | 0 | Ortam & İskelet | ✅ Bitti | Backend + frontend iskeleti kuruldu ve doğrulandı (2026-08-23). Laravel 12.67.0 (güvenlik kararı — bkz. karar günlüğü), React 18.3.1, Tailwind 4.3.3 |
-| 1 | Design System | 🟨 Devam | Token'lar Figma'dan çıkarıldı → docs/DESIGN-SYSTEM.md. Kalan iş: `frontend/src/styles/tokens.css` (Tailwind v4 `@theme`) + UI primitive'leri. Açık tema karara bağlandı (DESIGN-SYSTEM §1.6, WCAG AA doğrulandı) |
+| 1 | Design System | ✅ Bitti | Token'lar + tema yönetimi + 15 UI primitive'i + /showcase (2026-08-23). Görsel doğrulama kullanıcıya kaldı — bkz. Açık Bloklar |
 | 2 | Auth & RBAC & Kullanıcı Yönetimi | ⬜ Bekliyor | Faz 0 sonrası |
 | 3 | Veri Katmanı | ⬜ Bekliyor | Faz 2 sonrası; Faz 4 ile paralel yürütülebilir |
 | 4 | Realtime Altyapı | ⬜ Bekliyor | Faz 2 sonrası; Faz 3 ile paralel yürütülebilir |
@@ -41,23 +41,23 @@ Durum simgeleri: ⬜ Bekliyor · 🟨 Devam · ✅ Bitti · 🚫 Bloke
 | React / Tailwind | 18.3.1 / 4.3.3 | ✅ | Tailwind v4: `tailwind.config.js` yok, tema CSS'te `@theme` ile |
 | PHP `redis` eklentisi | — | ❌ yok | `predis/predis` (saf PHP) kullanılacak |
 | PATH | — | ✅ | `C:\xampp\php` kullanıcı PATH'inde (3 kez tekrarlı — zararsız). Açık terminaller oturum başındaki eski PATH'i taşır; `php`/`composer` bulunamazsa yeni terminal aç |
+| UI bağımlılıkları | — | ✅ | @fontsource/poppins (self-host), clsx, tailwind-merge, lucide-react, sonner |
 
 ---
 
 ## Şu Anki Odak
 
-Faz 0 tamamlandı (backend Laravel 12 + frontend React 18/Vite iskeletleri kuruldu ve doğrulandı). Odak şimdi Faz 1 (Design System) ve Faz 2 (Auth & RBAC) — bkz. Bir Sonraki Adım.
+Faz 2 — Auth & RBAC: Sanctum SPA + CSRF akışı, login ekranı, rate limiting, roller ve granüler izinler, Super Admin seeder, Kullanıcı Yönetimi CRUD, aktif/pasif + anlık session revoke.
 
 ## Açık Bloklar
 
-- Şu an açık blok yok.
+- **`/showcase` görsel doğrulaması bekliyor:** Kod, token ve build denetimleri geçti ama sayfa hiçbir tarayıcıda gözle kontrol edilmedi (oturumda tarayıcı otomasyon aracı yoktu). Kullanıcı `npm run dev` → `http://localhost:5173/showcase` adresinde her iki temayı kontrol etmeli.
 
 ## Bir Sonraki Adım
 
-1. **Faz 1 — Design System:** `docs/DESIGN-SYSTEM.md` token'ları → `frontend/src/styles/tokens.css` (Tailwind v4 `@theme` bloğu + `:root` / `[data-theme="dark"]` custom property'leri) → UI primitive'leri (`frontend/src/components/ui/`) → `/showcase` sayfası → WCAG AA denetimi.
-2. **Faz 2 — Auth & RBAC:** Sanctum SPA + CSRF akışı, roller/izinler, Super Admin seeder, Kullanıcı Yönetimi, session revoke.
-3. Faz 1 ve Faz 2 paralel yürütülebilir (Faz 2'nin UI cilası Faz 1'in primitive'lerini bekler).
-4. **Not:** `sigma_crm` veritabanı HENÜZ OLUŞTURULMADI ve hiçbir migration çalıştırılmadı — Faz 3'ün işi, ayrı onay gerektirir.
+1. `/showcase` sayfasını her iki temada gözle kontrol et (`cd frontend && npm run dev` → http://localhost:5173/showcase).
+2. **Faz 2 — Auth & RBAC:** Sanctum SPA + CSRF akışı, login ekranı, rate limiting (5/dk + artan bekleme), roller + granüler izinler, Super Admin seeder, Kullanıcı Yönetimi CRUD, aktif/pasif + anlık session revoke.
+3. **Faz 3 — Veri Katmanı** Faz 2 sonrası; `sigma_crm` veritabanı HENÜZ OLUŞTURULMADI ve hiçbir migration çalıştırılmadı, ayrı onay gerektirir.
 
 ---
 
@@ -77,6 +77,9 @@ Faz 0 tamamlandı (backend Laravel 12 + frontend React 18/Vite iskeletleri kurul
 | 2026-08-23 | **Laravel 11 yerine Laravel 12 kullanılacak** (kurulu: 12.67.0) | Laravel 11.x'te yamalanmamış 3 advisory var ve 11.x hattında düzeltme yok: CVE-2026-48019 varsayılan `email` validation kuralında CRLF injection (HIGH, yamalı 12.60.0+) ve Temporary Signed URL Path Confusion (MEDIUM, yamalı 12.61.1+). Bu CRM her modülde e-posta doğrulaması kullanacağı için doğrudan ilgili. `PRODUCT-BRIEF.md`'deki "Laravel 11 DEĞİŞTİRİLEMEZ" maddesi, aynı belgenin "GÜVENLİK KRİTİK" maddesi lehine bilinçli olarak terk edildi — kullanıcı onayladı. `composer audit` şu an temiz |
 | 2026-08-23 | Tailwind CSS v4 kullanılacak (4.3.3) | v4'te `tailwind.config.js` yok; tema CSS'te `@theme` bloğuyla tanımlanıyor. Bu, token'ları CSS custom property olarak tutma stratejimizle doğrudan örtüşüyor (dark/light tek dosyada) |
 | 2026-08-23 | React 18 pinlendi (18.3.1) | Vite şablonu varsayılan React 19 kuruyor; `PRODUCT-BRIEF.md` React 18 istiyor. `react`, `react-dom` ve `@types/*` `^18`'e sabitlendi |
+| 2026-08-23 | Toast için Sonner kullanılacak | Projede kurulu `ask-sonner` skill'i ile API'si doğrulandı; erişilebilir, hafif, tema desteği var. Tokenlarımızla sarmalandı (`Toast.tsx`) |
+| 2026-08-23 | İkon seti: lucide-react (Font Awesome 5 değil) | Tasarım FA5 kullanıyor ama React projesinde lucide tree-shake edilebilir ve tip güvenli; ikon isimleri eşlenerek kullanılıyor |
+| 2026-08-23 | Poppins self-host (@fontsource/poppins) | Kapalı devre sistemde Google Fonts CDN bağımlılığı istenmiyor; 400/500/600/700 ağırlıkları bundle'a dahil |
 
 ---
 

@@ -34,7 +34,7 @@
 | Faz | İsim | Çıktı (Deliverable) | Bağımlılık | Bitti Kriteri (DoD) |
 |---|---|---|---|---|
 | 0 | Ortam & İskelet | XAMPP/MySQL/Redis (Memurai veya WSL) kurulum notları README taslağında; `backend/` Laravel 12 + `frontend/` Vite iskeleti; `.env.example` eksiksiz; Pint + ESLint/Prettier; klasör yapısı | — (ortam 2026-08-23'te kuruldu ve doğrulandı) | ✅ TAMAMLANDI (2026-08-23). `composer install` + `php artisan serve` ve `npm run dev` ayağa kalkıyor; `.env` git'te yok; lint komutları temiz |
-| 1 | Design System | Figma'dan design token'lar (renk/tipografi/spacing/radius/shadow, dark+light) → `frontend/src/styles/tokens.css` (Tailwind v4 `@theme`); UI primitive'leri: Button, Input, Select, Modal, Table, Card, Toast, Skeleton, EmptyState; `/showcase` sayfası | 0 | DoD: tüm primitive'ler showcase'te iki temada, WCAG AA kontrast doğrulanmış Token kaynağı: docs/DESIGN-SYSTEM.md |
+| 1 | Design System | Figma'dan design token'lar (renk/tipografi/spacing/radius/shadow, dark+light) → `frontend/src/styles/tokens.css` (Tailwind v4 `@theme`); UI primitive'leri: Button, Input, Select, Modal, Table, Card, Toast, Skeleton, EmptyState; `/showcase` sayfası | 0 | ✅ TAMAMLANDI (2026-08-23). DoD: tüm primitive'ler showcase'te iki temada, WCAG AA kontrast doğrulanmış Token kaynağı: docs/DESIGN-SYSTEM.md |
 | 2 | Auth & RBAC & Kullanıcı Yönetimi | Sanctum SPA + CSRF akışı, login ekranı ("beni hatırla", kilitlenme uyarısı), rate limit (5/dk + artan bekleme), roller (Super Admin, Admin, Satış Müdürü, Satış Temsilcisi, Destek Temsilcisi, İzleyici) + granüler izinler, Super Admin seeder, Kullanıcı Yönetimi CRUD, aktif/pasif + anlık session revoke, admin onaylı şifre sıfırlama, route guard | 0 (UI cilası 1'e) | Login/logout uçtan uca; pasif yapılan kullanıcı anında atılıyor; her endpoint Policy'li; İzleyici hiçbir şey yazamıyor |
 | 3 | Veri Katmanı | Tüm migration + factory + seeder (users, roles, permissions, leads, contacts, companies, deals, pipeline_stages, tasks, activities, tickets, products, quotes, quote_items, messages, conversations, conversation_user, notifications, activity_logs, page_visit_logs, session_logs, custom_fields, custom_field_values, tags, taggables, attachments, settings); FK + index + soft delete; mermaid ER diyagramı | 2 | `php artisan migrate:fresh --seed` tek komutla dolu demo sistem; phpMyAdmin'de temiz şema; ER diyagramı README'de |
 | 4 | Realtime Altyapı | Reverb sunucu + Echo client + Redis broadcast/queue; kanal mimarisi: `private-user.{id}`, `presence-online`, `presence-record.{type}.{id}`, whisper altyapısı; "online kullanıcılar" presence temeli | 2 | İki tarayıcıda presence listesi canlı; private kanal yetki kontrolü çalışıyor; `reverb:start` + `queue:work` README'de |
@@ -50,10 +50,10 @@
 
 **Faz 1 durumu (2026-08-23 güncellendi):** Figma linki geldi ve dosya Figma REST API ile okundu (`Dashboard CRM (Community) (Copy)`, key `tlJ6qKhhmbBZAKIYaCIolE`). Tüm design token'ları ölçülüp `docs/DESIGN-SYSTEM.md` dosyasına yazıldı — bu doküman token'lar için tek doğruluk kaynağıdır. Kalan adımlar:
 1. ✅ Token extraction (renk, tipografi, spacing, radius, shadow, layout) — tamamlandı
-2. ⬜ `frontend/src/styles/tokens.css` aktarımı — Tailwind v4 `@theme` bloğu + `:root` / `[data-theme="dark"]` CSS custom property'leri (v4'te `tailwind.config.js` yoktur)
-3. ⬜ Primitive'lerin inşası: Button, Input, Select, Modal, Table, Card, Toast, Skeleton, EmptyState, Badge, Avatar, Pagination, Tabs
-4. ⬜ `/showcase` sayfası — tüm primitive + state'ler
-5. ⬜ WCAG 2.1 AA kontrast denetimi
+2. ✅ `frontend/src/styles/tokens.css` aktarımı — Tailwind v4 `@theme` bloğu + `:root` / `[data-theme="dark"]` CSS custom property'leri (v4'te `tailwind.config.js` yoktur)
+3. ✅ Primitive'lerin inşası: Button, Input, Select, Modal, Table, Card, Toast, Skeleton, EmptyState, Badge, Avatar, Pagination, Tabs
+4. ✅ `/showcase` sayfası — tüm primitive + state'ler
+5. 🟨 WCAG 2.1 AA kontrast denetimi — kontrast oranları DESIGN-SYSTEM §1.6'da hesaplandı, ancak render edilmiş sayfada gözle doğrulanmadı
 
 **Açık tema:** Figma dosyasında yalnızca koyu tema frame'i çizilmişti. Açık tema paleti 2026-08-23'te karara bağlandı ve WCAG 2.1 AA için doğrulandı — dört accent ile text-muted, beyaz zeminde 4.5:1'i geçmedikleri için koyulaştırıldı. Değerler ve 18 çiftlik kontrast tablosu: `docs/DESIGN-SYSTEM.md` §1.6.
 
@@ -82,6 +82,9 @@
 **Faz 1 — Design System** (token'lar çıkarıldı — bkz. docs/DESIGN-SYSTEM.md)
 - Kilit dosyalar: `frontend/src/styles/tokens.css` (CSS custom properties, `[data-theme="dark"]` varyantları), `frontend/src/components/ui/*.tsx`, `frontend/src/pages/Showcase.tsx` (`/showcase` route'u yalnız dev ortamında).
 - Layout sabitleri: sidebar 240px, sağ drawer 340px, baskın kart padding'i 20px, taban font 13px/20px (Poppins). Primitive prop imzaları Faz 0 sonunda sabitlenir.
+
+> **Faz 1 sonucu (2026-08-23):** `src/styles/tokens.css` (Tailwind v4 `@theme inline` + `[data-theme]`), `src/stores/themeStore.ts` + `src/hooks/useTheme.ts` (light/dark/system, OS değişimini dinler), `src/lib/cn.ts`. 15 primitive: Button, Input, Select, Textarea, Checkbox, Badge, Avatar(+Group), Card(+Header/Body/Footer), Modal, Table(+alt bileşenler), Toast (Sonner), Skeleton, EmptyState, Pagination, Tabs — barrel `src/components/ui/index.ts` (29 export). Showcase: `/showcase`.
+> Doğrulandı: build/typecheck/lint temiz; `src/` altında hex, `rgb()`, varsayılan Tailwind rengi veya `dark:` prefix'i yok. **Görsel doğrulama yapılmadı** (oturumda tarayıcı aracı yoktu).
 
 **Faz 2 — Auth & RBAC**
 - Sanctum SPA: `config/sanctum.php` `stateful` domain'leri, `config/cors.php` `supports_credentials: true`; frontend'te önce `GET /sanctum/csrf-cookie` sonra `POST /login`.
