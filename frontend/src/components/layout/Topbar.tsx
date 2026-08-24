@@ -2,7 +2,7 @@
 // kullanıcı menüsü. ~56px yükseklik (bkz. docs/DESIGN-SYSTEM.md §6/§7).
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { Bell, LogOut, Menu, Monitor, Moon, Search, Sun, User as UserIcon, WifiOff } from 'lucide-react'
+import { LogOut, Menu, Monitor, Moon, Search, Sun, User as UserIcon, WifiOff } from 'lucide-react'
 import { Avatar, Input } from '../ui'
 import { cn } from '../../lib/cn'
 import { useAuth } from '../../features/auth/hooks/useAuth'
@@ -10,6 +10,7 @@ import { useTheme } from '../../hooks/useTheme'
 import type { Theme } from '../../stores/themeStore'
 import { onConnectionStateChange } from '../../lib/echo'
 import { OnlineUsersPopover } from '../../features/presence/components/OnlineUsersPopover'
+import { NotificationBell } from '../../features/notifications'
 
 const THEME_SEQUENCE: Theme[] = ['light', 'dark', 'system']
 
@@ -138,15 +139,7 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed }: TopbarProps) {
 
         <OnlineUsersPopover />
 
-        {/* Bildirim zili — yer tutucu, Faz 10'da bildirim merkezine bağlanacak. */}
-        <button
-          type="button"
-          aria-label="Bildirimler (yakında)"
-          disabled
-          className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-fg-disabled disabled:cursor-not-allowed"
-        >
-          <Bell className="size-4" aria-hidden="true" />
-        </button>
+        <NotificationBell />
 
         <div ref={menuRef} className="relative">
           <button

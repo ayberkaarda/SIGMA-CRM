@@ -5,18 +5,24 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\CustomFieldController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DealController;
 use App\Http\Controllers\Api\DealMoveController;
+use App\Http\Controllers\Api\EmailTemplateController;
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\LeadImportController;
 use App\Http\Controllers\Api\LogController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PageVisitController;
 use App\Http\Controllers\Api\PipelineStageController;
 use App\Http\Controllers\Api\PresenceController;
 use App\Http\Controllers\Api\PriceListController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\QuoteController;
+use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\RoleMatrixController;
+use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\TicketController;
@@ -333,5 +339,70 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         // Policy ile yapılır).
         Route::post('/quotes/{quote}/revise', [QuoteController::class, 'revise'])->name('quotes.revise');
         Route::get('/quotes/{quote}/pdf', [QuoteController::class, 'pdf'])->name('quotes.pdf');
+
+        /*
+         * Bildirimler (Faz 10) — `notifications.view` izni.
+         *
+         * Route sırası KASITLIDIR: `/notifications/unread-count` ve
+         * `/notifications/read-all` sabit segmentleri `/notifications/{notification}`
+         * route-model-binding parametresinden ÖNCE tanımlanmalı, yoksa Laravel
+         * bu segmentleri bir bildirim id'si sanıp 404 üretir — Faz 6'dan beri
+         * tekrar eden aynı tuzak (bkz. yukarıdaki yorumlar).
+         */
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+        Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+        Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+        Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+
+        /*
+         * Ayarlar (Faz 10) — `settings.manage` izni.
+         *
+         * Rota ADLARI sözleşmedir: `settings.pipeline-stages.index` ve
+         * `settings.custom-fields.index` controller'ları `routeIs()` ile rota
+         * adına bakıp yetkiyi ve `include_inactive` varsayılanını ayırıyor.
+         * Mevcut `GET /api/pipeline-stages` ve `GET /api/custom-fields`
+         * rotaları (yukarıda) Faz 6/7 testlerine bağlı, buradan ayrı tutulur.
+         *
+         * Route sırası KASITLIDIR: `/settings/pipeline-stages/reorder` sabit
+         * segmenti `/settings/pipeline-stages/{stage}` route-model-binding
+         * parametresinden ÖNCE tanımlanmalı — yukarıdaki tekrar eden tuzak.
+         */
+        Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
+        Route::patch('/settings', [SettingController::class, 'update'])->name('settings.update');
+
+        Route::get('/settings/pipeline-stages', [PipelineStageController::class, 'index'])->name('settings.pipeline-stages.index');
+        Route::post('/settings/pipeline-stages', [PipelineStageController::class, 'store'])->name('settings.pipeline-stages.store');
+        Route::post('/settings/pipeline-stages/reorder', [PipelineStageController::class, 'reorder'])->name('settings.pipeline-stages.reorder');
+        Route::patch('/settings/pipeline-stages/{stage}', [PipelineStageController::class, 'update'])->name('settings.pipeline-stages.update');
+
+        Route::get('/settings/custom-fields', [CustomFieldController::class, 'index'])->name('settings.custom-fields.index');
+        Route::post('/settings/custom-fields', [CustomFieldController::class, 'store'])->name('settings.custom-fields.store');
+        Route::patch('/settings/custom-fields/{customField}', [CustomFieldController::class, 'update'])->name('settings.custom-fields.update');
+        Route::delete('/settings/custom-fields/{customField}', [CustomFieldController::class, 'destroy'])->name('settings.custom-fields.destroy');
+
+        Route::get('/settings/email-templates', [EmailTemplateController::class, 'index'])->name('settings.email-templates.index');
+        Route::post('/settings/email-templates', [EmailTemplateController::class, 'store'])->name('settings.email-templates.store');
+        Route::patch('/settings/email-templates/{emailTemplate}', [EmailTemplateController::class, 'update'])->name('settings.email-templates.update');
+        Route::delete('/settings/email-templates/{emailTemplate}', [EmailTemplateController::class, 'destroy'])->name('settings.email-templates.destroy');
+
+        Route::get('/settings/permission-matrix', [RoleMatrixController::class, 'index'])->name('settings.permission-matrix.index');
+        Route::patch('/settings/roles/{role}/permissions', [RoleMatrixController::class, 'update'])->name('settings.roles.permissions.update');
+
+        /*
+         * Raporlar + Dashboard (Faz 11) — `reports.view` / `reports.export` /
+         * `dashboard.view` izinleri.
+         */
+        Route::get('/reports/sales-performance', [ReportController::class, 'salesPerformance'])->name('reports.sales-performance');
+        Route::get('/reports/user-performance', [ReportController::class, 'userPerformance'])->name('reports.user-performance');
+        Route::get('/reports/source-analysis', [ReportController::class, 'sourceAnalysis'])->name('reports.source-analysis');
+        Route::get('/reports/conversion', [ReportController::class, 'conversion'])->name('reports.conversion');
+        Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
+
+        Route::get('/dashboard/kpis', [DashboardController::class, 'kpis'])->name('dashboard.kpis');
+        Route::get('/dashboard/funnel', [DashboardController::class, 'funnel'])->name('dashboard.funnel');
+        Route::get('/dashboard/revenue-trend', [DashboardController::class, 'revenueTrend'])->name('dashboard.revenue-trend');
+        Route::get('/dashboard/recent-activities', [DashboardController::class, 'recentActivities'])->name('dashboard.recent-activities');
+        Route::get('/dashboard/task-summary', [DashboardController::class, 'taskSummary'])->name('dashboard.task-summary');
     });
 });

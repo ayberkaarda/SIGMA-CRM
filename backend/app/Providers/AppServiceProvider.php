@@ -2,11 +2,30 @@
 
 namespace App\Providers;
 
+use App\Events\DealMoved;
+use App\Events\TaskReminderDue;
+use App\Events\TicketSlaBreached;
+use App\Events\TicketSlaWarning;
 use App\Http\Resources\UserResource;
+use App\Listeners\Notifications\SendDealStageChangedNotification;
+use App\Listeners\Notifications\SendTaskReminderNotification;
+use App\Listeners\Notifications\SendTicketSlaBreachedNotification;
+use App\Listeners\Notifications\SendTicketSlaWarningNotification;
+use App\Models\Deal;
+use App\Models\Lead;
+use App\Models\Quote;
+use App\Models\Task;
+use App\Models\Ticket;
 use App\Observers\ActivityLogObserver;
+use App\Observers\Notifications\DealNotificationObserver;
+use App\Observers\Notifications\LeadNotificationObserver;
+use App\Observers\Notifications\QuoteNotificationObserver;
+use App\Observers\Notifications\TaskNotificationObserver;
+use App\Observers\Notifications\TicketNotificationObserver;
 use App\Services\Auth\AuthService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -30,6 +49,8 @@ class AppServiceProvider extends ServiceProvider
         $this->registerSuperAdminGate();
         $this->registerLoginRateLimiter();
         $this->registerActivityLogObserver();
+        $this->registerNotificationObservers();
+        $this->registerNotificationListeners();
     }
 
     /*
@@ -83,6 +104,37 @@ class AppServiceProvider extends ServiceProvider
         $activityModel = ActivitylogServiceProvider::determineActivityModel();
 
         $activityModel::observe(ActivityLogObserver::class);
+    }
+
+    /**
+     * Faz 10 — model bazlı bildirim tetikleyicileri (A grubu, bkz. görev
+     * sözleşmesi "TETİKLEYİCİLER — KRİTİK KURAL"). Deal/Task/Ticket/Lead/
+     * Quote servis/repository katmanlarına TEK BİR dispatch satırı bile
+     * eklenmedi; her observer ilgili modelin `created`/`updated` Eloquent
+     * event'lerine burada bağlanır.
+     */
+    protected function registerNotificationObservers(): void
+    {
+        Deal::observe(DealNotificationObserver::class);
+        Task::observe(TaskNotificationObserver::class);
+        Ticket::observe(TicketNotificationObserver::class);
+        Lead::observe(LeadNotificationObserver::class);
+        Quote::observe(QuoteNotificationObserver::class);
+    }
+
+    /**
+     * Faz 10 — mevcut event'lere bağlanan bildirim listener'ları (B grubu).
+     * `DealMoved`/`TaskReminderDue`/`TicketSlaWarning`/`TicketSlaBreached`
+     * event'lerinin kendileri Faz 7/8'de zaten üretiliyor; burada yalnızca
+     * onlara YENİ bir dinleyici eklenir, üretildikleri servisler
+     * değiştirilmez.
+     */
+    protected function registerNotificationListeners(): void
+    {
+        Event::listen(DealMoved::class, SendDealStageChangedNotification::class);
+        Event::listen(TaskReminderDue::class, SendTaskReminderNotification::class);
+        Event::listen(TicketSlaWarning::class, SendTicketSlaWarningNotification::class);
+        Event::listen(TicketSlaBreached::class, SendTicketSlaBreachedNotification::class);
     }
 
     /**

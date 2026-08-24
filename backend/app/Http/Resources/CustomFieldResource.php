@@ -28,6 +28,11 @@ class CustomFieldResource extends JsonResource
             'options' => $field->options,
             'is_required' => (bool) $field->is_required,
             'position' => $field->position,
+            // Faz 10: Ayarlar ekranı pasif alanları da listeler ve onları
+            // geri açar. `GET /api/custom-fields` (form şeması ucu) zaten
+            // yalnızca aktifleri döndürdüğü için orada bu alan sabit `true`
+            // olur — eklenmesi o ucun sözleşmesini bozmaz.
+            'is_active' => (bool) $field->is_active,
         ];
     }
 }

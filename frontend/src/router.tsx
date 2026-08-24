@@ -22,6 +22,9 @@ import { QuoteFormPage } from './features/quotes/pages/QuoteFormPage'
 import { ProductsPage } from './features/products/pages/ProductsPage'
 import { PriceListsPage } from './features/price-lists/pages/PriceListsPage'
 import { PriceListDetailPage } from './features/price-lists/pages/PriceListDetailPage'
+import { SettingsPage } from './features/settings'
+import { ReportsPage } from './features/reports'
+import { NotificationsPage } from './features/notifications'
 import { DashboardPage } from './pages/DashboardPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import Showcase from './pages/Showcase'
@@ -47,7 +50,14 @@ export const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [
-      { index: true, element: <DashboardPage /> },
+      {
+        index: true,
+        element: (
+          <RequireAuth permission="dashboard.view">
+            <DashboardPage />
+          </RequireAuth>
+        ),
+      },
       {
         path: 'users',
         element: (
@@ -200,6 +210,30 @@ export const router = createBrowserRouter([
         element: (
           <RequireAuth permission="quotes.view">
             <QuoteDetailPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'settings',
+        element: (
+          <RequireAuth permission="settings.manage">
+            <SettingsPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'reports',
+        element: (
+          <RequireAuth permission="reports.view">
+            <ReportsPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'notifications',
+        element: (
+          <RequireAuth permission="notifications.view">
+            <NotificationsPage />
           </RequireAuth>
         ),
       },

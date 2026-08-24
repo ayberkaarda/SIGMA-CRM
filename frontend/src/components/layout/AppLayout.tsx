@@ -7,6 +7,7 @@ import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 import { usePageTracking } from '../../hooks/usePageTracking'
+import { useNotificationSocket } from '../../features/notifications'
 
 const SIDEBAR_STORAGE_KEY = 'syncra-sidebar'
 const DESKTOP_MEDIA_QUERY = '(min-width: 1024px)' // Tailwind `lg` kırılım noktası
@@ -25,6 +26,7 @@ export function AppLayout() {
   // AppLayout yalnızca kimliği doğrulanmış rotaları sarmaladığı için sayfa
   // gezinme takibinin mount edildiği doğru yer burası (bkz. usePageTracking.ts).
   usePageTracking()
+  useNotificationSocket()
 
   const [collapsed, setCollapsed] = useState<boolean>(readStoredCollapsed)
   const [mobileOpen, setMobileOpen] = useState(false)

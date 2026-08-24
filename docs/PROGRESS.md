@@ -1,7 +1,7 @@
 # Syncra — İlerleme Durumu (PROGRESS)
 
 **Son güncelleme:** 2026-08-24
-**Durum özeti:** Faz 0-9 tamamlandı — ürün kataloğu, fiyat listeleri, teklif hesabı ve PDF çıktısı dahil. Sıradaki: Faz 10 (Bildirimler & Ayarlar) ve Faz 11 (Raporlar & Dashboard) birlikte.
+**Durum özeti:** Faz 0-11 tamamlandı — bildirim merkezi, ayarlar, raporlar ve canlı dashboard dahil. Sıradaki: Faz 12 (Chat).
 
 > Ayrıntılı plan: `docs/ROADMAP.md`. Bu dosya her oturum başında okunur (docs/ENGINEERING-RULES.md kuralı).
 
@@ -21,8 +21,8 @@
 | 7 | Deals & Kanban Pipeline | ✅ Bitti | Fractional index, optimistic locking, 409 çakışma çözümü, realtime senkron. R4 kapandı. 357 test (2026-08-24) |
 | 8 | Tasks/Activities + Tickets | ✅ Bitti | Görev/aktivite + takvim, in-app hatırlatıcı, SLA duraklama semantiği, durum makinesi, iç notlar activities üzerinden. 470 test (2026-08-24) |
 | 9 | Products & Quotes | ✅ Bitti | KDV matrahı düzeltildi (demo veride 37.645 TL fazla KDV bulundu), fiyat listeleri, PDF (R7 kapandı). 646 test (2026-08-24) |
-| 10 | Notifications + Settings | ⬜ Bekliyor | Faz 11 ile paralel yürütülebilir |
-| 11 | Reports + Dashboard | ⬜ Bekliyor | Faz 10 ile paralel yürütülebilir |
+| 10 | Notifications + Settings | ✅ Bitti | Bildirim merkezi (11 tip, `database`+`broadcast` kanalı, `private-user.{id}`, okunmamış sayaç), Ayarlar (şirket profili, pipeline aşama editörü, özel alan yönetimi, e-posta şablonları, rol/izin matrisi). Tetikleyiciler observer/listener ile (2026-08-24) |
+| 11 | Reports + Dashboard | ✅ Bitti | 4 rapor (satış performansı, kullanıcı performansı, kaynak analizi, dönüşüm) + CSV/XLSX export, 8 KPI'lı canlı dashboard (Recharts), `DashboardInvalidated` 3 sn debounce. 805 test / 7237 assertion (2026-08-24) |
 | 12 | Chat | ⬜ Bekliyor | — |
 | 13 | Test, Sertleştirme & Teslim | ⬜ Bekliyor | Son faz |
 
@@ -51,7 +51,7 @@ Durum simgeleri: ⬜ Bekliyor · 🟨 Devam · ✅ Bitti · 🚫 Bloke
 
 ## Şu Anki Odak
 
-Faz 10 + Faz 11 birlikte: bildirim merkezi, ayarlar (pipeline aşama editörü, özel alan yönetimi, rol/izin matrisi) ve raporlar + canlı dashboard.
+Faz 12 — Chat: DM + grup/kanal sohbeti, yazıyor... göstergesi (whisper), okundu bilgisi (çift tik), online/offline/son görülme (presence), dosya/görsel paylaşımı, mesaj arama, @mention, okunmamış sayaçları; deal/ticket detayında kayda bağlı sohbet paneli.
 
 ## Açık Bloklar
 
@@ -59,14 +59,11 @@ Faz 10 + Faz 11 birlikte: bildirim merkezi, ayarlar (pipeline aşama editörü, 
 
 ## Bir Sonraki Adım
 
-1. **Faz 10 — Bildirimler & Ayarlar:** bildirim merkezi (`database` + `broadcast` kanalları, `private-user.{id}` push, okunmamış sayaç), Ayarlar: pipeline aşama editörü (mevcut deal'ları koruyarak sıralama/ekleme/pasifleştirme), özel alan yönetimi, e-posta şablonları, rol/izin matrisi.
-2. **Faz 11 — Raporlar & Dashboard:** satış performansı/kullanıcı performansı/kaynak analizi/dönüşüm raporları (tarih filtreli + export), KPI kartları, satış hunisi, gelir trendi (Recharts), canlı dashboard (WebSocket ile).
-3. Faz 10/11 kesişimi: bildirim tetikleyicileri Faz 6/7/8 servislerinin içinde — dosya sahipliği çakışmasın diye mevcut event'leri dinleyen ayrı listener'lar yazılacak, servislere dispatch satırı eklenmeyecek.
-4. Karar bekliyor: Ayarlar'daki pipeline aşama editörü, açık kartları olan bir aşamayı pasifleştirmek istendiğinde ne yapmalı? Pasifleştirme silme değil — kartlar aşamada kalır ama pano onları göstermez, yani sessizce kaybolurlar.
-5. Frontend'de test altyapısı YOK (vitest/jest kurulu değil) — 646 backend testi var, frontend'de sıfır. Orijinal gereksinim yalnızca backend feature testleri istiyordu; Faz 13'te değerlendirilebilir.
-6. Deal timeline ucu YOK — Faz 6'da kişi/firma için yazıldı, deal için yazılmadı. Detay sayfası şu an bağlı kişinin timeline'ına bağlantı veriyor.
-7. Etiket/aşama renkleri için components/shared/tokenBadgeVariant.ts hazır — pipeline_stages.color aynı token adlarını taşıyor.
-8. Demo hesaplarla giriş: demo kullanıcıların şifresi Demo!2026Syncra, must_change_password=false — farklı rollerin UI'da ne gördüğünü test etmek için kullanılabilir.
+1. **Faz 12 — Chat:** `conversations` (`type: dm|group|record`), `conversation_user` pivotu (`last_read_message_id`, `unread_count`), `messages` (`body`, `attachment_id`, soft delete). Tik makinesi: gönderildi (kayıt OK) → iletildi (broadcast alındı) → okundu (`POST /api/conversations/{id}/read` → `MessageRead` eventi). Yazıyor göstergesi client-to-client whisper (sunucuya yazılmaz). Kayda bağlı sohbet: `type=record` konuşma `presence-record.{type}.{id}` ile aynı detay sayfasına gömülür.
+2. Frontend'de test altyapısı YOK (vitest/jest kurulu değil) — 805 backend testi var, frontend'de sıfır. Orijinal gereksinim yalnızca backend feature testleri istiyordu; Faz 13'te değerlendirilebilir.
+3. Deal timeline ucu YOK — Faz 6'da kişi/firma için yazıldı, deal için yazılmadı. Detay sayfası şu an bağlı kişinin timeline'ına bağlantı veriyor.
+4. Etiket/aşama renkleri için components/shared/tokenBadgeVariant.ts hazır — pipeline_stages.color aynı token adlarını taşıyor.
+5. Demo hesaplarla giriş: demo kullanıcıların şifresi Demo!2026Syncra, must_change_password=false — farklı rollerin UI'da ne gördüğünü test etmek için kullanılabilir.
 
 **Uyarı:** Faz 3+ endpoint'leri `routes/api.php` içinde `password.changed` grubunun İÇİNE yazılmalı — dışına yazılan uç zorunlu şifre değişimini atlar.
 
@@ -121,6 +118,14 @@ Faz 10 + Faz 11 birlikte: bildirim merkezi, ayarlar (pipeline aşama editörü, 
 | 2026-08-24 | Para hesabında int-kuruş + bcmath iş bölümü | Toplama/karşılaştırma int (kayıpsız), çarpma/bölme bcmath. Saf int taşardı: quantity × unit_price × (10000-indirim) 10²⁷ mertebesine çıkıp 64-bit sınırını aşar ve sessizce float'a döner. Ayrıca bccomp'un varsayılan ölçeği 0'dır ve ondalığı yok sayar — COMPARE_SCALE=10 ile kapatıldı |
 | 2026-08-24 | Teklif toplamları istemcide hesaplanmıyor | KDV grubu bazlı largest-remainder dağıtımını JavaScript'te yeniden üretmek ikinci doğruluk kaynağı yaratırdı. POST /api/quotes/calculate kalıcı olmayan önizleme sağlıyor; satır toplamı (basit çarpım) istemcide, toplamlar sunucuda |
 | 2026-08-24 | Soft delete çocuk kayıtları korur, cascade yalnızca forceDelete'te | PriceList soft delete kullandığı için FK cascade tetiklenmiyordu; kalemleri elle silmek soft delete'i yıkıcı yapardı (liste geri yüklenince boş dönerdi). quotes/quote_items ve conversations/messages ile aynı desen |
+| 2026-08-24 | Aşama pasifleştirme zorunlu hedef aşama ister | Açık kartlar aşamada bırakılsaydı Kanban onları göstermez ve sessizce kaybolurlardı; sadece engellemek 50 kartlı aşamada kullanıcıyı elle taşımaya mahkûm ederdi. Taşıma tek transaction'da, mevcut fractional index üreteci yeniden kullanılarak, kart başına `DealMoved` yayınlanarak yapılır |
+| 2026-08-24 | Bildirim tetikleyicileri observer/listener ile, servis içinden dispatch ile değil | Dosya sahipliği çakışmasını önler ve bildirimleri iş mantığından ayrı tutar; Faz 6/7/8 servisleri değişmeden kaldı |
+| 2026-08-24 | Toplu içe aktarmada bildirim susturması mevcut `ActivityLogStatus` toggle'ıyla | `LeadImportService` audit gürültüsünü zaten bu toggle ile susturuyordu; ikinci bir susturma mekanizması kurmak yerine tek gönderim kapısı (`NotificationDispatcher`) aynı bayrağı okuyor. `DemoDataSeeder` ham `DB::table()->insert()` kullandığı için observer'ları hiç tetiklemiyor |
+| 2026-08-24 | `CrmNotification` alanları `readonly` değil | `SerializesModels::__unserialize()` alanları Reflection ile alt sınıf kapsamından geri yüklüyor ve PHP bunu readonly için reddediyor; `QUEUE_CONNECTION=sync` dahil her koşulda fatal veriyordu ve ilgisiz 88 testi kırıyordu |
+| 2026-08-24 | Rapor/dashboard para değerleri JSON'da string | JSON float precision kaybı sessiz veri bozulmasıdır; biçimlendirme frontend'de `lib/money.ts` ile yapılır. Sayaçlar ve oranlar sayı olarak kalır |
+| 2026-08-24 | `previous` sıfırken `delta_pct: null` | Sıfıra bölme yerine %∞ veya yanıltıcı %0 göstermek yerine rozet hiç gösterilmez |
+| 2026-08-24 | Dashboard invalidate olayı 3 sn debounce ediliyor | Tek kullanıcı eylemi N fırsatı taşıyabiliyor (aşama pasifleştirme); N broadcast yerine tek invalidate yeterli |
+| 2026-08-24 | `ConversionReport` lead durumlarını sabit listeden değil veriden türetiyor | Sabit liste `status='lost'` lead'leri sessizce düşürüyordu, `total_leads` 40 yerine 35 okunuyordu |
 
 ---
 
