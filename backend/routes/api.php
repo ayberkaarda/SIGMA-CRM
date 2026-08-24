@@ -4,10 +4,13 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\CustomFieldController;
+use App\Http\Controllers\Api\DealController;
+use App\Http\Controllers\Api\DealMoveController;
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\LeadImportController;
 use App\Http\Controllers\Api\LogController;
 use App\Http\Controllers\Api\PageVisitController;
+use App\Http\Controllers\Api\PipelineStageController;
 use App\Http\Controllers\Api\PresenceController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\TagController;
@@ -175,5 +178,30 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('/tags', [TagController::class, 'index'])->name('tags.index');
         Route::post('/tags', [TagController::class, 'store'])->name('tags.store');
         Route::get('/custom-fields', [CustomFieldController::class, 'index'])->name('custom-fields.index');
+
+        /*
+         * Fırsatlar / Deals (Faz 7 / B) — Kanban pano ucu + CRUD + pipeline
+         * aşamaları. Controller'ları B şeridinin; `/move` ise A şeridinin
+         * DealMoveController'ına bağlıdır (route sözleşmesi burada
+         * sabitlenir, controller/service/request A'nın dosyaları).
+         *
+         * Route sırası KASITLIDIR: `/deals/board` sabit segmenti
+         * `/deals/{deal}` route-model-binding parametresinden ÖNCE
+         * tanımlanmalı, yoksa Laravel `board`'u bir deal id sanıp 404
+         * üretir — Faz 6'da aynı tuzak `leads/check-duplicates` için
+         * yaşandı (bkz. yukarı). `/deals/{deal}/move` ve `/deals/{deal}/assign`
+         * ise zaten `{deal}`'e bağlı alt-yollar oldukları için bu sıra
+         * sorununu YAŞAMAZ.
+         */
+        Route::get('/deals', [DealController::class, 'index'])->name('deals.index');
+        Route::get('/deals/board', [DealController::class, 'board'])->name('deals.board');
+        Route::post('/deals', [DealController::class, 'store'])->name('deals.store');
+        Route::get('/deals/{deal}', [DealController::class, 'show'])->name('deals.show');
+        Route::patch('/deals/{deal}', [DealController::class, 'update'])->name('deals.update');
+        Route::delete('/deals/{deal}', [DealController::class, 'destroy'])->name('deals.destroy');
+        Route::patch('/deals/{deal}/move', [DealMoveController::class, 'update'])->name('deals.move');
+        Route::patch('/deals/{deal}/assign', [DealController::class, 'assign'])->name('deals.assign');
+
+        Route::get('/pipeline-stages', [PipelineStageController::class, 'index'])->name('pipeline-stages.index');
     });
 });

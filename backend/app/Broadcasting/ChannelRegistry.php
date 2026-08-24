@@ -44,6 +44,31 @@ final class ChannelRegistry
     ];
 
     /**
+     * BOARD channels: one channel per module-wide live view, gated on the
+     * module's own `*.view` permission.
+     *
+     * Different question from RECORDS. `presence-record.deal.{id}` answers
+     * "who is looking at THIS card" and is subscribed per record; a Kanban
+     * board needs the opposite - one subscription that carries every card
+     * movement on the board, so a page showing 50 deals opens one socket
+     * channel instead of 50.
+     *
+     * @var array<string, string>
+     */
+    public const BOARDS = [
+        'deals' => 'deals.view',
+    ];
+
+    /**
+     * The permission required to listen on a board channel, or null when the
+     * name is not a board.
+     */
+    public static function board(string $name): ?string
+    {
+        return self::BOARDS[$name] ?? null;
+    }
+
+    /**
      * Resolve a client-supplied record type, or null when it is not whitelisted.
      *
      * @return array{model: class-string<Model>, permission: string}|null

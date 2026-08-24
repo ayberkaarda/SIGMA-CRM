@@ -33,6 +33,7 @@ SIGMA-CRM, kapalı devre (yalnızca davetle erişilen) bir kurumsal CRM sistemid
 | Queue / Cache | Redis | 8.0.5 (WSL2 üzerinde) |
 | Araç | Node.js | 26.7.0 |
 | Loglama | spatie/laravel-activitylog ^4.12 + maatwebsite/excel ^3.1 | audit trail, CSV/XLSX export |
+| Sürükle-bırak | @dnd-kit/core ^6.3 + sortable ^10 | Kanban panosu, klavye erişilebilirliği ile |
 
 > **Not:** Proje başlangıçta Laravel 11 hedefliyordu. Laravel 11.x'te yamalanmamış güvenlik açıkları (CVE-2026-48019 dahil) bulunduğu ve 11.x hattında düzeltme olmadığı için Laravel 12'ye geçildi. Ayrıntı: `docs/PROGRESS.md` karar günlüğü.
 
@@ -130,10 +131,12 @@ Zamanlanmış görevler için `php artisan schedule:work` gerekir — `logs:prun
 - **CSV export'ta Türkçe karakterler bozuk** → Dosya UTF-8 BOM ile üretiliyor; Excel'de "Veri → Metinden" yerine dosyayı doğrudan açın.
 - **CSV import'ta Türkçe karakterler bozuk** → Şablonu `/api/leads/import/template` adresinden indirin; UTF-8 BOM ile üretiliyor. Kendi dosyanızı UTF-8 olarak kaydedin.
 - **Duplicate uyarısı çıkmıyor** → Kontrol en az bir alan (e-posta, telefon, ad veya soyad) dolduğunda ve 500ms yazma duraklamasından sonra çalışır. Hiçbir alan doluysa değilse istek gönderilmez (sunucu 422 döner).
+- **Kanban'da kart taşıyınca "başkası taşıdı" uyarısı alıyorum** → Bu kasıtlı bir koruma. Kartın sizde görünen sürümü bayatlamış demektir (başka biri sizden önce taşımış). Kart otomatik olarak gerçek konumuna oturur; tekrar taşıyabilirsiniz.
+- **Kartı kayıp aşamasına sürükleyince neden soruyor** → `lost_reason` zorunludur; kayıp nedeni olmadan taşıma sunucu tarafından reddedilir (422). Kazanma nedeni opsiyoneldir.
 
 ## API Endpoint Listesi
 
-_Faz 2, 4, 5 ve 6 uçları eklendi; kalanı Faz 13'te tamamlanacak._
+_Faz 2, 4, 5, 6 ve 7 uçları eklendi; kalanı Faz 13'te tamamlanacak._
 
 | Metot | Yol | İzin / Koruma | Açıklama |
 | --- | --- | --- | --- |
@@ -185,6 +188,15 @@ _Faz 2, 4, 5 ve 6 uçları eklendi; kalanı Faz 13'te tamamlanacak._
 | GET | `/api/tags` | Kimlik doğrulama gerekli | Etiket listesini döner |
 | POST | `/api/tags` | Kimlik doğrulama gerekli | Yeni etiket oluşturur |
 | GET | `/api/custom-fields` | Kimlik doğrulama gerekli | Tanımlı özel alanları döner |
+| GET | `/api/deals` | `deals.view` | Fırsatları sayfalı/sıralı/filtreli/aramalı listeler (`meta.totals`: count/total_amount/open_amount/won_amount/lost_amount) |
+| GET | `/api/deals/board` | `deals.view` | Kanban panosu için aşama başına kartları döner (`?per_stage=`, `has_more`, `meta.total_amount`) |
+| POST | `/api/deals` | `deals.create` | Yeni fırsat oluşturur (`position`/`version`/`status` sunucuda üretilir) |
+| GET | `/api/deals/{id}` | `deals.view` | Fırsat detayını döner |
+| PATCH | `/api/deals/{id}` | `deals.update` | Fırsatı günceller (`pipeline_stage_id`/`position`/`version`/`status` reddedilir — 422) |
+| DELETE | `/api/deals/{id}` | `deals.delete` | Fırsatı soft-delete yapar (kazanılmış/kaybedilmiş fırsat 403) |
+| PATCH | `/api/deals/{id}/move` | `deals.move` | Fırsatı Kanban'da başka aşamaya/pozisyona taşır; komşu id'leri + `version` alır. **409 DEAL_VERSION_CONFLICT dönebilir** |
+| PATCH | `/api/deals/{id}/assign` | `deals.update` | Fırsatı bir kullanıcıya atar |
+| GET | `/api/pipeline-stages` | `deals.view` | Aktif pipeline aşamalarını sıralı döner |
 
 ## ER Diyagramı
 

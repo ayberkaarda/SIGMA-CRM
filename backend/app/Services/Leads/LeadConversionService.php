@@ -13,6 +13,7 @@ use App\Models\Lead;
 use App\Models\PipelineStage;
 use App\Models\Task;
 use App\Models\User;
+use App\Support\FractionalIndex;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -62,16 +63,6 @@ class LeadConversionService
     private const ENTITY_LEADS = 'leads';
 
     private const ENTITY_CONTACTS = 'contacts';
-
-    /**
-     * Fırsat `position` alanı: sabit genişlikte base36 fractional index
-     * (DemoDataSeeder ile aynı biçim — `a` + 4 hane).
-     */
-    private const POSITION_PREFIX = 'a';
-
-    private const POSITION_WIDTH = 4;
-
-    private const POSITION_STEP = 32;
 
     /**
      * @param  array{create_deal?: bool, deal_title?: ?string, deal_amount?: ?float, company_id?: ?int, contact_id?: ?int}  $options
@@ -299,18 +290,16 @@ class LeadConversionService
      * Aşamadaki mevcut en büyük `position` değerinden kesin olarak BÜYÜK bir
      * fractional index üretir (kart listenin SONUNA eklenir).
      *
-     * Biçim DemoDataSeeder ile aynı: `a` + 4 haneli base36. Beklenen biçimde
-     * olmayan ya da taşan bir değerle karşılaşılırsa geri düşülen çare, mevcut
-     * en büyük değerin sonuna bir karakter eklemektir — leksikografik sırada
-     * bir stringin öneki daima kendisinden küçüktür, dolayısıyla sonuç her
-     * durumda kesin olarak büyüktür.
+     * Anahtar üretimi App\Support\FractionalIndex'e DEVREDİLMİŞTİR (Faz 7):
+     * aynı mantık daha önce burada ve DemoDataSeeder'da kopyalanmıştı, Kanban
+     * kart taşıma da üçüncü bir kopya isteyecekti. Sıralama anahtarının kuralı
+     * (alfabe, sondaki '0' yasağı, uzunluk sınırı) tek bir yerde durmalı;
+     * iki kopyanın ayrışması, aynı aşamada çakışan `position` değerleri
+     * demektir.
      *
      * Soft-deleted fırsatlar da hesaba katılır: silinmiş kart geri
      * yüklendiğinde aynı position'a düşüp (stage, position) tekilliğini
      * bozmasın.
-     *
-     * NOT: Faz 7 (Kanban) kart taşımayı yazarken bu mantığı ortak bir Support
-     * sınıfına çıkarmalı; şu an tek kullanıcısı bu servis.
      */
     private function nextPositionInStage(int $stageId): string
     {
@@ -320,30 +309,7 @@ class LeadConversionService
             ->orderByDesc('position')
             ->value('position');
 
-        if ($max === null || $max === '') {
-            return $this->encodePosition(self::POSITION_STEP);
-        }
-
-        if (preg_match('/^'.self::POSITION_PREFIX.'([0-9a-z]{'.self::POSITION_WIDTH.'})$/', $max, $matches) === 1) {
-            $next = (int) base_convert($matches[1], 36, 10) + self::POSITION_STEP;
-            $encoded = $this->encodePosition($next);
-
-            if (strlen($encoded) === self::POSITION_WIDTH + strlen(self::POSITION_PREFIX)) {
-                return $encoded;
-            }
-        }
-
-        return $max.'m';
-    }
-
-    private function encodePosition(int $sequence): string
-    {
-        return self::POSITION_PREFIX.str_pad(
-            base_convert((string) $sequence, 10, 36),
-            self::POSITION_WIDTH,
-            '0',
-            STR_PAD_LEFT
-        );
+        return FractionalIndex::last($max);
     }
 
     /**

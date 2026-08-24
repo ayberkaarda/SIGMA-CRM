@@ -9,6 +9,9 @@ import { UsersPage } from './features/users/pages/UsersPage'
 import { LogsPage } from './features/logs/pages/LogsPage'
 import { LeadsPage } from './features/leads/pages/LeadsPage'
 import { LeadDetailPage } from './features/leads/pages/LeadDetailPage'
+import { DealsBoardPage } from './features/deals/pages/DealsBoardPage'
+import { DealsListPage } from './features/deals/pages/DealsListPage'
+import { DealDetailPage } from './features/deals/pages/DealDetailPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import Showcase from './pages/Showcase'
@@ -64,6 +67,32 @@ export const router = createBrowserRouter([
         element: (
           <RequireAuth permission="leads.view">
             <LeadDetailPage />
+          </RequireAuth>
+        ),
+      },
+      // Fırsatlar. Rota sırası KASITLI: sabit `deals/list` segmenti `deals/:id`den ÖNCE
+      // gelmeli, aksi hâlde "list" bir id sanılır ve liste görünümü detay sayfasına düşer.
+      {
+        path: 'deals',
+        element: (
+          <RequireAuth permission="deals.view">
+            <DealsBoardPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'deals/list',
+        element: (
+          <RequireAuth permission="deals.view">
+            <DealsListPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'deals/:id',
+        element: (
+          <RequireAuth permission="deals.view">
+            <DealDetailPage />
           </RequireAuth>
         ),
       },

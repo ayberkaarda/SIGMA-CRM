@@ -1,7 +1,7 @@
 # SIGMA-CRM — İlerleme Durumu (PROGRESS)
 
 **Son güncelleme:** 2026-08-24
-**Durum özeti:** Faz 0-6 tamamlandı — iskelet, design system, auth/RBAC, veri katmanı, realtime, log/audit ve Leads+Kişiler/Firmalar hazır. Sıradaki: Faz 7 (Deals & Kanban Pipeline).
+**Durum özeti:** Faz 0-7 tamamlandı — Kanban pipeline ve eşzamanlı taşıma çözümü dahil. Sıradaki: Faz 8 (Görevler/Aktiviteler + Destek Talepleri).
 
 > Ayrıntılı plan: `docs/ROADMAP.md`. Bu dosya her oturum başında okunur (docs/ENGINEERING-RULES.md kuralı).
 
@@ -18,7 +18,7 @@
 | 4 | Realtime Altyapı | ✅ Bitti | Reverb v1.11.1 Windows'ta çalışıyor (R2 kapandı), 6 kanallı mimari, presence + online kullanıcı ucu, frontend Echo bağlantısı ve UI cilası tamamlandı |
 | 5 | Log & Audit | ✅ Bitti | Oturum/gezinme/audit logları, canlı akış, 4 sekmeli Loglar sayfası, CSV/XLSX export, logs:prune. 162 test (2026-08-23) |
 | 6 | Leads + Contacts/Companies | ✅ Bitti | Duplicate tespiti (4/4 gerçek veride doğrulandı), lead dönüşümü, CSV import, timeline. 279 test (2026-08-24) |
-| 7 | Deals & Kanban Pipeline | ⬜ Bekliyor | — |
+| 7 | Deals & Kanban Pipeline | ✅ Bitti | Fractional index, optimistic locking, 409 çakışma çözümü, realtime senkron. R4 kapandı. 357 test (2026-08-24) |
 | 8 | Tasks/Activities + Tickets | ⬜ Bekliyor | — |
 | 9 | Products & Quotes | ⬜ Bekliyor | — |
 | 10 | Notifications + Settings | ⬜ Bekliyor | Faz 11 ile paralel yürütülebilir |
@@ -49,7 +49,7 @@ Durum simgeleri: ⬜ Bekliyor · 🟨 Devam · ✅ Bitti · 🚫 Bloke
 
 ## Şu Anki Odak
 
-Faz 7 — Deals & Kanban Pipeline: dnd-kit sürükle-bırak, aşama bazlı olasılık/tutar, kazanma-kaybetme nedenleri, WebSocket ile anlık senkron (optimistic update + version çakışma çözümü).
+Faz 8 — Görevler/Aktiviteler + Destek Talepleri: görev atama, hatırlatıcılar, takvim görünümü, aktivite kayıtları; ticket önceliği, SLA sayacı, durum akışı, iç notlar.
 
 ## Açık Bloklar
 
@@ -57,9 +57,9 @@ Faz 7 — Deals & Kanban Pipeline: dnd-kit sürükle-bırak, aşama bazlı olas�
 
 ## Bir Sonraki Adım
 
-1. **Faz 7 — Deals & Kanban Pipeline:** dnd-kit sürükle-bırak Kanban, aşama bazlı olasılık/tutar, kazanma-kaybetme nedenleri, tahmini kapanış tarihi, `DealMoved` WebSocket eventi ile anlık senkron (optimistic update + stale `version`'da 409 ile geri alma).
-2. Faz 7 için hazır: deals tablosunda position (fractional index) ve version (optimistic lock) kolonları, deals(pipeline_stage_id, position) composite index'i, presence-record.deal.{id} kanalı, 7 aşamalı seed'li pipeline, 50 demo fırsat.
-3. Deal position hesaplama mantığı şu an LeadConversionService içinde; Faz 7'de ortak bir Support sınıfına çıkarılmalı (iki yerde kopyalanmasın).
+1. **Faz 8 — Görevler/Aktiviteler + Destek Talepleri:** görev atama, hatırlatıcılar (Redis queue), hafif takvim görünümü, arama/toplantı/e-posta aktivite kayıtları; ticket önceliği, SLA sayacı, atama, durum akışı, iç notlar.
+2. Faz 8 için hazır: tasks ve activities tabloları (morph taskable/activityable), tickets tablosu (SLA alanları: sla_due_at, first_response_at, resolved_at, closed_at), settings'te önceliğe göre SLA saatleri (ticket.sla_hours_low/normal/high/urgent = 72/48/24/4), demo veride 8 SLA'sı ihlal edilmiş açık ticket ve 20 gecikmiş görev.
+3. Deal timeline ucu YOK — Faz 6'da kişi/firma için yazıldı, deal için yazılmadı. Detay sayfası şu an bağlı kişinin timeline'ına bağlantı veriyor. Faz 8'de aktivite/görev modülü gelince deal timeline'ı da eklenebilir.
 4. Etiket/aşama renkleri için components/shared/tokenBadgeVariant.ts hazır — pipeline_stages.color aynı token adlarını taşıyor.
 5. Demo hesaplarla giriş: demo kullanıcıların şifresi Demo!2026Sigma, must_change_password=false — farklı rollerin UI'da ne gördüğünü test etmek için kullanılabilir.
 
@@ -104,6 +104,10 @@ Faz 7 — Deals & Kanban Pipeline: dnd-kit sürükle-bırak, aşama bazlı olas�
 | 2026-08-24 | Duplicate uyarısı kaydetmeyi engellemez | Tespit bir yargıdır, kesinlik değil. Aynı isimde iki gerçek kişi olabilir. Kullanıcıyı kendi verisi üzerinde kilitlemek yerine neden eşleştiği gösterilip karar ona bırakılır |
 | 2026-08-24 | Dönüşümde morph kayıtları contact'a taşınır | Aksi halde dönüşüm teknik olarak başarılı görünür ama iletişim geçmişi lead'de kalır ve müşteri kartı boş açılır — dönüşümün amacı sessizce kaybolur |
 | 2026-08-24 | CSV import'ta duplicate contact GÜNCELLENMEZ, atlanır | Contact canlı müşteri kaydı; import dosyasından gelen eksik/eski verilerle üzerine yazmak veri kaybıdır. Lead güncellenebilir (henüz nitelendirilmemiş aday) |
+| 2026-08-24 | İstemci `position` göndermez, komşu id'lerini bildirir | İki istemci aynı anda aynı iki kart arasına bırakırsa ikisi de aynı fractional index'i hesaplar ve çakışırlar. Pozisyon her zaman sunucuda üretilir |
+| 2026-08-24 | Fractional index alfabesi yalnızca küçük harfli base36 | `position` kolonu `utf8mb4_unicode_ci` (harf duyarsız); büyük harfli alfabede MySQL `ORDER BY` ile PHP `strcmp()` ayrışır — testler yeşil kalırken üretimde sıralama bozulur |
+| 2026-08-24 | Optimistic update'te `version` cache'ten değil, sürükleme öncesi karttan okunur | Araya bir realtime olayı girerse cache'teki sürüm tazelenir ve çakışma tespiti sessizce devre dışı kalır — koruma varmış gibi görünüp hiçbir şey korumaz |
+| 2026-08-24 | `is_lost` aşamasına taşımada `lost_reason` zorunlu | Kayıp nedeni satış analitiğinin en değerli verisi; opsiyonel bırakılırsa hiç doldurulmaz. `won_reason` opsiyonel — kazanma nedeni analitik olarak daha az kritik |
 
 ---
 

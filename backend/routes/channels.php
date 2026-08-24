@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Broadcast;
 | Broadcast Channels — the channel dictionary
 |--------------------------------------------------------------------------
 |
-| Every realtime feature in this project subscribes through one of the six
+| Every realtime feature in this project subscribes through one of the seven
 | channels below. Names here are written WITHOUT the `private-` / `presence-`
 | prefix: Laravel Echo adds it, and the authorization callback is looked up by
 | the bare name.
@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Broadcast;
 |   private-conversation.{id}      -> chat room                      (Phase 12)
 |   private-logs                   -> live log stream                (Phase 5)
 |   private-dashboard              -> live dashboard counters        (Phase 11)
+|   private-deals                  -> Kanban board card moves        (Phase 7)
 |
 | ----------------------------------------------------------------------------
 | SECURITY MODEL
@@ -140,4 +141,19 @@ Broadcast::channel('logs', function (User $user): bool {
  */
 Broadcast::channel('dashboard', function (User $user): bool {
     return $user->is_active && $user->can('dashboard.view');
+});
+
+/*
+ * private-deals — Kanban board, one channel for the whole board (Phase 7).
+ *
+ * App\Events\DealMoved publishes `deal.moved` here whenever a card changes
+ * stage or order. Gated on `deals.view` and NOT on `deals.move`: everyone who
+ * may look at the board must see it move, even if they may not drag anything
+ * themselves. The permission is read from ChannelRegistry::board() rather than
+ * written inline, so the board dictionary has exactly one home.
+ */
+Broadcast::channel('deals', function (User $user): bool {
+    $permission = ChannelRegistry::board('deals');
+
+    return $permission !== null && $user->is_active && $user->can($permission);
 });
