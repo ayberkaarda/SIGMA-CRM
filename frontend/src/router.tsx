@@ -12,6 +12,10 @@ import { LeadDetailPage } from './features/leads/pages/LeadDetailPage'
 import { DealsBoardPage } from './features/deals/pages/DealsBoardPage'
 import { DealsListPage } from './features/deals/pages/DealsListPage'
 import { DealDetailPage } from './features/deals/pages/DealDetailPage'
+import { TasksPage } from './features/tasks/pages/TasksPage'
+import { ActivitiesPage } from './features/activities/pages/ActivitiesPage'
+import { TicketsListPage } from './features/tickets/pages/TicketsListPage'
+import { TicketDetailPage } from './features/tickets/pages/TicketDetailPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import Showcase from './pages/Showcase'
@@ -93,6 +97,41 @@ export const router = createBrowserRouter([
         element: (
           <RequireAuth permission="deals.view">
             <DealDetailPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'tasks',
+        element: (
+          <RequireAuth permission="tasks.view">
+            <TasksPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'activities',
+        element: (
+          <RequireAuth permission="activities.view">
+            <ActivitiesPage />
+          </RequireAuth>
+        ),
+      },
+      // Destek Talepleri (Faz 8 / D). Rota sırası KASITLI: sabit `tickets/:id` segmenti bir
+      // sayı beklediği için `/tickets` (liste) ile aralarında bir belirsizlik yok (deals'taki
+      // `list` segmenti gibi ayrı bir sabit alt yol GEREKMEZ).
+      {
+        path: 'tickets',
+        element: (
+          <RequireAuth permission="tickets.view">
+            <TicketsListPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'tickets/:id',
+        element: (
+          <RequireAuth permission="tickets.view">
+            <TicketDetailPage />
           </RequireAuth>
         ),
       },

@@ -115,7 +115,7 @@ Uygulamanın tam çalışması için dört süreç, dört ayrı terminalde çal�
 
 Alternatif olarak, kök dizindeki **`dev.bat`** dosyası çalıştırılarak dört süreç de tek komutla, ayrı pencerelerde başlatılabilir.
 
-Zamanlanmış görevler için `php artisan schedule:work` gerekir — `logs:prune` her gün 03:17'de eski log kayıtlarını budar (page_visit_logs 90 gün, session_logs ve activity_log 365 gün).
+Zamanlanmış görevler için `php artisan schedule:work` gerekir — 3 komut çalışır: `logs:prune` her gün 03:17'de eski log kayıtlarını budar (page_visit_logs 90 gün, session_logs ve activity_log 365 gün), `tasks:dispatch-reminders` dakikada bir görev hatırlatıcılarını gönderir, `tickets:scan-sla` 5 dakikada bir SLA ihlali yaklaşan/aşan ticket'ları tarar. Hatırlatıcılar ve SLA taraması `schedule:work` çalışmadan işlemez.
 
 ## Sorun Giderme
 
@@ -133,10 +133,12 @@ Zamanlanmış görevler için `php artisan schedule:work` gerekir — `logs:prun
 - **Duplicate uyarısı çıkmıyor** → Kontrol en az bir alan (e-posta, telefon, ad veya soyad) dolduğunda ve 500ms yazma duraklamasından sonra çalışır. Hiçbir alan doluysa değilse istek gönderilmez (sunucu 422 döner).
 - **Kanban'da kart taşıyınca "başkası taşıdı" uyarısı alıyorum** → Bu kasıtlı bir koruma. Kartın sizde görünen sürümü bayatlamış demektir (başka biri sizden önce taşımış). Kart otomatik olarak gerçek konumuna oturur; tekrar taşıyabilirsiniz.
 - **Kartı kayıp aşamasına sürükleyince neden soruyor** → `lost_reason` zorunludur; kayıp nedeni olmadan taşıma sunucu tarafından reddedilir (422). Kazanma nedeni opsiyoneldir.
+- **Görev hatırlatıcıları gelmiyor** → `php artisan schedule:work` çalışıyor olmalı (dakikalık `tasks:dispatch-reminders` komutu). Ayrıca hatırlatıcı in-app'tir: Reverb (`reverb:start`) ve queue worker (`queue:work`) da açık olmalı.
+- **SLA sayacı yanlış görünüyor** → Sayaç sunucudan gelen kalan süreyi `performance.now()` ile eritir, bilgisayarınızın saatinden bağımsızdır. Yanlış görünüyorsa sayfayı yenileyin; kalan süre 60 saniyede bir sunucuyla yeniden senkronlanır.
 
 ## API Endpoint Listesi
 
-_Faz 2, 4, 5, 6 ve 7 uçları eklendi; kalanı Faz 13'te tamamlanacak._
+_Faz 2, 4, 5, 6, 7 ve 8 uçları eklendi; kalanı Faz 13'te tamamlanacak._
 
 | Metot | Yol | İzin / Koruma | Açıklama |
 | --- | --- | --- | --- |
@@ -197,6 +199,27 @@ _Faz 2, 4, 5, 6 ve 7 uçları eklendi; kalanı Faz 13'te tamamlanacak._
 | PATCH | `/api/deals/{id}/move` | `deals.move` | Fırsatı Kanban'da başka aşamaya/pozisyona taşır; komşu id'leri + `version` alır. **409 DEAL_VERSION_CONFLICT dönebilir** |
 | PATCH | `/api/deals/{id}/assign` | `deals.update` | Fırsatı bir kullanıcıya atar |
 | GET | `/api/pipeline-stages` | `deals.view` | Aktif pipeline aşamalarını sıralı döner |
+| GET | `/api/tasks` | `tasks.view` | Görevleri sayfalı/sıralı/filtreli/aramalı listeler |
+| GET | `/api/tasks/calendar` | `tasks.view` | Takvim görünümü için görevleri döner (`?from`&`?to` zorunlu, max 90 gün) |
+| POST | `/api/tasks` | `tasks.create` | Yeni görev oluşturur |
+| GET | `/api/tasks/{id}` | `tasks.view` | Görev detayını döner |
+| PATCH | `/api/tasks/{id}` | `tasks.update` | Görevi günceller |
+| DELETE | `/api/tasks/{id}` | `tasks.delete` | Görevi soft-delete yapar |
+| PATCH | `/api/tasks/{id}/complete` | `tasks.update` | Görevi tamamlanmış olarak işaretler (idempotent) |
+| PATCH | `/api/tasks/{id}/assign` | `tasks.assign` | Görevi bir kullanıcıya atar |
+| GET | `/api/tickets` | `tickets.view` | Destek taleplerini sayfalı/sıralı/filtreli/aramalı listeler (`filter[sla_breached]=1` destekler) |
+| GET | `/api/tickets/stats` | `tickets.view` | Filtre ve sayfalamadan bağımsız genel özet döner |
+| POST | `/api/tickets` | `tickets.create` | Yeni destek talebi oluşturur |
+| GET | `/api/tickets/{id}` | `tickets.view` | Ticket detayını döner |
+| PATCH | `/api/tickets/{id}` | `tickets.update` | Ticket'ı günceller (`status` ve SLA alanları reddedilir — 422) |
+| DELETE | `/api/tickets/{id}` | `tickets.delete` | Ticket'ı soft-delete yapar (`resolved`/`closed` ticket 403) |
+| PATCH | `/api/tickets/{id}/status` | `tickets.update` | Ticket durumunu değiştirir. **422 INVALID_STATUS_TRANSITION dönebilir** |
+| PATCH | `/api/tickets/{id}/assign` | `tickets.assign` | Ticket'ı bir kullanıcıya atar |
+| GET | `/api/activities` | `activities.view` | Aktiviteleri sayfalı/sıralı/filtreli/aramalı listeler |
+| POST | `/api/activities` | `activities.create` | Yeni aktivite kaydı oluşturur (çağrı/toplantı/e-posta/not) |
+| GET | `/api/activities/{id}` | `activities.view` | Aktivite detayını döner |
+| PATCH | `/api/activities/{id}` | `activities.update` | Aktiviteyi günceller |
+| DELETE | `/api/activities/{id}` | oluşturan kişi veya `activities.delete` | Aktiviteyi soft-delete yapar |
 
 ## ER Diyagramı
 

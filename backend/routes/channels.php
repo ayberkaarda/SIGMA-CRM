@@ -157,3 +157,21 @@ Broadcast::channel('deals', function (User $user): bool {
 
     return $permission !== null && $user->is_active && $user->can($permission);
 });
+
+/*
+ * private-tickets — the support queue, one channel for the whole module
+ * (Phase 8).
+ *
+ * App\Events\TicketSlaWarning and App\Events\TicketSlaBreached publish
+ * `ticket.sla.warning` / `ticket.sla.breached` here whenever the scanner
+ * (`tickets:scan-sla`, every five minutes) crosses a threshold. Gated on
+ * `tickets.view`: whoever may not read a ticket may not hear its SLA burn
+ * either. Same shape as `private-deals` above - the permission is read from
+ * ChannelRegistry::board() rather than written inline, so the board
+ * dictionary keeps exactly one home.
+ */
+Broadcast::channel('tickets', function (User $user): bool {
+    $permission = ChannelRegistry::board('tickets');
+
+    return $permission !== null && $user->is_active && $user->can($permission);
+});

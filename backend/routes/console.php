@@ -15,3 +15,21 @@ Artisan::command('inspire', function () {
  * --force: zamanlanmış çalışma non-interactive'dir, onay isteyemez.
  */
 Schedule::command('logs:prune --force')->dailyAt('03:17');
+
+/*
+ * Faz 8 / A: görev hatırlatıcıları (`reminder_at`). Her dakika çalışır ki
+ * hatırlatıcı gecikmesi dakika mertebesinde kalsın — bkz.
+ * App\Console\Commands\DispatchTaskReminders dokümanı (tekrar gönderimi
+ * önleme tasarımı ve sınırları orada açıklanıyor).
+ */
+Schedule::command('tasks:dispatch-reminders')->everyMinute();
+
+/*
+ * Faz 8 / B: SLA tarayıcısı (docs/SLA-DESIGN.md §5.5). 5 dakikada bir koşar —
+ * en kısa SLA hedefi 4 saat (`urgent`) olduğu için dakikalık tarama gereksiz,
+ * saatlik tarama ise %20'lik uyarı penceresini (urgent'te 48 dakika) kaba
+ * bırakırdı. Uyarı ve ihlal olayları ticket başına bir kez üretilir
+ * (`sla_warning_notified_at` / `sla_breach_notified_at` damgaları), bu yüzden
+ * sık koşmanın tekrar gönderim maliyeti yoktur.
+ */
+Schedule::command('tickets:scan-sla')->everyFiveMinutes();

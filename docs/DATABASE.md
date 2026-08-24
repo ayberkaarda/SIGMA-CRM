@@ -247,7 +247,8 @@ Geçmişe dönük etkileşim kaydı (çağrı, toplantı, e-posta, not). `activi
 FK: `user_id → users.id` (nullOnDelete).
 
 #### `tickets`
-Destek talebi, SLA takibi ile.
+Destek talebi, SLA takibi ile. SLA duraklama semantiği (sayaç `pending` durumunda durur,
+ihlal kalıcı bayrak değil türetilmiş değerdir) `docs/SLA-DESIGN.md`'de tanımlıdır — bağlayıcı sözleşme.
 
 | Kolon | Tip | Null | Varsayılan | Açıklama |
 | --- | --- | --- | --- | --- |
@@ -266,6 +267,10 @@ Destek talebi, SLA takibi ile.
 | first_response_at | timestamp | evet | null | |
 | resolved_at | timestamp | evet | null | |
 | closed_at | timestamp | evet | null | |
+| sla_paused_at | dateTime | evet | null | aktif duraklamanın başlangıcı |
+| sla_paused_seconds | unsignedInteger | hayır | 0 | birikmiş toplam duraklama |
+| sla_warning_notified_at | dateTime | evet | null | "ihlale yaklaşıyor" bildirimi idempotency damgası |
+| sla_breach_notified_at | dateTime | evet | null | "ihlal edildi" bildirimi idempotency damgası |
 | deleted_at | timestamp | evet | null | softDeletes |
 | created_at / updated_at | timestamp | evet | null | |
 
@@ -591,6 +596,9 @@ Aşağıdaki tablolar `*_type` + `*_id` çifti ile birden fazla model tipine ayn
 - `notifiable` (`notifications`) — Laravel bildirim sisteminin standart hedefi (şu an yalnızca `User`, ama şema herhangi bir modeli destekler).
 
 Bu desenin bedeli: veritabanı seviyesinde klasik FK bütünlüğü kurulamaz (`*_type` sütunu veritabanına "hangi tabloya bakılacağı" bilgisini vermez), bütünlük uygulama katmanında (Eloquent) sağlanır; bu yüzden ilgili `*_id` sütunları her zaman **index**'lenir (bkz. §4) ki morph sorguları tam tablo taraması yapmasın.
+
+**`tickets` SLA ihlali neden kalıcı bir bayrak kolonu değil, türetilmiş bir değerdir:**
+Bir `is_sla_breached` boolean kolonu tutulsaydı, bu değerin duraklama girişi/çıkışı, öncelik değişimi ve yeniden açma gibi her senaryoda senkron tutulması gerekirdi; bu yollardan birini güncellemeyi unutan herhangi bir kod yolu sessizce yanlış veri üretirdi. Bunun yerine ihlal, `sla_due_at`/`sla_paused_at`/`resolved_at` alanlarından her sorguda türetilir (tek tanım `SlaService`'te, ham SQL'siz); tarayıcı, filtre ve istatistik uçları aynı tanımı paylaşır. Ayrıntı: `docs/SLA-DESIGN.md`.
 
 **`custom_fields` + `custom_field_values` EAV deseni:**
 CRM'in farklı kurumlarda farklı özel alan ihtiyaçları olabileceğinden (ör. bir firma için "vergi numarası", başka biri için "bölge kodu"), her `entity_type` (leads/contacts/companies/deals ...) için şema migration'ı gerektirmeden çalışma zamanında alan tanımlayabilmek amacıyla EAV (Entity-Attribute-Value) deseni kullanılmıştır: `custom_fields` alan tanımını (ad, tip, seçenekler), `custom_field_values` ise `customizable` polymorphic ilişkisiyle her kayda ait değeri tutar. Bunun sınırları bilinçli olarak kabul edilmiştir: `value` kolonu `text` tipindedir (tip güvenliği yoktur, doğrulama uygulama katmanında yapılır), sayısal/tarihsel alanlarda SQL seviyesinde aralık sorgusu ya da toplama (SUM/AVG) verimsizdir, ve her özel alan okuması bir JOIN gerektirir. Bu desen, "sık değişmeyen çekirdek şema + seyrek/kuruma özel ek alan" senaryosu için tercih edilmiştir; yüksek hacimli analitik sorgular için uygun değildir.

@@ -57,6 +57,12 @@ final class ChannelRegistry
      */
     public const BOARDS = [
         'deals' => 'deals.view',
+        // Phase 8: the support queue. TicketSlaWarning / TicketSlaBreached
+        // publish here. An SLA about to burn is the team's shared problem,
+        // not the assignee's private notification - and unassigned tickets
+        // have no personal recipient at all - so this is a module channel
+        // rather than private-user.{id}.
+        'tickets' => 'tickets.view',
     ];
 
     /**

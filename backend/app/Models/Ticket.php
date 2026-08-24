@@ -33,6 +33,17 @@ class Ticket extends Model
         'assigned_to',
         'created_by',
         'sla_due_at',
+        // Faz 8 / B — SLA duraklama + bildirim damgaları (docs/SLA-DESIGN.md §3).
+        // $fillable'a eklenmeleri KASITLIDIR: LogsCrmActivity `logFillable()`
+        // kullanır, yani bu alanlar ancak burada listelenirse `activity_log`'a
+        // düşer. Bir SLA duraklaması ya da ihlal damgası tam olarak denetim
+        // izinde görülmesi gereken türden bir değişikliktir. İstemci bunları
+        // YİNE DE gönderemez: StoreTicketRequest'te hiç tanımlı değiller,
+        // UpdateTicketRequest ise `missing` kuralıyla 422 üretir.
+        'sla_paused_at',
+        'sla_paused_seconds',
+        'sla_warning_notified_at',
+        'sla_breach_notified_at',
         'first_response_at',
         'resolved_at',
         'closed_at',
@@ -47,6 +58,10 @@ class Ticket extends Model
     {
         return [
             'sla_due_at' => 'datetime',
+            'sla_paused_at' => 'datetime',
+            'sla_paused_seconds' => 'integer',
+            'sla_warning_notified_at' => 'datetime',
+            'sla_breach_notified_at' => 'datetime',
             'first_response_at' => 'datetime',
             'resolved_at' => 'datetime',
             'closed_at' => 'datetime',

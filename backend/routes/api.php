@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ActivityController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\ContactController;
@@ -14,6 +15,8 @@ use App\Http\Controllers\Api\PipelineStageController;
 use App\Http\Controllers\Api\PresenceController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\TagController;
+use App\Http\Controllers\Api\TaskController;
+use App\Http\Controllers\Api\TicketController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -203,5 +206,65 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::patch('/deals/{deal}/assign', [DealController::class, 'assign'])->name('deals.assign');
 
         Route::get('/pipeline-stages', [PipelineStageController::class, 'index'])->name('pipeline-stages.index');
+
+        /*
+         * Görevler / Tasks (Faz 8 / A) — controller/service/repository A
+         * şeridinin. Ticket route'ları BURADA YOK: SLA tasarımı henüz karara
+         * bağlanmadığı için sonraki dalgada başka bir şerit ekleyecek.
+         *
+         * Route sırası KASITLIDIR: `/tasks/calendar` sabit segmenti
+         * `/tasks/{task}` route-model-binding parametresinden ÖNCE
+         * tanımlanmalı, yoksa Laravel `calendar`'ı bir görev id'si sanıp 404
+         * üretir — Faz 6'daki `leads/check-duplicates` ve Faz 7'deki
+         * `deals/board` ile AYNI tuzak (bkz. yukarıdaki yorumlar).
+         * `/tasks/{task}/complete` ve `/tasks/{task}/assign` zaten `{task}`'e
+         * bağlı alt-yollar oldukları için bu sıra sorununu YAŞAMAZ.
+         */
+        Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
+        Route::get('/tasks/calendar', [TaskController::class, 'calendar'])->name('tasks.calendar');
+        Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
+        Route::get('/tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
+        Route::patch('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
+        Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
+        Route::patch('/tasks/{task}/complete', [TaskController::class, 'complete'])->name('tasks.complete');
+        Route::patch('/tasks/{task}/assign', [TaskController::class, 'assign'])->name('tasks.assign');
+
+        /*
+         * Destek talepleri / Tickets (Faz 8 / B) — controller/service/
+         * repository/SLA B şeridinin. SLA sözleşmesi docs/SLA-DESIGN.md.
+         *
+         * Route sırası KASITLIDIR: `/tickets/stats` sabit segmenti
+         * `/tickets/{ticket}` route-model-binding parametresinden ÖNCE
+         * tanımlanmalı, yoksa Laravel `stats`'ı bir ticket id'si sanıp 404
+         * üretir — Faz 6'daki `leads/check-duplicates`, Faz 7'deki
+         * `deals/board` ve Faz 8/A'daki `tasks/calendar` ile AYNI tuzak
+         * (üç fazda üç kez yaşandı; TicketApiTest bunu doğrulayan bir test
+         * taşır). `/tickets/{ticket}/status` ve `/tickets/{ticket}/assign`
+         * zaten `{ticket}`'e bağlı alt-yollar oldukları için bu sıra
+         * sorununu YAŞAMAZ.
+         *
+         * TICKET NOTLARI İÇİN AYRI UÇ YOK: notlar `activities` tablosunda
+         * `type='note'` olarak tutulur ve yukarıdaki `POST /api/activities`
+         * ucundan (`activityable_type: "ticket"`) eklenir — sistem kapalı
+         * devredir, her not zaten iç nottur (bkz. TicketResource dokümanı).
+         */
+        Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
+        Route::get('/tickets/stats', [TicketController::class, 'stats'])->name('tickets.stats');
+        Route::post('/tickets', [TicketController::class, 'store'])->name('tickets.store');
+        Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
+        Route::patch('/tickets/{ticket}', [TicketController::class, 'update'])->name('tickets.update');
+        Route::delete('/tickets/{ticket}', [TicketController::class, 'destroy'])->name('tickets.destroy');
+        Route::patch('/tickets/{ticket}/status', [TicketController::class, 'status'])->name('tickets.status');
+        Route::patch('/tickets/{ticket}/assign', [TicketController::class, 'assign'])->name('tickets.assign');
+
+        /*
+         * Aktiviteler / Activities (Faz 8 / A) — controller/service/
+         * repository A şeridinin.
+         */
+        Route::get('/activities', [ActivityController::class, 'index'])->name('activities.index');
+        Route::post('/activities', [ActivityController::class, 'store'])->name('activities.store');
+        Route::get('/activities/{activity}', [ActivityController::class, 'show'])->name('activities.show');
+        Route::patch('/activities/{activity}', [ActivityController::class, 'update'])->name('activities.update');
+        Route::delete('/activities/{activity}', [ActivityController::class, 'destroy'])->name('activities.destroy');
     });
 });

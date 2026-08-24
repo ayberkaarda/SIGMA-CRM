@@ -1,7 +1,7 @@
 # SIGMA-CRM — İlerleme Durumu (PROGRESS)
 
 **Son güncelleme:** 2026-08-24
-**Durum özeti:** Faz 0-7 tamamlandı — Kanban pipeline ve eşzamanlı taşıma çözümü dahil. Sıradaki: Faz 8 (Görevler/Aktiviteler + Destek Talepleri).
+**Durum özeti:** Faz 0-8 tamamlandı — görev/aktivite yönetimi, takvim ve SLA'lı destek talepleri dahil. Sıradaki: Faz 9 (Ürünler & Teklifler).
 
 > Ayrıntılı plan: `docs/ROADMAP.md`. Bu dosya her oturum başında okunur (docs/ENGINEERING-RULES.md kuralı).
 
@@ -19,7 +19,7 @@
 | 5 | Log & Audit | ✅ Bitti | Oturum/gezinme/audit logları, canlı akış, 4 sekmeli Loglar sayfası, CSV/XLSX export, logs:prune. 162 test (2026-08-23) |
 | 6 | Leads + Contacts/Companies | ✅ Bitti | Duplicate tespiti (4/4 gerçek veride doğrulandı), lead dönüşümü, CSV import, timeline. 279 test (2026-08-24) |
 | 7 | Deals & Kanban Pipeline | ✅ Bitti | Fractional index, optimistic locking, 409 çakışma çözümü, realtime senkron. R4 kapandı. 357 test (2026-08-24) |
-| 8 | Tasks/Activities + Tickets | ⬜ Bekliyor | — |
+| 8 | Tasks/Activities + Tickets | ✅ Bitti | Görev/aktivite + takvim, in-app hatırlatıcı, SLA duraklama semantiği, durum makinesi, iç notlar activities üzerinden. 470 test (2026-08-24) |
 | 9 | Products & Quotes | ⬜ Bekliyor | — |
 | 10 | Notifications + Settings | ⬜ Bekliyor | Faz 11 ile paralel yürütülebilir |
 | 11 | Reports + Dashboard | ⬜ Bekliyor | Faz 10 ile paralel yürütülebilir |
@@ -44,12 +44,13 @@ Durum simgeleri: ⬜ Bekliyor · 🟨 Devam · ✅ Bitti · 🚫 Bloke
 | UI bağımlılıkları | — | ✅ | @fontsource/poppins (self-host), clsx, tailwind-merge, lucide-react, sonner |
 | Veritabanı | sigma_crm | ✅ | utf8mb4_unicode_ci. Test DB'si ayrı: sigma_crm_test (phpunit.xml'de sabit). 39 tablo, 40 FK, demo veri yüklü |
 | Reverb | v1.11.1 | ✅ | Windows'ta yerel çalışıyor, ws://127.0.0.1:8080. WSL/pcntl gerekmedi |
+| Zamanlanmış görevler | 3 komut | ✅ | logs:prune (03:17), tasks:dispatch-reminders (dakikalık), tickets:scan-sla (5 dk) — schedule:work gerekir |
 
 ---
 
 ## Şu Anki Odak
 
-Faz 8 — Görevler/Aktiviteler + Destek Talepleri: görev atama, hatırlatıcılar, takvim görünümü, aktivite kayıtları; ticket önceliği, SLA sayacı, durum akışı, iç notlar.
+Faz 9 — Ürünler & Teklifler: ürün kataloğu, fiyat listeleri, teklif oluşturma ve PDF çıktısı (barryvdh/laravel-dompdf), teklif→fırsat bağlantısı.
 
 ## Açık Bloklar
 
@@ -57,11 +58,12 @@ Faz 8 — Görevler/Aktiviteler + Destek Talepleri: görev atama, hatırlatıcı
 
 ## Bir Sonraki Adım
 
-1. **Faz 8 — Görevler/Aktiviteler + Destek Talepleri:** görev atama, hatırlatıcılar (Redis queue), hafif takvim görünümü, arama/toplantı/e-posta aktivite kayıtları; ticket önceliği, SLA sayacı, atama, durum akışı, iç notlar.
-2. Faz 8 için hazır: tasks ve activities tabloları (morph taskable/activityable), tickets tablosu (SLA alanları: sla_due_at, first_response_at, resolved_at, closed_at), settings'te önceliğe göre SLA saatleri (ticket.sla_hours_low/normal/high/urgent = 72/48/24/4), demo veride 8 SLA'sı ihlal edilmiş açık ticket ve 20 gecikmiş görev.
-3. Deal timeline ucu YOK — Faz 6'da kişi/firma için yazıldı, deal için yazılmadı. Detay sayfası şu an bağlı kişinin timeline'ına bağlantı veriyor. Faz 8'de aktivite/görev modülü gelince deal timeline'ı da eklenebilir.
-4. Etiket/aşama renkleri için components/shared/tokenBadgeVariant.ts hazır — pipeline_stages.color aynı token adlarını taşıyor.
-5. Demo hesaplarla giriş: demo kullanıcıların şifresi Demo!2026Sigma, must_change_password=false — farklı rollerin UI'da ne gördüğünü test etmek için kullanılabilir.
+1. **Faz 9 — Ürünler & Teklifler:** ürün kataloğu, fiyat listeleri, teklif oluşturma ve PDF çıktısı (`barryvdh/laravel-dompdf`), teklif→fırsat bağlantısı.
+2. Faz 9 için hazır: products, quotes, quote_items tabloları; quote_items.name ürün adının anlık kopyası (ürün değişse/silinse geçmiş teklif bozulmaz); demo veride 20 ürün ve 15 teklif (57 kalem) var.
+3. Teklif matematiği DemoDataSeeder'da zaten tutarlı üretiliyor ve assertConsistency() ile doğrulanıyor — QuoteCalculator aynı kuralları uygulamalı (satır toplamı → indirim → KDV → genel toplam, kuruş yuvarlaması).
+4. Deal timeline ucu YOK — Faz 6'da kişi/firma için yazıldı, deal için yazılmadı. Detay sayfası şu an bağlı kişinin timeline'ına bağlantı veriyor.
+5. Etiket/aşama renkleri için components/shared/tokenBadgeVariant.ts hazır — pipeline_stages.color aynı token adlarını taşıyor.
+6. Demo hesaplarla giriş: demo kullanıcıların şifresi Demo!2026Sigma, must_change_password=false — farklı rollerin UI'da ne gördüğünü test etmek için kullanılabilir.
 
 **Uyarı:** Faz 3+ endpoint'leri `routes/api.php` içinde `password.changed` grubunun İÇİNE yazılmalı — dışına yazılan uç zorunlu şifre değişimini atlar.
 
@@ -108,6 +110,10 @@ Faz 8 — Görevler/Aktiviteler + Destek Talepleri: görev atama, hatırlatıcı
 | 2026-08-24 | Fractional index alfabesi yalnızca küçük harfli base36 | `position` kolonu `utf8mb4_unicode_ci` (harf duyarsız); büyük harfli alfabede MySQL `ORDER BY` ile PHP `strcmp()` ayrışır — testler yeşil kalırken üretimde sıralama bozulur |
 | 2026-08-24 | Optimistic update'te `version` cache'ten değil, sürükleme öncesi karttan okunur | Araya bir realtime olayı girerse cache'teki sürüm tazelenir ve çakışma tespiti sessizce devre dışı kalır — koruma varmış gibi görünüp hiçbir şey korumaz |
 | 2026-08-24 | `is_lost` aşamasına taşımada `lost_reason` zorunlu | Kayıp nedeni satış analitiğinin en değerli verisi; opsiyonel bırakılırsa hiç doldurulmaz. `won_reason` opsiyonel — kazanma nedeni analitik olarak daha az kritik |
+| 2026-08-24 | SLA sayacı `pending` durumunda durur | Durmasaydı destek temsilcisi müşterinin yavaşlığından dolayı ihlal almış görünürdü ve ölçüm ekip değerlendirmesinde kullanılamazdı. Maliyeti 2 kolon; tasarım: docs/SLA-DESIGN.md |
+| 2026-08-24 | SLA ihlali kalıcı bayrak değil, türetilmiş değer | Bayrak tutulsaydı duraklama sonrası güncellemeyi unutan her kod yolu sessizce yanlış veri üretirdi. Tek predicate SlaService'te, filtre/stats/tarayıcı aynı tanımı paylaşır |
+| 2026-08-24 | İç notlar için yeni tablo açılmadı, activities kullanıldı | Sistem kapalı devre; müşteri portalı olmadığı için her not zaten iç nottur ve is_internal ayrımı anlamsızdır. Bir migration'dan tasarruf edildi, Faz 6 timeline altyapısıyla uyumlu kaldı |
+| 2026-08-24 | SLA geri sayımı istemcide performance.now() ile | Date.now() ile sla_due_at karşılaştırılırsa kullanıcının sistem saati bozuksa SLA durumu tamamen yanlış görünür ve hiçbir test bunu yakalayamaz. Monoton saat sistem saatinden bağımsız ilerler |
 
 ---
 
