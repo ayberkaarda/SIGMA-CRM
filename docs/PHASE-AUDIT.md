@@ -249,6 +249,47 @@ Bu faz E2E doğrulamayı çoğunlukla **backend feature testi + elle rol turu** 
 Frontend birim/entegrasyon test altyapısı kurmak Faz 14'e (işlevsel kapsama) aday olarak
 bırakılır; bu fazda güvenlik regresyonları backend'de kilitlenir.
 
+### §3.1 Yürütme sonucu (2026-08-25)
+
+**Yöntem:** Bağımlılık kurulmadan sürüldü — headless Chrome + Node'un global `WebSocket`'i ile
+doğrudan Chrome DevTools Protocol (CDP) konuşuldu. `npm install` yapılmadı, Playwright/Puppeteer
+kurulmadı (bkz. PROGRESS karar günlüğü 2026-08-25). Uygulama gerçek dev ortamında çalıştırıldı
+(Laravel `:8000` + Vite `:5173` + Reverb + Redis + MariaDB).
+
+**Kapsam ve sonuç — 5 rol × 18 rota = 90 erişim hücresi, 90'ı da doğru:**
+
+| Rol | UI'da reddedilen sayfalar |
+|---|---|
+| Admin | — (hepsi açık) |
+| Satış Müdürü | tickets, logs, settings, users |
+| Satış Temsilcisi | tickets, reports, logs, settings, users |
+| Destek Temsilcisi | leads, deals, deals/list, quotes, products, price-lists, reports, logs, settings, users |
+| İzleyici | settings, chat |
+
+Her hücre ölçülen izin matrisiyle karşılaştırıldı, sapma YOK. Hiçbir rolde JS istisnası veya
+konsol hatası çıkmadı (0 hata).
+
+**Faz 13 sahiplik arayüzü GÖRSEL olarak doğrulandı:** Satış Temsilcisi (Zeynep Demir) panosunda
+başka temsilcilerin (EY, MK) kartlarında kilit ikonu var, kendi kartlarında (ZD) yok. DOM
+ölçümü: 40 kilitli kart (`aria-disabled="true"` + `cursor-not-allowed`), 10 sürüklenebilir kart,
+ipucu metni "Bu kartın sahibi değilsiniz, taşıyamazsınız.". `aria-disabled` sayesinde klavye/
+ekran okuyucu kullanıcıları da kısıtı algılıyor.
+
+**Ayrıca doğrulandı:** oturum düşünce `/login`'e yönlendirme çalışıyor; koyu ve açık tema ikisi
+de doğru render ediliyor (kilit ikonları, kontrast, yerleşim korunuyor).
+
+**Turun bulduğu YENİ bulgu:** bkz. §4.1 F12 (DÜŞÜK, KAPATILMADI, Faz 15 adayı).
+
+**Kapsanmayan (dürüst kayıt):**
+1. **Super Admin UI'da test EDİLEMEDİ:** `admin@syncra.local` hesabının şifresi önceki bir
+   oturumda değiştirilmiş (`must_change_password` artık `false`), seeder'daki
+   `SyncraAdmin!2026` çalışmıyor. Kullanıcının admin şifresi bilinçli olarak SIFIRLANMADI.
+   Super Admin'in "her şeyi görür" davranışı backend testleriyle (`RoleAcceptanceTest`,
+   `PrivilegeEscalationTest`) zaten kilitli.
+2. **CRUD akış senaryoları uçtan uca sürülmedi** (lead → fırsat → teklif → görev/ticket → rapor
+   zinciri). Tur erişim/yetki boyutunu ve yeni sahiplik arayüzünü kapsadı.
+3. Çift gönderim (idempotency), çevrimdışı davranış ve klavye navigasyonu elle sınanmadı.
+
 ---
 
 ## 4. Ön Bulgular (Kod Okunurken Saptandı — Bu Fazda Kapatılacak)
@@ -383,6 +424,13 @@ Kimliği doğrulanmış herkes herhangi bir `entity_type` için aktif özel alan
 listeleyebiliyor. Müşteri verisi değil, şema metadata'sı; kapalı devre + davetle giriş nedeniyle
 düşük. Karar: kabul edilebilir, ama kayda geçiriliyor (bkz. PROGRESS "Bir Sonraki Adım").
 
+**F12 (DÜŞÜK) — Kanban her yüklemede yetkisiz kullanıcı için 403'e giden boşa istek atıyor.** ⬜ KAPATILMADI (Faz 15 adayı.)
+İz B'nin elle kabul turunda saptandı (§3.1). Fırsatlar (Kanban) sayfası her yüklemede
+`GET /api/users?per_page=100` çağırıyor; `users.view` izni olmayan rollerde (Satış Temsilcisi,
+Destek Temsilcisi) bu istek **403** dönüyor. Zararsız — "Sahip" filtresi zarifçe gizleniyor,
+kullanıcıya hata toast'ı gösterilmiyor — ama her pano açılışında boşa giden başarısız bir istek.
+KAPATILMADI; Faz 15 adayı olarak kaydedildi (bkz. PROGRESS "Bir Sonraki Adım").
+
 ---
 
 ## 5. İZ C — Attio ANALİZİ (kabul/red kararı; özellik İNŞASI Faz 14'te)
@@ -460,19 +508,16 @@ kurulu — kabul listesine alınmadı.
       `MassAssignmentTest.php` (F7/F8 dahil).
 - [x] 8 broadcast kanalının her biri için yetkisiz-abone testi var ve `reverb` sürücüsüyle koşuyor.
       `ChannelAuthorizationTest.php`, `ChannelPayloadLeakTest.php`.
-- [ ] 6 rolün her biri için "görmemesi gerekeni görmüyor" turu (backend testi + elle) tamamlandı.
-      **KISMİ.** Backend tarafı `RoleAcceptanceTest.php` ile kilitli; ama İz B'nin elle (UI
-      üzerinden gerçek kullanıcı) 6-rol kabul turu henüz BİTMEDİ — bu yüzden Faz 13 durumu
-      PROGRESS'te 🟨 Devam olarak işaretlendi. Kalan iş: elle tur + bulunacak yeni bulguların
-      kapatılması.
+- [x] 6 rolün her biri için "görmemesi gerekeni görmüyor" turu (backend testi + elle) tamamlandı.
+      5 rol (Admin, Satış Müdürü, Satış Temsilcisi, Destek Temsilcisi, İzleyici) UI'da CDP ile
+      sürüldü (90/90 erişim hücresi doğru, bkz. §3.1); Super Admin backend testleriyle kapsandı
+      (UI'da test edilemedi — şifre değişmiş, bkz. §3.1 kapsanmayan #1).
 - [x] `composer audit` + `npm audit` temiz (veya açık kararı kayıtlı).
 - [x] Attio §5 kabul/red listesi karara bağlandı (analiz çıktısı); kabul edilen C1–C4'ün İNŞASI
       Faz 14'e (`PHASE-INTL` §3) devredildi. **Bu fazda hiçbir Attio özelliği inşa edilmez.**
       §5.4'te Faz 14'e devredilen güvenlik kısıtları (C1/C2/C4) kayda geçirildi.
-- [ ] Tüm mevcut test suiti (Faz 12 sonrası) hâlâ yeşil; yeni testlerle birlikte sayı arttı.
-      **KISMİ.** Son ölçüm 1087 test / 8650 assertion, 0 hata (899'dan arttı) — ama bu Faz 13'ün
-      SON sayısı DEĞİL; İz B elle turu ve son doğrulama sürdükçe sayı değişebilir. Faz kapanışında
-      bu satır güncellenip [x] yapılacak.
+- [x] Tüm mevcut test suiti (Faz 12 sonrası) hâlâ yeşil; yeni testlerle birlikte sayı arttı.
+      **1098 test / 8843 assertion, 0 hata** (Faz 12 sonunda 899 / 7558 idi).
 
 > İz D (i18n) ve İz E (para birimi) kabul kriterleri Faz 14'tedir — bkz. `docs/PHASE-INTL.md` §4.
 

@@ -1,7 +1,7 @@
 # Syncra — İlerleme Durumu (PROGRESS)
 
 **Son güncelleme:** 2026-08-25
-**Durum özeti:** Faz 0-12 tamamlandı — bildirim merkezi, ayarlar, raporlar, canlı dashboard ve chat (DM/grup, tik makinesi, mention, dosya paylaşımı, kayda bağlı panel) dahil. Faz 13 (Güvenlik Denetimi, Kırmızı Takım, Kullanıcı Kabul & Attio Analizi) 🟨 devam ediyor — İz A (kırmızı takım) ve İz C (Attio analizi) tamamlandı, İz B'nin (6-rol elle kabul turu) son doğrulaması sürüyor.
+**Durum özeti:** Faz 0-13 tamamlandı — bildirim merkezi, ayarlar, raporlar, canlı dashboard, chat (DM/grup, tik makinesi, mention, dosya paylaşımı, kayda bağlı panel) ve Faz 13 (Güvenlik Denetimi, Kırmızı Takım, Kullanıcı Kabul & Attio Analizi — İz A/B/C tamamlandı) dahil. Şu anki odak Faz 14 (Uluslararasılaştırma + Attio Özellikleri).
 
 > Ayrıntılı plan: `docs/ROADMAP.md`. Bu dosya her oturum başında okunur (docs/ENGINEERING-RULES.md kuralı).
 
@@ -24,7 +24,7 @@
 | 10 | Notifications + Settings | ✅ Bitti | Bildirim merkezi (11 tip, `database`+`broadcast` kanalı, `private-user.{id}`, okunmamış sayaç), Ayarlar (şirket profili, pipeline aşama editörü, özel alan yönetimi, e-posta şablonları, rol/izin matrisi). Tetikleyiciler observer/listener ile (2026-08-24) |
 | 11 | Reports + Dashboard | ✅ Bitti | 4 rapor (satış performansı, kullanıcı performansı, kaynak analizi, dönüşüm) + CSV/XLSX export, 8 KPI'lı canlı dashboard (Recharts), `DashboardInvalidated` 3 sn debounce. 805 test / 7237 assertion (2026-08-24) |
 | 12 | Chat | ✅ Bitti | DM + grup/kanal sohbeti, imleç bazlı tik makinesi (`TickState`, mesaj başına satır değil), whisper yazıyor göstergesi, presence, @mention (istemci taraflı seçim), dosya/görsel paylaşımı (allowlist + sunucu taraflı MIME), okunmamış sayaçları, deal/ticket detayında kayda bağlı sohbet paneli. 899 test / 7558 assertion (2026-08-24) |
-| 13 | Güvenlik Denetimi, Kırmızı Takım, Kullanıcı Kabul & Attio Analizi | 🟨 Devam | İz A kırmızı takım A1–A8 çalıştırıldı ve işaretlendi (SAFE + F1–F6 ön bulgu kapatıldı + yürütmede bulunan F7–F11 kapatıldı/kayda geçti) + H1–H6/H8 sertleştirme tamam; İz C Attio ANALİZİ kesinleşti (§5.4 Faz 14 kısıtları eklendi). **Bitmedi:** İz B'nin 6-rol elle kabul turu ve son doğrulama sürüyor. Detay: `docs/PHASE-AUDIT.md` |
+| 13 | Güvenlik Denetimi, Kırmızı Takım, Kullanıcı Kabul & Attio Analizi | ✅ Bitti | İz A kırmızı takım (A1–A8) çalıştırıldı ve işaretlendi (SAFE + F1–F6 ön bulgu + F7–F11 yürütme bulgusu kapatıldı), Model C yatay yazma izolasyonu, H1–H6/H8 sertleştirme; İz B 6-rol kabul turu (backend + UI, bkz. `docs/PHASE-AUDIT.md` §3.1); İz C Attio analizi (§5.4 Faz 14 kısıtları). **1098 test / 8843 assertion (2026-08-25).** Detay: `docs/PHASE-AUDIT.md` |
 | 14 | Uluslararasılaştırma (i18n + Çoklu Para Birimi) & Attio Özellikleri | ⬜ Bekliyor | İz D i18n (tr/en/de/fr) + README EN; İz E çoklu para birimi + TCMB kur (H7 XXE sertleştirme + A5.8 testi burada); İz F Faz 13'te kabul edilen C1–C4 Attio özelliklerinin inşası. Detay: `docs/PHASE-INTL.md` |
 | 15 | Teslim & Final Kabul | ⬜ Bekliyor | İşlevsel feature/E2E test kapsamı tamamlama; README final (kurulum + API endpoint listesi + ER, iki dilde); Faz 14 sonrası kısa yeniden-kabul turu; Bölüm 6 global kabul kriterleri son turu; teslim |
 
@@ -53,7 +53,7 @@ Durum simgeleri: ⬜ Bekliyor · 🟨 Devam · ✅ Bitti · 🚫 Bloke
 
 ## Şu Anki Odak
 
-Faz 13 — Güvenlik Denetimi, Kırmızı Takım, Kullanıcı Kabul & Attio Analizi (🟨 devam): İz A (A1–A8 kırmızı takım) ve İz C (Attio analizi, §5.4 Faz 14 kısıtları) TAMAMLANDI; F1–F6 ön bulguları + yürütmede bulunan F7–F10 açıkları kapatıldı ve regresyon testiyle kilitlendi, F11 bilinen/kabul edilmiş durum olarak kayda geçti. **Kalan iş:** İz B'nin 6-rol elle kabul turu (gerçek kullanıcı gibi UI üzerinden) ve turda çıkabilecek yeni bulguların kapatılması; ardından §6 kabul kriterlerinin son turu ve faz kapanışı. Detay: `docs/PHASE-AUDIT.md` §2 (Durum sütunu işlendi), §4.1 (F7–F11), §6 (kabul kriterleri). i18n, çoklu para birimi ve Attio özellik inşası Faz 14'tedir (`docs/PHASE-INTL.md`); teslim Faz 15'tedir.
+Faz 14 — Uluslararasılaştırma (i18n tr/en/de/fr) + README İngilizce (İz D), çoklu para birimi + TCMB kur (İz E), Attio kabul edilen C1–C4 özelliklerinin inşası (İz F). Sözleşme: `docs/PHASE-INTL.md`. H7 (XXE/giden-çağrı sertleştirme) ve A5.8 (XXE testi) bu fazdadır. Faz 13 (Güvenlik Denetimi, Kırmızı Takım, Kullanıcı Kabul & Attio Analizi) TAMAMLANDI — İz A, İz B (6-rol kabul turu, backend + UI) ve İz C bitti; detay `docs/PHASE-AUDIT.md`.
 
 ## Açık Bloklar
 
@@ -61,7 +61,7 @@ Faz 13 — Güvenlik Denetimi, Kırmızı Takım, Kullanıcı Kabul & Attio Anal
 
 ## Bir Sonraki Adım
 
-1. **Faz 13 — Güvenlik Denetimi, Kırmızı Takım, Kullanıcı Kabul & Attio Analizi (🟨 devam):** İz A (A1–A8) ve İz C (Attio analizi) TAMAMLANDI; F1–F6 + yürütmede bulunan F7–F10 kapatıldı, F11 kabul edilmiş bilinen durum. **Kalan:** İz B'nin 6-rol elle kabul turu ve son doğrulama. Ayrıntı `docs/PHASE-AUDIT.md`'de (tehdit modeli §1, test matrisi A1–A8 §2 — Durum sütunu işlendi, 6-rol kabul turu §3, ön bulgular F1–F6 §4, yürütmede bulunan açıklar F7–F11 §4.1, Attio analizi §5 + Faz 14 kısıtları §5.4, sertleştirme H1–H6/H8 §7, kabul kriterleri §6). i18n (İz D) + çoklu para birimi (İz E) + Attio özellik inşası (İz F) Faz 14'tedir (`docs/PHASE-INTL.md`); teslim Faz 15'tedir.
+1. **Faz 14 — Uluslararasılaştırma (i18n + Çoklu Para Birimi) & Attio Özellikleri:** İz D i18n (tr/en/de/fr) + README EN; İz E çoklu para birimi + TCMB kur (H7 XXE sertleştirme + A5.8 testi burada); İz F Faz 13'te kabul edilen C1–C4 Attio özelliklerinin inşası. Sözleşme: `docs/PHASE-INTL.md`. Faz 13 (Güvenlik Denetimi, Kırmızı Takım, Kullanıcı Kabul & Attio Analizi) TAMAMLANDI — ayrıntı `docs/PHASE-AUDIT.md`'de (tehdit modeli §1, test matrisi A1–A8 §2, 6-rol kabul turu §3 + yürütme sonucu §3.1, ön bulgular F1–F6 §4, yürütmede bulunan açıklar F7–F12 §4.1, Attio analizi §5 + Faz 14 kısıtları §5.4, sertleştirme H1–H6/H8 §7, kabul kriterleri §6). Teslim Faz 15'tedir.
 2. Frontend lint'te Faz 10/11'den kalma bilinen borç: 3 hata + 1 uyarı (`RevenueTrendChart.tsx`, `SalesPerformanceChart.tsx`, `CompanyProfileTab.tsx`, `Toast.tsx`). `EmailTemplateFormModal.tsx`'deki `react/no-danger` hatası F5 kapatılırken giderildi (`dangerouslySetInnerHTML` kaldırıldı, `<iframe sandbox="" srcDoc>` ile değiştirildi). `features/chat/` altında 0 hata.
 3. `attachments:prune-orphans` komutu yazıldı ama `routes/console.php`'ye kaydedilmedi — zamanlama kararı docs/ENGINEERING-RULES.md §6 uyarınca kullanıcıda.
 4. Frontend'de test altyapısı YOK (vitest/jest kurulu değil) — 1087 backend testi var (İz B sürdükçe artabilir), frontend'de sıfır. Orijinal gereksinim yalnızca backend feature testleri istiyordu; Faz 15'te (işlevsel kapsama) değerlendirilebilir — Faz 13 güvenlik doğrulaması backend'de kilitlenir.
@@ -70,6 +70,7 @@ Faz 13 — Güvenlik Denetimi, Kırmızı Takım, Kullanıcı Kabul & Attio Anal
 7. Demo hesaplarla giriş: demo kullanıcıların şifresi Demo!2026Syncra, must_change_password=false — farklı rollerin UI'da ne gördüğünü test etmek için kullanılabilir.
 8. **F6'nın collation sınırı — Faz 15 adayı:** Türkçe İ/ı katlaması `app/Support/TurkishCase.php`/`frontend/src/lib/turkishCase.ts` ile düzeltildi ama `utf8mb4_unicode_ci` collation `I`=`ı` saymadığından yalnız-isimle aranan `Irmak`/`ırmak` çifti SQL ön-filtresinde PHP katlamasına hiç ulaşamıyor. Telefon eşleştirmedeki "SQL'de garantili üst küme + PHP'de kesin doğrulama" deseni isimlere de uygulanabilir (bkz. `docs/PHASE-AUDIT.md` §4 F6).
 9. **F11 — kabul edilmiş bilinen durum:** `CustomFieldController::index` yetkilendirme çağrısı taşımıyor; kimliği doğrulanmış herkes herhangi bir `entity_type` için aktif özel alan tanımlarını listeleyebiliyor. Müşteri verisi değil şema metadata'sı; kapalı devre + davetle giriş nedeniyle düşük risk kabul edildi, kapatılmadı (bkz. `docs/PHASE-AUDIT.md` §4.1 F11).
+10. **F12 — Faz 15 adayı:** Kanban sayfası her yüklemede `GET /api/users?per_page=100` çağırıyor; `users.view` izni olmayan rollerde (Satış Temsilcisi, Destek Temsilcisi) bu istek 403 dönüyor. Zararsız (hata toast'ı yok, "Sahip" filtresi zarifçe gizleniyor) ama boşa giden istek — İz B'nin elle kabul turunda saptandı (bkz. `docs/PHASE-AUDIT.md` §4.1 F12).
 
 **Uyarı:** Faz 3+ endpoint'leri `routes/api.php` içinde `password.changed` grubunun İÇİNE yazılmalı — dışına yazılan uç zorunlu şifre değişimini atlar.
 
@@ -153,6 +154,7 @@ Faz 13 — Güvenlik Denetimi, Kırmızı Takım, Kullanıcı Kabul & Attio Anal
 | 2026-08-25 | Teklif PDF önizlemesi `blob:` URL'e taşındı | `X-Frame-Options: DENY` + `frame-ancestors 'none'` çapraz origin iframe'i kırıyordu; başlık GEVŞETİLMEDİ, frontend PDF'i axios ile blob olarak alıp `blob:` URL veriyor. İndirme/yeni-sekme bağlantıları etkilenmedi (üst seviye gezinme) |
 | 2026-08-25 | E-posta şablonu önizlemesi `<iframe sandbox="" srcDoc>` ile | `dangerouslySetInnerHTML` reponun kalite çizgisini ihlal eden TEK yerdi, kaldırıldı. `allow-scripts` + `allow-same-origin` BİRLİKTE verilmez — iframe kendi sandbox özniteliğini silip kaçabilir |
 | 2026-08-25 | Paralel test şeritleri için izole test veritabanları | Ortak `syncra_crm_test` üzerinde eşzamanlı `RefreshDatabase` koşuları birbirini bozuyordu (migration yarışı, kayıp tablo hataları). `syncra_crm_test_{a,b,c,d}` açıldı; `phpunit.xml`'deki `<env>` girdileri `force="true"` taşımadığı için `DB_DATABASE=... php artisan test` ile üzerine yazılabiliyor |
+| 2026-08-25 | Elle kabul turu bağımlılık kurmadan CDP ile sürüldü | Playwright/Puppeteer kurmak kapalı devre projeye ~100MB'lık bir geliştirme bağımlılığı ve tarayıcı indirmesi eklerdi; Node 22+ `WebSocket`'i global sunduğu için headless Chrome'a doğrudan CDP konuşmak yeterli oldu. Not: turun ilk iki koşumu, aynı Chrome profilinde çerezlerin roller arasında taşınması yüzünden yanlış sonuç verdi (bir rolün menüsü bir öncekinin oturumuyla okundu); çerez temizleme + kimliği ARAYÜZDEN doğrulama ile düzeltildi. Ayrıca ilk "yetkisiz" dedektörü, Kanban'ın meşru "Kartları taşıma yetkiniz yok; pano salt okunur" bilgilendirmesini 403 sanıyordu; gerçek red ekranının tam metniyle ("Bu sayfaya erişim yetkiniz yok") değiştirildi |
 
 ---
 
