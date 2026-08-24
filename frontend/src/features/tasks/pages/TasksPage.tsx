@@ -42,6 +42,7 @@ import {
   toast,
 } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
+import { getErrorMessage } from '../../../lib/axios'
 import { useQueryClient } from '@tanstack/react-query'
 import { usePermission } from '../../auth/hooks/usePermission'
 import { PriorityBadge } from '../components/PriorityBadge'
@@ -243,10 +244,13 @@ export function TasksPage() {
     try {
       const updated = await completeTaskQuiet(task.id, completed)
       patchTaskInCaches(task.id, () => updated)
-    } catch {
+    } catch (error) {
       for (const [key, data] of previousLists) queryClient.setQueryData(key, data)
       for (const [key, data] of previousCalendars) queryClient.setQueryData(key, data)
-      toast.error('Görev güncellenemedi. Lütfen tekrar deneyin.')
+      // Faz 13: UI kuralı doğru uygulansa bile yarış olabilir (görev bu sırada başkasına
+      // atandı) — `getErrorMessage` backend'in 403 mesajını ("Bu işlem için yetkiniz yok.")
+      // olduğu gibi gösterir, jenerik metne düşmez (bkz. mevcut mutasyon hook'larındaki desen).
+      toast.error(getErrorMessage(error))
     } finally {
       setCompletingIds((prev) => {
         const next = new Set(prev)
@@ -483,12 +487,18 @@ export function TasksPage() {
                             )}
                           >
                             <Td>
+                              {/* Faz 13: `tasks.update` izni yeterli değil — görev sahibine (`assigned_to`)
+                                  atanan kişi, atanmamış görev ya da `tasks.assign` taşıyan biri
+                                  tamamlayabilir (bkz. `TaskPolicy::complete`). İzin varken sadece
+                                  sahiplik yüzünden engellendiğinde kutu GİZLENMEZ, devre dışı + tooltip
+                                  ile neden gösterilir. */}
                               {can('tasks.update') && (
                                 <Checkbox
                                   checked={task.status === 'completed'}
-                                  disabled={task.status === 'cancelled' || isCompleting}
+                                  disabled={task.status === 'cancelled' || isCompleting || !task.can.complete}
                                   onChange={(e) => handleQuickComplete(task, e.target.checked)}
                                   aria-label={`${task.title} tamamlandı`}
+                                  title={task.can.complete ? undefined : 'Bu görevin sahibi değilsiniz, tamamlayamazsınız.'}
                                 />
                               )}
                             </Td>
@@ -536,16 +546,25 @@ export function TasksPage() {
                             <Td align="right">
                               <div className="flex items-center justify-end gap-1">
                                 {can('tasks.update') && (
-                                  <IconButton label="Düzenle" onClick={() => setFormModal({ mode: 'edit', task })}>
+                                  <IconButton
+                                    label="Düzenle"
+                                    disabled={!task.can.update}
+                                    title={task.can.update ? 'Düzenle' : 'Bu görevin sahibi değilsiniz, düzenleyemezsiniz.'}
+                                    onClick={() => setFormModal({ mode: 'edit', task })}
+                                  >
                                     <Pencil className="size-4" aria-hidden="true" />
                                   </IconButton>
                                 )}
-                                {can('tasks.assign') && (
+                                {/* `tasks.assign` saf izin kontrolüdür (bkz. `TaskPolicy::assign`) —
+                                    sahiplik boyutu yok, gizlemek yeterli. */}
+                                {can('tasks.assign') && task.can.assign && (
                                   <IconButton label="Ata" onClick={() => setAssignTaskState(task)}>
                                     <UserCog className="size-4" aria-hidden="true" />
                                   </IconButton>
                                 )}
-                                {can('tasks.delete') && (
+                                {/* `tasks.delete` de saf izin kontrolüdür — `TaskPolicy::delete` sahiplik
+                                    sormaz (görev silme yalnızca Müdür/Admin'de, bkz. policy gerekçesi). */}
+                                {can('tasks.delete') && task.can.delete && (
                                   <IconButton label="Sil" danger onClick={() => setDeleteTaskState(task)}>
                                     <Trash2 className="size-4" aria-hidden="true" />
                                   </IconButton>
@@ -695,22 +714,30 @@ function IconButton({
   onClick,
   children,
   danger,
+  disabled,
+  title,
 }: {
   label: string
   onClick: () => void
   children: ReactNode
   danger?: boolean
+  /** Faz 13: izin var ama bu kayıtta `can.*` false — buton görünür kalır, tıklanamaz olur. */
+  disabled?: boolean
+  /** Varsayılan tooltip `label`'dır; devre dışı durumda nedeni açıklayan bir metinle geçilebilir. */
+  title?: string
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       aria-label={label}
-      title={label}
+      title={title ?? label}
       className={cn(
         'inline-flex size-8 items-center justify-center rounded-md text-fg-muted hover:bg-surface-2 hover:text-fg',
         'transition-colors duration-150 motion-reduce:transition-none',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-1',
+        'disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-fg-muted',
         danger && 'hover:text-danger'
       )}
     >

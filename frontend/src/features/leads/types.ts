@@ -25,6 +25,13 @@ export type LeadOwner = { id: number; name: string } | null
 
 export type LeadTag = { id: number; name: string; color: string | null }
 
+/**
+ * Faz 13 — yatay yazma izolasyonu. Backend `ExposesAbilities` trait'iyle HER ZAMAN üretir
+ * (kullanıcı yoksa tümü `false`) — opsiyonel DEĞİL. Arayüz bu bileşik kararı (izin + sahiplik +
+ * durum) KENDİ BAŞINA yeniden kurmaz, bkz. `backend/app/Http/Resources/LeadResource.php`.
+ */
+export type LeadAbilities = { update: boolean; convert: boolean; delete: boolean; assign: boolean }
+
 export type Lead = {
   id: number
   first_name: string
@@ -47,6 +54,7 @@ export type Lead = {
   converted_deal_id: number | null
   created_at: string
   updated_at: string
+  can: LeadAbilities
 }
 
 export type Pagination = {

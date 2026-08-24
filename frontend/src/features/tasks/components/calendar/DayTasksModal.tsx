@@ -74,13 +74,16 @@ export function DayTasksModal({
             const isCompleting = completingIds.has(task.id)
             return (
               <li key={task.id} className="flex items-start gap-3 py-3">
+                {/* Faz 13: bkz. `TasksPage.tsx`teki aynı gerekçe — `can.complete` false ise
+                    (sahiplik) kutu gizlenmez, devre dışı + tooltip gösterilir. */}
                 {can('tasks.update') && (
                   <div className="pt-0.5">
                     <Checkbox
                       checked={task.status === 'completed'}
-                      disabled={task.status === 'cancelled' || isCompleting}
+                      disabled={task.status === 'cancelled' || isCompleting || !task.can.complete}
                       onChange={(e) => onToggleComplete(task, e.target.checked)}
                       aria-label={`${task.title} tamamlandı`}
+                      title={task.can.complete ? undefined : 'Bu görevin sahibi değilsiniz, tamamlayamazsınız.'}
                     />
                   </div>
                 )}
@@ -115,14 +118,19 @@ export function DayTasksModal({
                     <button
                       type="button"
                       onClick={() => onEdit(task)}
+                      disabled={!task.can.update}
                       aria-label="Düzenle"
-                      title="Düzenle"
-                      className="inline-flex size-7 items-center justify-center rounded-md text-fg-muted hover:bg-surface-2 hover:text-fg"
+                      title={task.can.update ? 'Düzenle' : 'Bu görevin sahibi değilsiniz, düzenleyemezsiniz.'}
+                      className={cn(
+                        'inline-flex size-7 items-center justify-center rounded-md text-fg-muted hover:bg-surface-2 hover:text-fg',
+                        'disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-fg-muted'
+                      )}
                     >
                       <Pencil className="size-3.5" aria-hidden="true" />
                     </button>
                   )}
-                  {can('tasks.delete') && (
+                  {/* `tasks.delete` saf izin kontrolüdür — sahiplik boyutu yok, gizlemek yeterli. */}
+                  {can('tasks.delete') && task.can.delete && (
                     <button
                       type="button"
                       onClick={() => onDelete(task)}

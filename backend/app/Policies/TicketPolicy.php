@@ -4,14 +4,20 @@ namespace App\Policies;
 
 use App\Models\Ticket;
 use App\Models\User;
+use App\Policies\Concerns\ChecksRecordOwnership;
 
 class TicketPolicy
 {
+    use ChecksRecordOwnership;
+
     public function viewAny(User $user): bool
     {
         return $user->can('tickets.view');
     }
 
+    /**
+     * Okuma BİLEREK düz (bkz. ChecksRecordOwnership dokümanı).
+     */
     public function view(User $user, Ticket $ticket): bool
     {
         return $user->can('tickets.view');
@@ -22,9 +28,30 @@ class TicketPolicy
         return $user->can('tickets.create');
     }
 
+    /**
+     * Yatay yazma izolasyonu; sahiplik kolonu `assigned_to`.
+     *
+     * PAYLAŞILAN DESTEK KUYRUĞU BOZULMAZ: `Destek Temsilcisi` rolünün TAMAMI
+     * `tickets.assign` iznini taşır (bkz. RolePermissionSeeder) — yani bugün
+     * bir talebe dokunabilen herkes yarın da dokunabilecek. Kural, `tickets.
+     * update` iznine sahip olup `tickets.assign` taşımayan ileride
+     * tanımlanacak dar rolleri (ör. yalnız kendi talebini yürüten bir dış
+     * kaynak rolü) kapsar. Atanmamış talepler (`assigned_to` NULL) havuzdadır
+     * ve herkese açıktır — ilk yanıt veren üstlenir.
+     *
+     * `PATCH /api/tickets/{ticket}/status` de bu metottan geçer:
+     * TicketController::status() bilerek `Gate::authorize('update', ...)`
+     * çağırır (izin sözlüğünde `tickets.status` diye bir satır yok), bu yüzden
+     * durum değişimi ayrı bir policy metoduna gerek kalmadan aynı yatay
+     * sınıra tabidir.
+     */
     public function update(User $user, Ticket $ticket): bool
     {
-        return $user->can('tickets.update');
+        if (! $user->can('tickets.update')) {
+            return false;
+        }
+
+        return $this->ownsOrManages($user, $ticket->assigned_to, 'tickets.assign');
     }
 
     /**
@@ -48,6 +75,9 @@ class TicketPolicy
      * Hâlâ AÇIK olan (`open` / `in_progress` / `pending`) ticket'lar
      * silinebilir: yanlışlıkla açılmış, mükerrer ya da test amaçlı kayıtlar
      * bunlardır ve henüz hiçbir raporun girdisi değildirler.
+     *
+     * Silmede sahiplik kontrolü YOK: `tickets.delete` yalnızca Admin/Super
+     * Admin'de ve bu roller zaten `tickets.assign` taşıyor — no-op olurdu.
      *
      * 403 tercih edildi (422 değil), Faz 6/7'deki iki emsalle aynı desen:
      * LeadPolicy::delete() dönüştürülmüş lead'i, DealPolicy::delete()

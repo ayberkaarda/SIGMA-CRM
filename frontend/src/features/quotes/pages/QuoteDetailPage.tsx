@@ -18,6 +18,7 @@ import { Badge, Button, Card, CardBody, CardHeader, Modal, Select, Skeleton, Tex
 import { usePermission } from '../../auth/hooks/usePermission'
 import { QuoteStatusBadge } from '../components/QuoteStatusBadge'
 import { QuoteTotalsPanel } from '../components/QuoteTotalsPanel'
+import { useQuotePdfPreview } from '../hooks/useQuotePdfPreview'
 import { formatDate, formatDateTime, formatTRY } from '../utils/money'
 import {
   buildQuotePdfUrl,
@@ -49,6 +50,11 @@ export function QuoteDetailPage() {
   const { data: quote, isLoading, isError, refetch } = useQuote(Number.isFinite(quoteId) ? quoteId : undefined)
   const { data: parentQuote } = useParentQuote(quote?.parent_quote_id)
   const { data: revisionFamily } = useQuoteRevisionFamily(quote)
+  // `quote` bu satırda henüz `undefined` olabilir (sayfa hâlâ yükleniyor) — hook `quoteId
+  // undefined` iken hiç istek atmaz (bkz. `useQuotePdfPreview` dosya başı sözleşmesi, madde 6).
+  // Çağrı, altındaki `isLoading`/`isError` early return'lerinden ÖNCE durur; aksi hâlde Hooks
+  // Kuralları ihlal edilir (koşullu hook çağrısı).
+  const pdfPreview = useQuotePdfPreview(quote?.id)
 
   const sendQuote = useSendQuote()
   const deleteQuote = useDeleteQuote()
@@ -378,13 +384,34 @@ export function QuoteDetailPage() {
         <CardBody noPadding>
           {/* Sabit yükseklik TOKEN SÖZLEŞMESİ gereği arbitrary Tailwind sınıfıyla (`h-[720px]`)
               DEĞİL, inline `style` ile verilir — `ScoreIndicator`/`SlaCountdown` ile aynı
-              kabul edilmiş desen (dinamik/precise boyut için tek çıkış yolu). */}
-          <iframe
-            src={pdfUrl}
-            title="Teklif PDF Önizleme"
-            className="w-full rounded-b-lg border-0"
-            style={{ height: 720 }}
-          />
+              kabul edilmiş desen (dinamik/precise boyut için tek çıkış yolu).
+
+              `iframe`'e DOĞRUDAN `pdfUrl` (çapraz origin API adresi) VERİLMEZ: backend'in
+              `SecurityHeaders` middleware'i `X-Frame-Options: DENY` gönderdiğinden tarayıcı bu
+              çerçevelemeyi reddeder (bkz. `useQuotePdfPreview` dosya başı yorumu). Bunun yerine
+              PDF axios ile blob olarak indirilip aynı-origin bir `blob:` URL'e çevrilir. */}
+          {pdfPreview.status === 'loading' && (
+            <Skeleton variant="rect" className="w-full rounded-b-lg" style={{ height: 720 }} />
+          )}
+          {pdfPreview.status === 'error' && (
+            <div
+              className="flex w-full flex-col items-center justify-center gap-1.5 rounded-b-lg bg-surface-2 px-6 text-center"
+              style={{ height: 720 }}
+            >
+              <p className="text-sm text-fg-secondary">Teklif PDF'i yüklenemedi: {pdfPreview.message}</p>
+              <p className="text-xs text-fg-muted">
+                Yukarıdaki &ldquo;Yeni Sekmede Aç&rdquo; bağlantısını kullanarak PDF&apos;i doğrudan açabilirsiniz.
+              </p>
+            </div>
+          )}
+          {pdfPreview.status === 'success' && (
+            <iframe
+              src={pdfPreview.url}
+              title="Teklif PDF Önizleme"
+              className="w-full rounded-b-lg border-0"
+              style={{ height: 720 }}
+            />
+          )}
         </CardBody>
       </Card>
 

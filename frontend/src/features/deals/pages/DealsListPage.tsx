@@ -407,7 +407,6 @@ export function DealsListPage() {
                       </Tr>
                     ))
                   : deals.map((deal) => {
-                      const isClosed = deal.status !== 'open'
                       return (
                         <Tr key={deal.id}>
                           <Td>
@@ -455,17 +454,33 @@ export function DealsListPage() {
                               <IconLinkButton label="Detay" to={`/deals/${deal.id}`}>
                                 <UserCog className="size-4" aria-hidden="true" />
                               </IconLinkButton>
+                              {/* Faz 13: `deals.update` izni yeterli değil — kayıt sahibi/sahipsiz ya da
+                                  `deals.assign` gerekir (bkz. `DealPolicy::update`). İzin varken sadece
+                                  sahiplik yüzünden engellendiğinde buton GİZLENMEZ, devre dışı + tooltip
+                                  gösterilir (kullanıcı nedenini anlar); izin hiç yoksa zaten gizli kalır. */}
                               {can('deals.update') && (
-                                <IconButton label="Düzenle" onClick={() => setFormModal({ mode: 'edit', deal })}>
+                                <IconButton
+                                  label="Düzenle"
+                                  disabled={!deal.can.update}
+                                  title={deal.can.update ? 'Düzenle' : 'Bu kaydın sahibi değilsiniz, düzenleyemezsiniz.'}
+                                  onClick={() => setFormModal({ mode: 'edit', deal })}
+                                >
                                   <Pencil className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
-                              {can('deals.assign') && (
+                              {/* `deals.assign` saf bir izin kontrolüdür (bkz. `DealPolicy::assign`) —
+                                  sahiplik boyutu yok, `can.assign` her zaman modül izniyle birebir aynıdır.
+                                  Bu yüzden yalnızca gizleme yeterli, ayrı bir disabled durumu gerekmez. */}
+                              {can('deals.assign') && deal.can.assign && (
                                 <IconButton label="Sahip ata" onClick={() => setAssignDeal(deal)}>
                                   <Users className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
-                              {!isClosed && can('deals.delete') && (
+                              {/* Kapanmış (won/lost) fırsat silinemez — bu SAHİPLİKTEN bağımsız, herkes
+                                  için geçerli bir durum kuralı (bkz. `DealPolicy::delete`), bu yüzden
+                                  disabled değil GİZLEME ile ele alınır; istemci artık kendi `isClosed`
+                                  kopyasını tutmaz, backend'in `can.delete`'ine güvenir. */}
+                              {can('deals.delete') && deal.can.delete && (
                                 <IconButton label="Sil" danger onClick={() => setDeleteDealState(deal)}>
                                   <Trash2 className="size-4" aria-hidden="true" />
                                 </IconButton>
@@ -534,22 +549,30 @@ function IconButton({
   onClick,
   children,
   danger,
+  disabled,
+  title,
 }: {
   label: string
   onClick: () => void
   children: ReactNode
   danger?: boolean
+  /** Faz 13: izin var ama bu kayıtta `can.*` false — buton görünür kalır, tıklanamaz olur. */
+  disabled?: boolean
+  /** Varsayılan tooltip `label`'dır; devre dışı durumda nedeni açıklayan bir metinle geçilebilir. */
+  title?: string
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       aria-label={label}
-      title={label}
+      title={title ?? label}
       className={cn(
         'inline-flex size-8 items-center justify-center rounded-md text-fg-muted hover:bg-surface-2 hover:text-fg',
         'transition-colors duration-150 motion-reduce:transition-none',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-1',
+        'disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-fg-muted',
         danger && 'hover:text-danger'
       )}
     >

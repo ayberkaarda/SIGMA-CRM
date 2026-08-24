@@ -4,6 +4,18 @@ namespace App\Http\Requests\Contacts;
 
 use Illuminate\Foundation\Http\FormRequest;
 
+/**
+ * NOT (Faz 13 / F8): `owner_id` bu uçta BİLEREK yazılabilir kaldı.
+ *
+ * Deal/Lead/Task/Ticket'ta sahip alanı `missing` yapıldı, çünkü oralarda
+ * devretme ayrı bir izinle (`*.assign`) korunan ayrı bir uçtur ve genel
+ * update ucu o kapıyı baypas ediyordu. Contact tarafında böyle bir kapı
+ * YOK: izin sözlüğünde `contacts.assign` diye bir satır ve `/assign` diye bir
+ * uç bulunmuyor (bkz. RolePermissionSeeder). Alanı burada kapatmak, baypas
+ * edilecek bir korumayı korumak yerine sahibi belirlemenin TEK yolunu
+ * kaldırırdı. Contact paylaşılan master data'dır; gerekçenin tamamı
+ * ContactPolicy::update() dokümanındadır.
+ */
 class UpdateContactRequest extends FormRequest
 {
     /**

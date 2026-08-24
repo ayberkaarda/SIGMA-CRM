@@ -16,6 +16,7 @@ import type { ChangeEvent, DragEvent, KeyboardEvent } from 'react'
 import { Paperclip, Send, X } from 'lucide-react'
 import { Button, Textarea } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
+import { foldTurkish } from '../../../lib/turkishCase'
 import { useSendMessage } from '../hooks/useMessageMutations'
 import { useUploadAttachment } from '../hooks/useUploadAttachment'
 import { formatFileSize } from './chatShared'
@@ -48,8 +49,12 @@ export function MessageComposer({ conversationId, members, notifyTyping }: Messa
   const [mentionStart, setMentionStart] = useState<number | null>(null)
   const [highlightedIndex, setHighlightedIndex] = useState(0)
 
+  // F6/H8: `.toLowerCase()` Türkçe İ/ı kuralını uygulamıyordu (İ -> i̇ birleşik
+  // nokta), bu yüzden "İhsan" adlı üye "@ihsan" ile aranınca listede hiç
+  // çıkmıyordu. `foldTurkish` backend `TurkishCase::fold()` ile aynı agresif
+  // kararı uygular — bkz. `lib/turkishCase.ts`.
   const mentionResults = mentionOpen
-    ? members.filter((member) => member.name.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 6)
+    ? members.filter((member) => foldTurkish(member.name).includes(foldTurkish(mentionQuery))).slice(0, 6)
     : []
 
   function handleChange(event: ChangeEvent<HTMLTextAreaElement>) {

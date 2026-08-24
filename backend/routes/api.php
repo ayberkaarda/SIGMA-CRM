@@ -129,11 +129,25 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
          * `logs.view` her üç listeleme ucunu, `logs.export` dışa aktarmayı
          * korur — kontrol LogController içinde Gate::allows() ile yapılır
          * (model policy yok, izin adı doğrudan kullanılır).
+         *
+         * `throttle:10,1,heavy-export` (H4/F3) — `/logs/export` ile
+         * `/reports/export` (aşağıda) AYNI `heavy-export` önekini paylaşır:
+         * ikisi de salt-okunur, sınırlı (LogQueryService::EXPORT_ROW_LIMIT /
+         * DateRangeResolver::MAX_WINDOW_DAYS) ama yine de DB/CPU-ağır
+         * agregasyon + dosya üretimi yapan uçlar; ortak bir "ağır iş"
+         * bütçesi paylaşmaları, bir kullanıcının iki uç arasında geçiş
+         * yaparak tek bir uç sınırını dolanmasını da engelliyor. Kimliği
+         * doğrulanmış istekte throttle anahtarı zaten KULLANICI bazlı (bkz.
+         * yukarıdaki `leads-import` notu). Dakikada 10 istek bir admin'in
+         * bir inceleme oturumunda art arda birkaç export alması için
+         * yeterince cömert, ama saniyede onlarca export döngüsünü engeller.
          */
         Route::get('/logs/sessions', [LogController::class, 'sessions'])->name('logs.sessions');
         Route::get('/logs/page-visits', [LogController::class, 'pageVisits'])->name('logs.page-visits');
         Route::get('/logs/activities', [LogController::class, 'activities'])->name('logs.activities');
-        Route::get('/logs/export', [LogController::class, 'export'])->name('logs.export');
+        Route::get('/logs/export', [LogController::class, 'export'])
+            ->middleware('throttle:10,1,heavy-export')
+            ->name('logs.export');
 
         /*
          * Sayfa ziyaret takibi (Faz 5 / C) — her kimliği doğrulanmış kullanıcı
@@ -151,11 +165,24 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
          *
          * `import/{batch}` da `import/template`'ten SONRA gelmeli — aksi
          * halde `template` kelimesi `{batch}` parametresi sanılır.
+         *
+         * `throttle:5,1,leads-import` (H4/F3) — CSV içe aktarma en pahalı uç:
+         * ≤500 satır senkron işlenir, üstü kuyruğa gider ama yine de her
+         * istek bir dosya okuma + ayrıştırma + (kuyruklamaysa) bir job
+         * dispatch'i tetikler. Kimliği doğrulanmış istekte Laravel'in
+         * varsayılan throttle anahtarı zaten KULLANICI kimliğine göredir
+         * (IP değil — bkz. ThrottleRequests::resolveRequestSignature), bu
+         * yüzden ayrı isimli bir limiter'a gerek yok. Ayrı `leads-import`
+         * öneki ile kendi bütçesini taşır; dakikada 5 istek, birkaç
+         * satır hatasını düzeltip yeniden yüklemeye yetecek kadar cömert
+         * ama saniyede onlarca job kuyruklayan bir döngüyü engelliyor.
          */
         Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
         Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
         Route::post('/leads/check-duplicates', [LeadController::class, 'checkDuplicates'])->name('leads.check-duplicates');
-        Route::post('/leads/import', [LeadImportController::class, 'store'])->name('leads.import.store');
+        Route::post('/leads/import', [LeadImportController::class, 'store'])
+            ->middleware('throttle:5,1,leads-import')
+            ->name('leads.import.store');
         Route::get('/leads/import/template', [LeadImportController::class, 'template'])->name('leads.import.template');
         Route::get('/leads/import/{batch}', [LeadImportController::class, 'status'])->name('leads.import.status');
         Route::get('/leads/{lead}', [LeadController::class, 'show'])->name('leads.show');
@@ -400,7 +427,11 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('/reports/user-performance', [ReportController::class, 'userPerformance'])->name('reports.user-performance');
         Route::get('/reports/source-analysis', [ReportController::class, 'sourceAnalysis'])->name('reports.source-analysis');
         Route::get('/reports/conversion', [ReportController::class, 'conversion'])->name('reports.conversion');
-        Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
+        // throttle:10,1,heavy-export — bkz. yukarıdaki `/logs/export` notu
+        // (H4/F3): aynı önek, aynı paylaşılan "ağır iş" bütçesi.
+        Route::get('/reports/export', [ReportController::class, 'export'])
+            ->middleware('throttle:10,1,heavy-export')
+            ->name('reports.export');
 
         Route::get('/dashboard/kpis', [DashboardController::class, 'kpis'])->name('dashboard.kpis');
         Route::get('/dashboard/funnel', [DashboardController::class, 'funnel'])->name('dashboard.funnel');

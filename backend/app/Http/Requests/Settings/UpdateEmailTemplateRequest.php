@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Settings;
 
+use App\Support\HtmlSanitizer;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -14,12 +15,30 @@ use Illuminate\Foundation\Http\FormRequest;
  * bulunabilir (form tüm nesneyi geri gönderir) ama FARKLI bir değer taşırsa
  * 422 `EMAIL_TEMPLATE_KEY_IMMUTABLE` döner — karşılaştırma
  * EmailTemplateService::update() içinde.
+ *
+ * Faz 13 / H6 (§4-F5): `body_html` DOĞRULAMADAN ÖNCE sanitize edilir
+ * (bkz. StoreEmailTemplateRequest::prepareForValidation gerekçesi).
  */
 class UpdateEmailTemplateRequest extends FormRequest
 {
     public function authorize(): bool
     {
         return true;
+    }
+
+    /**
+     * PATCH'te alan `sometimes`: GÖNDERİLMEMİŞ bir `body_html`'e dokunmak,
+     * olmayan bir anahtarı boş string olarak dizeye SOKAR ve kısmi güncellemeyi
+     * tam güncellemeye çevirirdi. Bu yüzden yalnız gerçekten string gelmişse
+     * temizlenir.
+     */
+    protected function prepareForValidation(): void
+    {
+        if (is_string($this->input('body_html'))) {
+            $this->merge([
+                'body_html' => HtmlSanitizer::sanitizeEmailBody($this->input('body_html')),
+            ]);
+        }
     }
 
     /**

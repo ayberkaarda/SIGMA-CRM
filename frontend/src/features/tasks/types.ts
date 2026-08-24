@@ -25,6 +25,13 @@ export type TaskableRef = {
 
 export type TaskUserRef = { id: number; name: string }
 
+/**
+ * Faz 13 — yatay yazma izolasyonu. Backend `ExposesAbilities` trait'iyle HER ZAMAN üretir
+ * (kullanıcı yoksa tümü `false`) — opsiyonel DEĞİL. Arayüz bu bileşik kararı (izin + sahiplik)
+ * KENDİ BAŞINA yeniden kurmaz, bkz. `backend/app/Http/Resources/TaskResource.php`.
+ */
+export type TaskAbilities = { update: boolean; complete: boolean; delete: boolean; assign: boolean }
+
 export type Task = {
   id: number
   title: string
@@ -41,6 +48,7 @@ export type Task = {
   taskable: TaskableRef | null
   created_at: string | null
   updated_at: string | null
+  can: TaskAbilities
 }
 
 export type Pagination = {

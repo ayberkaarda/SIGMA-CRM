@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Tickets;
 
+use App\Http\Requests\Concerns\ForcesRecordOwnerOnCreate;
 use App\Services\Tickets\SlaService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -20,6 +21,18 @@ use Illuminate\Validation\Rule;
  */
 class StoreTicketRequest extends FormRequest
 {
+    use ForcesRecordOwnerOnCreate;
+
+    /**
+     * `assigned_to` yalnızca `tickets.assign` iznine sahip aktörden kabul edilir;
+     * aksi hâlde isteği yapan kullanıcıya sabitlenir (gerekçe:
+     * ForcesRecordOwnerOnCreate).
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->forceOwnerUnlessAssigner('assigned_to', 'tickets.assign');
+    }
+
     public function authorize(): bool
     {
         return true;

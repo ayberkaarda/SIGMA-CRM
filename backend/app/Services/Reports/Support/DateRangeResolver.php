@@ -16,12 +16,25 @@ use Illuminate\Validation\ValidationException;
  *   - `to` gün sonu dahildir (endOfDay).
  *   - Geçersiz tarih biçimi veya `from > to` → 422 (ValidationException,
  *     bootstrap/app.php'deki ortak hata zarfına düşer).
+ *   - Aralık uzunluğu en fazla `MAX_WINDOW_DAYS` gün olabilir (H5/F4 —
+ *     `?from=2000-01-01&to=2026-12-31` gibi sınırsız aralıklar agregasyon
+ *     sorgularını sınırsız büyütüp DB/CPU'yu zorluyordu). 366 seçildi ki
+ *     artık yıl dahil tam bir takvim yılı tek istekte sığsın; daha uzun bir
+ *     karşılaştırma gerekiyorsa istemci birden fazla istekte birleştirmeli.
+ *     Rapor tipine göre ayrı sınır YOK — tek sabit sınır, hem raporlar hem
+ *     dashboard için yeterli ve gereksiz karmaşıklık eklemiyor.
  *   - `previous` aralığı: `from`'dan hemen önce başlayan, mevcut aralıkla
  *     AYNI gün sayısına sahip dönem.
  */
 class DateRangeResolver
 {
     private const DEFAULT_WINDOW_DAYS = 30;
+
+    /**
+     * İzin verilen azami aralık uzunluğü (gün, uçlar dahil). 366 = artık
+     * yıl dahil tam bir takvim yılı.
+     */
+    private const MAX_WINDOW_DAYS = 366;
 
     public function resolve(?string $from, ?string $to): DateRange
     {
@@ -37,7 +50,20 @@ class DateRangeResolver
             ]);
         }
 
-        $lengthInDays = $fromDate->diffInDays($toDate) + 1;
+        // `$toDate->startOfDay()` KASITLI: `$toDate`'in kendisi endOfDay
+        // (23:59:59.999999), ham `diffInDays($toDate)` bu yüzden 365.999...
+        // gibi kesirli bir değer döner (Carbon 3'te diffInDays float döner,
+        // tam gün sayısına yuvarlamaz) — MAX_WINDOW_DAYS ile sınır
+        // karşılaştırmasında off-by-one'a yol açardı (tam 366 günlük bir
+        // aralık 367 sanılırdı). Gün başına hizalanmış iki tarih arasındaki
+        // fark her zaman tam sayıdır.
+        $lengthInDays = $fromDate->diffInDays($toDate->startOfDay()) + 1;
+
+        if ($lengthInDays > self::MAX_WINDOW_DAYS) {
+            throw ValidationException::withMessages([
+                'to' => ['Tarih aralığı en fazla '.self::MAX_WINDOW_DAYS.' gün olabilir.'],
+            ]);
+        }
 
         $previousTo = $fromDate->subDay()->endOfDay();
         $previousFrom = $previousTo->subDays($lengthInDays - 1)->startOfDay();

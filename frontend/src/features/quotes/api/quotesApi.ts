@@ -5,7 +5,7 @@
 // (gönderilmiş teklifte kalem/indirim/firma/kişi değişikliği), `QUOTE_NOT_REVISABLE` (draft/accepted
 // revize), `INVALID_STATUS_TRANSITION` (durum geçişi), `QUOTE_DISCOUNT_EXCEEDS_SUBTOTAL` (calculate).
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { AxiosRequestConfig } from 'axios'
+import axios, { type AxiosRequestConfig } from 'axios'
 import { api, getErrorMessage } from '../../../lib/axios'
 import { toast } from '../../../components/ui'
 import type {
@@ -104,6 +104,41 @@ export async function calculateQuote(
 export function buildQuotePdfUrl(id: number): string {
   const base = api.defaults.baseURL ?? ''
   return `${base}/api/quotes/${id}/pdf`
+}
+
+/**
+ * Teklif PDF'ini BAYT olarak indirir — `QuoteDetailPage`'in "PDF Önizleme" `<iframe>`'i için
+ * kullanılır (bkz. `hooks/useQuotePdfPreview.ts`). Backend'deki `SecurityHeaders` middleware'i
+ * artık HER yanıtta `X-Frame-Options: DENY` + CSP `frame-ancestors 'none'` gönderiyor (clickjacking
+ * koruması — KASITLI, KALDIRILMAYACAK). SPA (`:5173`) ile API (`:8000`) FARKLI origin'de olduğundan
+ * `<iframe src="http://localhost:8000/...">` doğrudan çerçevelenemez; bu yüzden PDF mevcut axios
+ * örneği (oturum çerezi + `X-XSRF-TOKEN` taşıyarak) ile indirilip `URL.createObjectURL()` ile
+ * SAME-ORIGIN bir `blob:` URL'e çevrilir — tarayıcı `blob:` URL'lerini `X-Frame-Options`
+ * denetiminden hiç geçirmez. `responseType: 'blob'`: gövde ikili PDF verisi, JSON değil.
+ */
+export async function fetchQuotePdfBlob(id: number): Promise<Blob> {
+  const { data } = await api.get<Blob>(`/api/quotes/${id}/pdf`, { responseType: 'blob' })
+  return data
+}
+
+/**
+ * `responseType: 'blob'` isteklerinde axios BAŞARISIZ yanıtı da (403/404/500…) blob olarak
+ * bırakır — `error.response.data` bir `Blob`'tur, `getErrorMessage()`'ın beklediği ayrıştırılmış
+ * `{ errors: { message } }` nesnesi DEĞİL. Bu yüzden PDF indirme hataları için ayrı bir çözücü:
+ * blob'u metne çevirip JSON ayrıştırmayı DENER (backend'in standart hata gövdesi budur), olmazsa
+ * (ağ hatası, boş gövde, CORS vb.) genel `getErrorMessage` fallback'ine düşer.
+ */
+export async function getQuotePdfErrorMessage(error: unknown): Promise<string> {
+  if (axios.isAxiosError(error) && error.response?.data instanceof Blob) {
+    try {
+      const text = await error.response.data.text()
+      const body = JSON.parse(text) as { errors?: { message?: string } }
+      if (body.errors?.message) return body.errors.message
+    } catch {
+      // Gövde JSON değil (ör. boş/HTML) — aşağıdaki genel fallback'e düş.
+    }
+  }
+  return getErrorMessage(error)
 }
 
 function invalidateQuoteCaches(queryClient: ReturnType<typeof useQueryClient>, id?: number) {

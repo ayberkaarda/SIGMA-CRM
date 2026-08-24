@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Tasks;
 
+use App\Http\Requests\Concerns\ForcesRecordOwnerOnCreate;
 use App\Support\MorphTargets;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -18,6 +19,18 @@ use Illuminate\Validation\Validator;
  */
 class StoreTaskRequest extends FormRequest
 {
+    use ForcesRecordOwnerOnCreate;
+
+    /**
+     * `assigned_to` yalnızca `tasks.assign` iznine sahip aktörden kabul edilir;
+     * aksi hâlde isteği yapan kullanıcıya sabitlenir (gerekçe:
+     * ForcesRecordOwnerOnCreate).
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->forceOwnerUnlessAssigner('assigned_to', 'tasks.assign');
+    }
+
     public function authorize(): bool
     {
         return true;

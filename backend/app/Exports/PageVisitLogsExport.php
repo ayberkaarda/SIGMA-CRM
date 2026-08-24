@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\PageVisitLog;
+use App\Support\CsvFormulaGuard;
 use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
@@ -44,7 +45,10 @@ class PageVisitLogsExport implements FromQuery, WithChunkReading, WithHeadings, 
     public function map($row): array
     {
         /** @var PageVisitLog $row */
-        return [
+        // Faz 13/H2 (F1): tek merkezî kapı — bkz. ActivityLogsExport::map()
+        // ve CsvFormulaGuard docblock'u (XLSX'te PhpSpreadsheet kendiliğinden
+        // korumaz).
+        return CsvFormulaGuard::sanitizeRow([
             $row->id,
             $row->user_id,
             $row->user?->name,
@@ -57,7 +61,7 @@ class PageVisitLogsExport implements FromQuery, WithChunkReading, WithHeadings, 
             $row->ip_address,
             $row->session_id,
             $row->created_at?->toIso8601String(),
-        ];
+        ]);
     }
 
     public function chunkSize(): int

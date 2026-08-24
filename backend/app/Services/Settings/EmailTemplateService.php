@@ -3,6 +3,7 @@
 namespace App\Services\Settings;
 
 use App\Models\EmailTemplate;
+use App\Support\HtmlSanitizer;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
@@ -29,6 +30,19 @@ use Illuminate\Database\Eloquent\Collection;
  *
  * Liste AÇIKÇA gönderilirse olduğu gibi saklanır: henüz metne yazılmamış ama
  * planlanan bir değişkeni tanımlamak meşru bir istek.
+ *
+ * =============================================================================
+ * `body_html` SANİTİZASYONU (Faz 13 / H6, §4-F5)
+ * =============================================================================
+ * Gövde DB'ye YAZILMADAN ÖNCE `HtmlSanitizer` beyaz listesinden geçer. HTTP
+ * uçları için bu ikinci katmandır (FormRequest zaten `prepareForValidation`
+ * içinde temizler) ama TEK katman olamazdı: seeder, konsol komutu veya ileride
+ * bir import HTTP doğrulamasını hiç görmez ve kirli HTML doğrudan buraya
+ * gelirdi. Sanitizer idempotent olduğu için çift geçiş içeriği aşındırmaz.
+ *
+ * `variables` türetmesi de SANİTİZE EDİLMİŞ metin üzerinden yapılır: aksi
+ * halde yalnız `<script>` içinde geçen bir `{{degisken}}`, gövdede artık
+ * bulunmayan bir değişkeni listeye yazardı.
  */
 class EmailTemplateService
 {
@@ -60,7 +74,7 @@ class EmailTemplateService
     public function create(array $data): EmailTemplate
     {
         $subject = (string) $data['subject'];
-        $bodyHtml = (string) $data['body_html'];
+        $bodyHtml = HtmlSanitizer::sanitizeEmailBody((string) $data['body_html']);
 
         return EmailTemplate::query()->create([
             'key' => (string) $data['key'],
@@ -86,6 +100,13 @@ class EmailTemplateService
                 ['key' => ['Şablon anahtarı oluşturulduktan sonra değiştirilemez.']],
                 ['current_key' => (string) $template->key],
             );
+        }
+
+        // Sanitizasyon `$data` üzerinde YERİNDE yapılır ki hem kaydedilen
+        // değer hem aşağıdaki `extractVariables` türetmesi aynı temiz metni
+        // görsün (bkz. sınıf dokümanı).
+        if (array_key_exists('body_html', $data)) {
+            $data['body_html'] = HtmlSanitizer::sanitizeEmailBody((string) $data['body_html']);
         }
 
         $attributes = array_intersect_key($data, array_flip(['name', 'subject', 'body_html', 'is_active']));

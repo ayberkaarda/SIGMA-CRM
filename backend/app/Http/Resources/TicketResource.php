@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\Concerns\ExposesAbilities;
 use App\Models\Ticket;
 use App\Services\Tickets\SlaService;
 use Illuminate\Http\Request;
@@ -51,6 +52,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class TicketResource extends JsonResource
 {
+    use ExposesAbilities;
+
     /**
      * @return array<string, mixed>
      */
@@ -128,6 +131,17 @@ class TicketResource extends JsonResource
 
             'created_at' => $ticket->created_at?->toIso8601String(),
             'updated_at' => $ticket->updated_at?->toIso8601String(),
+            // Bu kullanıcının bu kayıtta neyi YAPABİLDİĞİ — arayüz kuralı
+            // yeniden yazmasın (gerekçe: ExposesAbilities).
+            'can' => $this->abilities($request, $ticket, [
+                'update' => 'update',
+                // `PATCH /api/tickets/{ticket}/status` ayrı bir uçtur ama
+                // TicketController::status() bilerek `update` yeteneğini sorar
+                // (izin sözlüğünde `tickets.status` yok) — eşleme onu yansıtır.
+                'status' => 'update',
+                'delete' => 'delete',
+                'assign' => 'assign',
+            ]),
         ];
     }
 }

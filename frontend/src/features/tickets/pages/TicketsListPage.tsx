@@ -360,7 +360,6 @@ export function TicketsListPage() {
                       </Tr>
                     ))
                   : tickets.map((ticket) => {
-                      const isClosedOrResolved = ticket.status === 'resolved' || ticket.status === 'closed'
                       return (
                         <Tr key={ticket.id}>
                           <Td>
@@ -407,17 +406,27 @@ export function TicketsListPage() {
                               <IconLinkButton label="Detay" to={`/tickets/${ticket.id}`}>
                                 <UserCog className="size-4" aria-hidden="true" />
                               </IconLinkButton>
+                              {/* Faz 13: izin var ama `can.update` false ise (sahiplik) buton GİZLENMEZ,
+                                  devre dışı + tooltip gösterilir. */}
                               {can('tickets.update') && (
-                                <IconButton label="Düzenle" onClick={() => setFormModal({ mode: 'edit', ticket })}>
+                                <IconButton
+                                  label="Düzenle"
+                                  disabled={!ticket.can.update}
+                                  title={ticket.can.update ? 'Düzenle' : 'Bu talebin sahibi değilsiniz, düzenleyemezsiniz.'}
+                                  onClick={() => setFormModal({ mode: 'edit', ticket })}
+                                >
                                   <Pencil className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
-                              {can('tickets.assign') && (
+                              {/* `tickets.assign` saf izin kontrolüdür — sahiplik boyutu yok. */}
+                              {can('tickets.assign') && ticket.can.assign && (
                                 <IconButton label="Ata" onClick={() => setAssignTicket(ticket)}>
                                   <Users className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
-                              {!isClosedOrResolved && can('tickets.delete') && (
+                              {/* Çözülmüş/kapanmış talep silinemez — durum kuralı, GİZLEME ile ele
+                                  alınır (bkz. `TicketPolicy::delete`). */}
+                              {can('tickets.delete') && ticket.can.delete && (
                                 <IconButton label="Sil" danger onClick={() => setDeleteTicketState(ticket)}>
                                   <Trash2 className="size-4" aria-hidden="true" />
                                 </IconButton>
@@ -489,22 +498,30 @@ function IconButton({
   onClick,
   children,
   danger,
+  disabled,
+  title,
 }: {
   label: string
   onClick: () => void
   children: ReactNode
   danger?: boolean
+  /** Faz 13: izin var ama bu kayıtta `can.*` false — buton görünür kalır, tıklanamaz olur. */
+  disabled?: boolean
+  /** Varsayılan tooltip `label`'dır; devre dışı durumda nedeni açıklayan bir metinle geçilebilir. */
+  title?: string
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       aria-label={label}
-      title={label}
+      title={title ?? label}
       className={cn(
         'inline-flex size-8 items-center justify-center rounded-md text-fg-muted hover:bg-surface-2 hover:text-fg',
         'transition-colors duration-150 motion-reduce:transition-none',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-1',
+        'disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-fg-muted',
         danger && 'hover:text-danger'
       )}
     >

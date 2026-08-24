@@ -5,6 +5,7 @@ namespace App\Services\Leads;
 use App\Models\Contact;
 use App\Models\Lead;
 use App\Support\PhoneNormalizer;
+use App\Support\TurkishCase;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -73,6 +74,17 @@ use Illuminate\Support\Collection;
  * indeksini kullanabilir. Firma adı karşılaştırması PHP'de yapılır (bkz.
  * `sameText()`), çünkü lead'de `company_name` string, contact'ta ise ilişkili
  * `companies.name` durur.
+ *
+ * BİLİNEN SINIR (F6/H8 çalışmasında ölçüldü, KAPSAM DIŞI — PHASE-AUDIT §4):
+ * `utf8mb4_unicode_ci`, Türkçe `İ`~`i`'yi eşit sayıyor ama dotless `I`~`ı`'yı
+ * SAYMIYOR (`'Irmak' = 'ırmak' COLLATE utf8mb4_unicode_ci` → 0). Yani
+ * SADECE ad/soyad SQL sorgusuna (`where('first_name', ...)`) dayanan, e-posta
+ * ya da telefonu OLMAYAN bir aday, "Irmak" / "ırmak" gibi dotless-I farklı
+ * yazılmışsa SQL AŞAMASINDA hiç bulunamaz — `sameText()`/`TurkishCase::fold()`
+ * bu satıra hiç sıra gelemeden devre dışı kalır. Bu, `sameText()`'in kapsadığı
+ * PHP-seviyesi katlama bug'ından (H8) FARKLI bir sınırdır ve collation
+ * değişmeden düzelmez; PHASE-AUDIT bilinçli olarak bu fazın dışında bıraktı
+ * (bkz. `tests/Feature/Security/TurkishCaseMatchingTest.php`).
  *
  * Soft-deleted kayıtlar Eloquent'in global scope'u sayesinde hiç görünmez —
  * silinmiş bir kaydı "duplicate" diye göstermek kullanıcıyı var olmayan bir
@@ -362,6 +374,26 @@ class DuplicateDetector
         return $wildcard.implode($wildcard, str_split($normalizedPhone)).$wildcard;
     }
 
+    /**
+     * KARAR (F6/H8): burada `TurkishCase::fold()` DEĞİL, kasıtlı olarak
+     * `mb_strtolower` kullanılmaya devam ediliyor.
+     *
+     * E-posta local-part'ı sözleşme gereği (RFC 5321/5322) pratikte ASCII'dir;
+     * gerçek bir e-posta adresinde Türkçe `İ` (U+0130) neredeyse hiç görülmez
+     * — ASCII `I`/`i` zaten `mb_strtolower` ile de doğru (Türkçe'ye özgü
+     * belirsizlik olmadan) küçülür, bozukluk yalnız `İ`'de var. Yani bu bug
+     * gerçek e-posta verisinde pratikte HİÇ tetiklenmiyor.
+     *
+     * Ayrıca `TurkishCase::fold()` BİLEREK agresif (ı/i/I/İ hepsini 'i'ye
+     * indiriyor) — isim/firma gibi serbest metin EŞLEŞTİRMESİ için doğru
+     * tercih ama e-posta'nın anlamı TAM KİMLİKTİR: iki e-posta adresi ya
+     * birebir aynı kutuya gider ya da gitmez, "yaklaşık eşleşme" burada
+     * anlamsız/yanıltıcı olur (agresif katlama teorik olarak birbirinden
+     * TAMAMEN farklı iki geçerli local-part'ı - örn. içinde harf yerine
+     * rakam/sembol geçen edge-case'ler - gereksiz yere aynı sayabilir).
+     * Bu yüzden e-posta karşılaştırması Türkçe katlamadan bağımsız, standart
+     * `mb_strtolower` ile bırakıldı.
+     */
     private function normalizeEmail(?string $email): ?string
     {
         if ($email === null) {
@@ -394,6 +426,13 @@ class DuplicateDetector
      * birebir aynıysa eşleşir. Bulanık (Levenshtein vb.) karşılaştırma bilerek
      * YOK: sözleşme "tam eşleşme" diyor; benzerlik eşiği ayarlamak yanlış
      * pozitifleri patlatır ve skor tablosunu belirsizleştirir.
+     *
+     * Küçültme `mb_strtolower` DEĞİL `TurkishCase::fold()` ile yapılır (F6/H8
+     * düzeltmesi) — aksi halde "İhsan" ile "ihsan" birebir eşit çıkmıyordu
+     * (bkz. `TurkishCase` sınıfının başındaki gerekçe). Tercih EDİLEN agresif
+     * katlama burada özellikle isabetli: isim/firma serbest metindir ve
+     * yanlış-pozitif (fazladan bir "possible" uyarısı) yanlış-negatiften
+     * (aynı kişi ikinci kez kaydedilir) çok daha ucuzdur.
      */
     private function sameText(?string $left, ?string $right): bool
     {
@@ -404,6 +443,6 @@ class DuplicateDetector
             return false;
         }
 
-        return mb_strtolower($left) === mb_strtolower($right);
+        return TurkishCase::fold($left) === TurkishCase::fold($right);
     }
 }

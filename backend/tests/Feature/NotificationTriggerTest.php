@@ -350,7 +350,13 @@ class NotificationTriggerTest extends TestCase
         Storage::fake('local');
 
         $actor = User::factory()->create();
-        $actor->givePermissionTo(['leads.import', 'leads.view']);
+        // `leads.assign` (Faz 13 / F8): import gövdesindeki `owner_id` yalnızca
+        // devretme iznine sahip aktörden kabul edilir, aksi hâlde sunucu onu
+        // aktörün kendisine sabitler. Gerçek izin matrisinde `leads.import`
+        // taşıyan iki rol (Admin, Satış Müdürü) `leads.assign` de taşır — bu
+        // satır testi o gerçeğe hizalar, testin amacını (import bildirim
+        // yağmuru üretmiyor) değiştirmez.
+        $actor->givePermissionTo(['leads.import', 'leads.view', 'leads.assign']);
         $owner = User::factory()->create();
 
         $header = ['first_name', 'last_name', 'email', 'phone', 'company_name', 'position', 'source', 'status', 'score', 'notes'];

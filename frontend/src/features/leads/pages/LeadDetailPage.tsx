@@ -103,22 +103,39 @@ export function LeadDetailPage() {
           subtitle={lead.position ? `${lead.position}${lead.company_name ? ' — ' + lead.company_name : ''}` : lead.company_name ?? undefined}
           action={
             <div className="flex items-center gap-2">
-              {can('leads.assign') && (
+              {/* `leads.assign` saf izin kontrolüdür — `can.assign` her zaman modül izniyle aynıdır. */}
+              {can('leads.assign') && lead.can.assign && (
                 <Button variant="secondary" leftIcon={<Users className="size-4" aria-hidden="true" />} onClick={() => setAssignOpen(true)}>
                   Sahip Ata
                 </Button>
               )}
+              {/* Faz 13: `!isConverted` durum kuralı korunur; kalan tek engel sahiplikse (can.convert
+                  false) buton GİZLENMEZ, devre dışı + tooltip gösterilir. */}
               {!isConverted && can('leads.convert') && (
-                <Button variant="secondary" leftIcon={<Repeat className="size-4" aria-hidden="true" />} onClick={() => setConvertOpen(true)}>
+                <Button
+                  variant="secondary"
+                  leftIcon={<Repeat className="size-4" aria-hidden="true" />}
+                  onClick={() => setConvertOpen(true)}
+                  disabled={!lead.can.convert}
+                  title={lead.can.convert ? undefined : 'Bu kaydın sahibi değilsiniz, dönüştüremezsiniz.'}
+                >
                   Dönüştür
                 </Button>
               )}
               {!isConverted && can('leads.update') && (
-                <Button variant="secondary" leftIcon={<Pencil className="size-4" aria-hidden="true" />} onClick={() => setEditOpen(true)}>
+                <Button
+                  variant="secondary"
+                  leftIcon={<Pencil className="size-4" aria-hidden="true" />}
+                  onClick={() => setEditOpen(true)}
+                  disabled={!lead.can.update}
+                  title={lead.can.update ? undefined : 'Bu kaydın sahibi değilsiniz, düzenleyemezsiniz.'}
+                >
                   Düzenle
                 </Button>
               )}
-              {!isConverted && can('leads.delete') && (
+              {/* Dönüştürülmüş lead silinemez — sahiplikten bağımsız durum kuralı, GİZLEME ile ele
+                  alınır (bkz. `LeadPolicy::delete`). */}
+              {can('leads.delete') && lead.can.delete && (
                 <Button variant="danger" leftIcon={<Trash2 className="size-4" aria-hidden="true" />} onClick={() => setDeleteOpen(true)}>
                   Sil
                 </Button>

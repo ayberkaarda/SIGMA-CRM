@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\Concerns\ExposesAbilities;
 use App\Models\Task;
 use App\Support\MorphTargets;
 use Illuminate\Http\Request;
@@ -12,6 +13,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class TaskResource extends JsonResource
 {
+    use ExposesAbilities;
+
     /**
      * @return array<string, mixed>
      */
@@ -56,6 +59,14 @@ class TaskResource extends JsonResource
                 : null,
             'created_at' => $task->created_at?->toIso8601String(),
             'updated_at' => $task->updated_at?->toIso8601String(),
+            // Bu kullanıcının bu kayıtta neyi YAPABİLDİĞİ — arayüz kuralı
+            // yeniden yazmasın (gerekçe: ExposesAbilities).
+            'can' => $this->abilities($request, $task, [
+                'update' => 'update',
+                'complete' => 'complete',
+                'delete' => 'delete',
+                'assign' => 'assign',
+            ]),
         ];
     }
 }

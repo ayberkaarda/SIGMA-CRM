@@ -22,6 +22,25 @@ class QuotePolicy
         return $user->can('quotes.create');
     }
 
+    /**
+     * =========================================================================
+     * KAPSAM DIŞI: yatay yazma izolasyonu (Model C) BU MODÜLE UYGULANMADI
+     * =========================================================================
+     *
+     * Faz 13'te Deal/Lead/Task/Ticket/Activity için "yazma yalnızca sahip,
+     * sahipsiz kayıt veya `*.assign` taşıyan yönetici" kuralı getirildi (bkz.
+     * App\Policies\Concerns\ChecksRecordOwnership). Teklifler BİLEREK dışarıda:
+     * `quotes.update` bugünkü izin matrisinde YALNIZCA Satış Müdürü, Admin ve
+     * Super Admin'dedir — Satış Temsilcisi teklif OLUŞTURUR (`quotes.create`)
+     * ama güncelleyemez. Yani bu ucun tamamı zaten yönetici düzeyindedir ve
+     * eklenecek bir sahiplik kontrolü hiçbir çağrıyı reddetmez: no-op olurdu.
+     *
+     * Ayrıca `quotes` tablosunda `owner_id` YOK; kuralın dayanacağı bir
+     * sahiplik kolonu bulunmuyor (teklif, `deal` üzerinden dolaylı olarak
+     * sahiplenilir — ve o deal artık korunuyor). İzin matrisi ileride
+     * `quotes.update`'i temsilcilere açarsa bu karar YENİDEN GÖZDEN
+     * GEÇİRİLMELİDİR.
+     */
     public function update(User $user, Quote $quote): bool
     {
         return $user->can('quotes.update');

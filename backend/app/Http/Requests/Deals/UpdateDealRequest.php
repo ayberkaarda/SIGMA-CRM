@@ -14,6 +14,15 @@ use Illuminate\Foundation\Http\FormRequest;
  * `PATCH /api/deals/{deal}/move` üzerinden yapılır (A şeridi) — aksi halde
  * optimistic locking (version) baypas edilir ve Kanban `position` sıralaması
  * bozulur.
+ *
+ * =============================================================================
+ * `owner_id` DA BU UÇTAN DEĞİŞTİRİLEMEZ (Faz 13 / F8)
+ * =============================================================================
+ * Devretme AYRI bir izin kapısıdır (`deals.assign`) ve AYRI bir ucu vardır
+ * (`PATCH /api/deals/{deal}/assign`). `owner_id` burada da kabul edildiği
+ * sürece o kapı fiilen yoktu: yalnız `deals.update` taşıyan bir temsilci,
+ * genel update ucundan deal'i istediği kişiye devredebiliyordu. Artık aynı
+ * `missing` deseniyle kapalı.
  */
 class UpdateDealRequest extends FormRequest
 {
@@ -36,16 +45,16 @@ class UpdateDealRequest extends FormRequest
             'expected_close_date' => ['sometimes', 'nullable', 'date'],
             'company_id' => ['sometimes', 'nullable', 'integer', 'exists:companies,id'],
             'contact_id' => ['sometimes', 'nullable', 'integer', 'exists:contacts,id'],
-            'owner_id' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
             'tag_ids' => ['sometimes', 'nullable', 'array'],
             'tag_ids.*' => ['integer', 'exists:tags,id'],
             'custom_fields' => ['sometimes', 'nullable', 'array'],
 
-            // Bu dördü gövdede HİÇ bulunmamalı (değeri boş/null olsa dahi).
+            // Bunların HİÇBİRİ gövdede bulunmamalı (değeri boş/null olsa dahi).
             'pipeline_stage_id' => ['missing'],
             'position' => ['missing'],
             'version' => ['missing'],
             'status' => ['missing'],
+            'owner_id' => ['missing'],
         ];
     }
 
@@ -65,7 +74,6 @@ class UpdateDealRequest extends FormRequest
             'probability.between' => 'Olasılık 0 ile 100 arasında olmalıdır.',
             'company_id.exists' => 'Seçilen firma geçerli değil.',
             'contact_id.exists' => 'Seçilen kişi geçerli değil.',
-            'owner_id.exists' => 'Seçilen sahip geçerli değil.',
             'tag_ids.array' => 'Etiketler bir liste olmalıdır.',
             'tag_ids.*.exists' => 'Seçilen etiketlerden biri geçerli değil.',
             'custom_fields.array' => 'Özel alanlar bir liste olmalıdır.',
@@ -73,6 +81,8 @@ class UpdateDealRequest extends FormRequest
             'position.missing' => $stageChangeMessage,
             'version.missing' => $stageChangeMessage,
             'status.missing' => $stageChangeMessage,
+            'owner_id.missing' => 'Sahip bu uçtan değiştirilemez. '.
+                'PATCH /api/deals/{deal}/assign ucunu kullanın.',
         ];
     }
 }

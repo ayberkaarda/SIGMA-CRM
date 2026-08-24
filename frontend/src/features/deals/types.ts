@@ -38,6 +38,15 @@ export type DealRef = { id: number; name: string }
 export type DealContactRef = { id: number; full_name: string }
 
 /**
+ * Faz 13 — yatay yazma izolasyonu. Bu kullanıcının BU KAYITTA neyi yapabildiği; backend
+ * `ExposesAbilities` trait'iyle üretir, `request.user()` yoksa TÜMÜ `false`, aksi halde HER ZAMAN
+ * mevcuttur (opsiyonel DEĞİL). Arayüz bu bileşik kararı (izin + sahiplik) KENDİ BAŞINA yeniden
+ * kurmaz — bkz. `backend/app/Http/Resources/Concerns/ExposesAbilities.php`.
+ */
+export type DealCardAbilities = { update: boolean; move: boolean }
+export type DealAbilities = { update: boolean; move: boolean; delete: boolean; assign: boolean }
+
+/**
  * Kanban kartı. Panodan, taşıma 200 yanıtından ve 409 çakışma zarfından AYNI şekilde
  * gelir — istemci üç yolda da tek bir "kartı yerine oturt" fonksiyonu kullanabilir.
  */
@@ -57,6 +66,7 @@ export type DealCard = {
   owner: DealRef | null
   tags: DealTag[]
   is_overdue: boolean
+  can: DealCardAbilities
 }
 
 /** Fırsat detayı (`GET /api/deals/{id}`, `DealResource`). Liste/detay/form tarafı kullanır. */
@@ -83,6 +93,7 @@ export type Deal = {
   is_overdue: boolean
   created_at: string | null
   updated_at: string | null
+  can: DealAbilities
 }
 
 export type BoardColumnMeta = {

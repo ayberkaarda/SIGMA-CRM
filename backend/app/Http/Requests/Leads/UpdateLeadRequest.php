@@ -34,7 +34,12 @@ class UpdateLeadRequest extends FormRequest
             // POST /api/leads/{lead}/convert üzerinden yapılabilir.
             'status' => ['sometimes', Rule::in(['new', 'contacted', 'qualified', 'unqualified'])],
             'score' => ['sometimes', 'nullable', 'integer', 'between:0,100'],
-            'owner_id' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
+            // `owner_id` gövdede HİÇ bulunmamalı (Faz 13 / F8): devretme AYRI bir
+            // izin kapısıdır (`leads.assign`) ve AYRI bir ucu vardır
+            // (PATCH /api/leads/{lead}/assign). Burada kabul edildiği sürece
+            // yalnız `leads.update` taşıyan bir temsilci lead'i istediği kişiye
+            // devredebiliyordu — izin kapısı baypas ediliyordu.
+            'owner_id' => ['missing'],
             'notes' => ['sometimes', 'nullable', 'string'],
             'tag_ids' => ['sometimes', 'nullable', 'array'],
             'tag_ids.*' => ['integer', 'exists:tags,id'],
@@ -59,7 +64,8 @@ class UpdateLeadRequest extends FormRequest
             'status.in' => 'Seçilen durum geçerli değil. Lead\'i dönüştürmek için /convert ucunu kullanın.',
             'score.integer' => 'Skor tam sayı olmalıdır.',
             'score.between' => 'Skor :min ile :max arasında olmalıdır.',
-            'owner_id.exists' => 'Seçilen sahip geçerli değil.',
+            'owner_id.missing' => 'Sahip bu uçtan değiştirilemez. '.
+                'PATCH /api/leads/{lead}/assign ucunu kullanın.',
             'tag_ids.array' => 'Etiketler bir liste olmalıdır.',
             'tag_ids.*.exists' => 'Seçilen etiketlerden biri geçerli değil.',
             'custom_fields.array' => 'Özel alanlar bir liste olmalıdır.',

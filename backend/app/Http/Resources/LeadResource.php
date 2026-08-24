@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\Concerns\ExposesAbilities;
 use App\Models\Lead;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -11,6 +12,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class LeadResource extends JsonResource
 {
+    use ExposesAbilities;
+
     /**
      * @return array<string, mixed>
      */
@@ -54,6 +57,14 @@ class LeadResource extends JsonResource
             'converted_deal_id' => $lead->converted_deal_id,
             'created_at' => $lead->created_at?->toIso8601String(),
             'updated_at' => $lead->updated_at?->toIso8601String(),
+            // Bu kullanıcının bu kayıtta neyi YAPABİLDİĞİ — arayüz kuralı
+            // yeniden yazmasın (gerekçe: ExposesAbilities).
+            'can' => $this->abilities($request, $lead, [
+                'update' => 'update',
+                'convert' => 'convert',
+                'delete' => 'delete',
+                'assign' => 'assign',
+            ]),
         ];
     }
 }

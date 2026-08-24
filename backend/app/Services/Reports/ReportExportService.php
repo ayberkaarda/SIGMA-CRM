@@ -3,6 +3,7 @@
 namespace App\Services\Reports;
 
 use App\Services\Reports\Support\DateRange;
+use App\Support\CsvFormulaGuard;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Concerns\FromArray;
@@ -41,6 +42,19 @@ class ReportExportService
     public function export(string $slug, DateRange $range, ?int $userId, string $format): StreamedResponse|BinaryFileResponse
     {
         [$headings, $rows] = $this->tabular($slug, $range, $userId);
+
+        // Faz 13/H2 (F1): tek merkezî kapı — CSV/XLSX ayrımından ÖNCE, tüm
+        // rapor tiplerini kapsayacak şekilde burada nötrlenir. Bu raporlardaki
+        // satırların çoğu sunucu-hesaplı agrega (sayı/oran/tutar) olsa da
+        // `user-performance` raporunun `user_name` kolonu bir kullanıcının
+        // kendi görünen adını yansıtır (Karar 1'deki tip/içerik ayrımı
+        // sayesinde bu ekleme gerçek negatif tutarları — ör.
+        // MoneyFormatter::normalize() çıktısı "-1500.00" — BOZMAZ). Diğer
+        // kolonlar (ör. `source`) bugün enum/whitelist ile sınırlı olsa da
+        // maliyeti sıfıra yakın olan bu tek kapıyı tüm rapor tiplerine
+        // uygulamak, ileride eklenecek serbest metin bir kolonun bu korumayı
+        // "unutarak" açık kalmasını da baştan engeller.
+        $rows = array_map(CsvFormulaGuard::sanitizeRow(...), $rows);
 
         $filename = sprintf('syncra-rapor-%s-%s.%s', $slug, now()->format('Y-m-d'), $format);
 

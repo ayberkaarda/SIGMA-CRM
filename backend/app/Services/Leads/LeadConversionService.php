@@ -78,7 +78,7 @@ class LeadConversionService
 
             $company = $this->resolveCompany($lead, $options, $actor);
             $contact = $this->resolveContact($lead, $company, $options, $actor);
-            $deal = $this->createDealIfRequested($lead, $contact, $company, $options);
+            $deal = $this->createDealIfRequested($lead, $contact, $company, $options, $actor);
 
             $this->moveRelatedRecords($lead, $contact);
             $this->copyCustomFieldValues($lead, $contact);
@@ -232,7 +232,7 @@ class LeadConversionService
      *
      * @throws ValidationException
      */
-    private function createDealIfRequested(Lead $lead, Contact $contact, ?Company $company, array $options): ?Deal
+    private function createDealIfRequested(Lead $lead, Contact $contact, ?Company $company, array $options, User $actor): ?Deal
     {
         if (! ($options['create_deal'] ?? false)) {
             return null;
@@ -270,7 +270,14 @@ class LeadConversionService
             'status' => 'open',
             'company_id' => $company?->getKey(),
             'contact_id' => $contact->getKey(),
-            'owner_id' => $lead->owner_id,
+            // Sahipsiz lead'den doğan deal SAHİPSİZ KALMAZ: dönüştüren kişiye
+            // yazılır — üç satır yukarıdaki contact/company ile aynı kural.
+            // Faz 13'ten sonra bunun bir de yetki sonucu var: sahipsiz kayda
+            // `deals.update` taşıyan HERKES yazabilir (bkz.
+            // App\Policies\Concerns\ChecksRecordOwnership), yani dönüşümün
+            // ürünü olan deal, sahibini yazmazsak yatay izolasyonun dışında
+            // doğardı.
+            'owner_id' => $lead->owner_id ?? $actor->getKey(),
         ]);
     }
 

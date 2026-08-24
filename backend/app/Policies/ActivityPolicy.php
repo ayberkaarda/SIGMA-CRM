@@ -4,9 +4,12 @@ namespace App\Policies;
 
 use App\Models\Activity;
 use App\Models\User;
+use App\Policies\Concerns\ChecksRecordOwnership;
 
 class ActivityPolicy
 {
+    use ChecksRecordOwnership;
+
     public function viewAny(User $user): bool
     {
         return $user->can('activities.view');
@@ -22,9 +25,37 @@ class ActivityPolicy
         return $user->can('activities.create');
     }
 
+    /**
+     * KARAR: bir aktiviteyi yalnızca onu YAZAN kişi güncelleyebilir;
+     * `activities.delete` taşıyan bir yönetici başkasınınkini de düzeltebilir.
+     * Yani delete() ile BİREBİR aynı sahiplik mantığı.
+     *
+     * GEREKÇE: aktivite geçmiş bir ETKİLEŞİMİN kaydıdır — delete()'in aynı
+     * gerekçesi (başkasının görüşme notunu yok edememek) düzenleme için de
+     * geçerlidir, hatta daha sinsidir: silinen bir not en azından kaybolur,
+     * DEĞİŞTİRİLEN bir not yanlış içeriğiyle doğru sanılır. Ticket iç notları
+     * da bu tabloda yaşadığı için kural destek tarafını da kapsar.
+     *
+     * `activities.assign` DİYE BİR İZİN YOK; bu modülde yönetici sinyali
+     * `activities.delete`'tir (Müdür/Admin'de var, temsilcilerde yok) ve
+     * delete() zaten aynı izni aynı rolde kullanıyor — iki metot tek ve aynı
+     * sahiplik mantığını paylaşsın diye trait'e o izin geçiliyor.
+     */
     public function update(User $user, Activity $activity): bool
     {
-        return $user->can('activities.update');
+        if (! $user->can('activities.update')) {
+            return false;
+        }
+
+        // Yazarı silinmiş (user_id NULL) bir kayıt "havuza düşmüş" SAYILMAZ:
+        // sahipsiz bir deal'den farklı olarak bu, hesabı silinen bir kullanıcıdan
+        // ÖKSÜZ KALMIŞ bir geçmiş kaydıdır — sahiplenilip yürütülecek bir iş
+        // değil. delete() ile aynı davranış: yalnızca yönetici dokunabilir.
+        if ($activity->user_id === null) {
+            return $user->can('activities.delete');
+        }
+
+        return $this->ownsOrManages($user, $activity->user_id, 'activities.delete');
     }
 
     /**

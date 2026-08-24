@@ -37,12 +37,17 @@ class UpdateTaskRequest extends FormRequest
             'reminder_at' => ['sometimes', 'nullable', 'date', 'before_or_equal:due_at'],
             'priority' => ['sometimes', Rule::in(['low', 'normal', 'high', 'urgent'])],
             'status' => ['sometimes', Rule::in(['pending', 'in_progress', 'completed', 'cancelled'])],
-            'assigned_to' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
             'taskable_type' => ['sometimes', 'nullable', 'string', Rule::in(array_keys(MorphTargets::TARGETS)), 'required_with:taskable_id'],
             'taskable_id' => ['sometimes', 'nullable', 'integer', 'required_with:taskable_type'],
 
-            // Bu uçtan HİÇ gönderilemez (değeri boş/null olsa dahi).
+            // Bunlar bu uçtan HİÇ gönderilemez (değeri boş/null olsa dahi).
             'completed_at' => ['missing'],
+            // `assigned_to` (Faz 13 / F8): devretme AYRI bir izin kapısıdır
+            // (`tasks.assign`) ve AYRI bir ucu vardır
+            // (PATCH /api/tasks/{task}/assign). Burada kabul edildiği sürece
+            // yalnız `tasks.update` taşıyan bir kullanıcı görevi istediği
+            // kişiye devredebiliyordu — izin kapısı baypas ediliyordu.
+            'assigned_to' => ['missing'],
         ];
     }
 
@@ -68,7 +73,8 @@ class UpdateTaskRequest extends FormRequest
             'reminder_at.before_or_equal' => 'Hatırlatıcı, vade tarihinden sonra olamaz.',
             'priority.in' => 'Seçilen öncelik geçerli değil.',
             'status.in' => 'Seçilen durum geçerli değil.',
-            'assigned_to.exists' => 'Seçilen atanan kişi geçerli değil.',
+            'assigned_to.missing' => 'Atanan kişi bu uçtan değiştirilemez. '.
+                'PATCH /api/tasks/{task}/assign ucunu kullanın.',
             'taskable_type.in' => 'Seçilen hedef türü geçerli değil.',
             'taskable_type.required_with' => 'Hedef türü ve hedef kimliği birlikte gönderilmelidir.',
             'taskable_id.required_with' => 'Hedef türü ve hedef kimliği birlikte gönderilmelidir.',

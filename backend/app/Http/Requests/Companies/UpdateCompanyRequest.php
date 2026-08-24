@@ -4,6 +4,18 @@ namespace App\Http\Requests\Companies;
 
 use Illuminate\Foundation\Http\FormRequest;
 
+/**
+ * NOT (Faz 13 / F8): `owner_id` bu uçta BİLEREK yazılabilir kaldı.
+ *
+ * Deal/Lead/Task/Ticket'ta sahip alanı `missing` yapıldı, çünkü oralarda
+ * devretme ayrı bir izinle (`*.assign`) korunan ayrı bir uçtur ve genel
+ * update ucu o kapıyı baypas ediyordu. Company tarafında böyle bir kapı
+ * YOK: izin sözlüğünde `companies.assign` diye bir satır ve `/assign` diye bir
+ * uç bulunmuyor (bkz. RolePermissionSeeder). Alanı burada kapatmak, baypas
+ * edilecek bir korumayı korumak yerine sahibi belirlemenin TEK yolunu
+ * kaldırırdı. Company paylaşılan master data'dır; gerekçenin tamamı
+ * CompanyPolicy::update() dokümanındadır.
+ */
 class UpdateCompanyRequest extends FormRequest
 {
     /**

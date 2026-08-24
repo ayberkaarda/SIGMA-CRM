@@ -363,22 +363,41 @@ export function LeadsPage() {
                               <IconLinkButton label="Detay" to={`/leads/${lead.id}`}>
                                 <UserCog className="size-4" aria-hidden="true" />
                               </IconLinkButton>
+                              {/* Faz 13: `!isConverted` durum kuralını korur (dönüşmüş lead zaten policy'de
+                                  de reddedilir, ama iş kuralı olarak burada da açık kalsın), `can.update`
+                                  false ise (yalnızca sahiplik kalır — durum burada zaten elendi) buton
+                                  GİZLENMEZ, devre dışı + tooltip gösterilir. */}
                               {!isConverted && can('leads.update') && (
-                                <IconButton label="Düzenle" onClick={() => setFormModal({ mode: 'edit', lead })}>
+                                <IconButton
+                                  label="Düzenle"
+                                  disabled={!lead.can.update}
+                                  title={lead.can.update ? 'Düzenle' : 'Bu kaydın sahibi değilsiniz, düzenleyemezsiniz.'}
+                                  onClick={() => setFormModal({ mode: 'edit', lead })}
+                                >
                                   <Pencil className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
                               {!isConverted && can('leads.convert') && (
-                                <IconButton label="Dönüştür" onClick={() => setConvertLead(lead)}>
+                                <IconButton
+                                  label="Dönüştür"
+                                  disabled={!lead.can.convert}
+                                  title={lead.can.convert ? 'Dönüştür' : 'Bu kaydın sahibi değilsiniz, dönüştüremezsiniz.'}
+                                  onClick={() => setConvertLead(lead)}
+                                >
                                   <Repeat className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
-                              {can('leads.assign') && (
+                              {/* `leads.assign` saf izin kontrolüdür (sahiplik boyutu yok) — `can.assign`
+                                  her zaman modül izniyle aynıdır, gizlemek yeterli. */}
+                              {can('leads.assign') && lead.can.assign && (
                                 <IconButton label="Sahip ata" onClick={() => setAssignLead(lead)}>
                                   <Users className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
-                              {!isConverted && can('leads.delete') && (
+                              {/* Dönüştürülmüş lead silinemez — sahiplikten bağımsız, herkes için geçerli
+                                  bir durum kuralı (bkz. `LeadPolicy::delete`); GİZLEME ile ele alınır,
+                                  istemci kendi `isConverted` kopyasını bu koşulda tutmaz. */}
+                              {can('leads.delete') && lead.can.delete && (
                                 <IconButton label="Sil" danger onClick={() => setDeleteLeadState(lead)}>
                                   <Trash2 className="size-4" aria-hidden="true" />
                                 </IconButton>
@@ -450,22 +469,30 @@ function IconButton({
   onClick,
   children,
   danger,
+  disabled,
+  title,
 }: {
   label: string
   onClick: () => void
   children: ReactNode
   danger?: boolean
+  /** Faz 13: izin var ama bu kayıtta `can.*` false — buton görünür kalır, tıklanamaz olur. */
+  disabled?: boolean
+  /** Varsayılan tooltip `label`'dır; devre dışı durumda nedeni açıklayan bir metinle geçilebilir. */
+  title?: string
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       aria-label={label}
-      title={label}
+      title={title ?? label}
       className={cn(
         'inline-flex size-8 items-center justify-center rounded-md text-fg-muted hover:bg-surface-2 hover:text-fg',
         'transition-colors duration-150 motion-reduce:transition-none',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-1',
+        'disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-fg-muted',
         danger && 'hover:text-danger'
       )}
     >

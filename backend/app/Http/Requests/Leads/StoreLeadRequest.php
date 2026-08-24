@@ -2,11 +2,24 @@
 
 namespace App\Http\Requests\Leads;
 
+use App\Http\Requests\Concerns\ForcesRecordOwnerOnCreate;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class StoreLeadRequest extends FormRequest
 {
+    use ForcesRecordOwnerOnCreate;
+
+    /**
+     * `owner_id` yalnızca `leads.assign` iznine sahip aktörden kabul edilir;
+     * aksi hâlde isteği yapan kullanıcıya sabitlenir (gerekçe:
+     * ForcesRecordOwnerOnCreate).
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->forceOwnerUnlessAssigner('owner_id', 'leads.assign');
+    }
+
     /**
      * Yetkilendirme LeadController::store() içinde Policy ile yapılır.
      */

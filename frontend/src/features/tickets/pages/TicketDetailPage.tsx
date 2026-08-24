@@ -73,8 +73,6 @@ export function TicketDetailPage() {
     )
   }
 
-  const canDelete = ticket.status !== 'resolved' && ticket.status !== 'closed'
-
   return (
     <div className="flex flex-col gap-4">
       <nav aria-label="breadcrumb" className="flex items-center gap-1.5 text-xs text-fg-muted">
@@ -91,17 +89,32 @@ export function TicketDetailPage() {
           title={`${ticket.ticket_number} — ${ticket.subject}`}
           action={
             <div className="flex items-center gap-2">
-              {can('tickets.assign') && (
+              {/* `tickets.assign` saf izin kontrolüdür (bkz. `TicketPolicy::assign`) — sahiplik
+                  boyutu yok, `can.assign` her zaman modül izniyle aynıdır. */}
+              {can('tickets.assign') && ticket.can.assign && (
                 <Button variant="secondary" leftIcon={<Users className="size-4" aria-hidden="true" />} onClick={() => setAssignOpen(true)}>
                   Ata
                 </Button>
               )}
+              {/* Faz 13: `tickets.update` izni yeterli değil — atanan kişi, atanmamış talep ya da
+                  `tickets.assign` taşıyan biri düzenleyebilir (bkz. `TicketPolicy::update`). İzin
+                  varken sadece sahiplik yüzünden engellendiğinde buton GİZLENMEZ, devre dışı +
+                  tooltip gösterilir. */}
               {can('tickets.update') && (
-                <Button variant="secondary" leftIcon={<Pencil className="size-4" aria-hidden="true" />} onClick={() => setEditOpen(true)}>
+                <Button
+                  variant="secondary"
+                  leftIcon={<Pencil className="size-4" aria-hidden="true" />}
+                  onClick={() => setEditOpen(true)}
+                  disabled={!ticket.can.update}
+                  title={ticket.can.update ? undefined : 'Bu talebin sahibi değilsiniz, düzenleyemezsiniz.'}
+                >
                   Düzenle
                 </Button>
               )}
-              {canDelete && can('tickets.delete') && (
+              {/* Çözülmüş/kapanmış talep silinemez — sahiplikten bağımsız, herkes için geçerli bir
+                  durum kuralı (bkz. `TicketPolicy::delete`); GİZLEME ile ele alınır, istemci kendi
+                  durum kopyasını tutmaz. */}
+              {can('tickets.delete') && ticket.can.delete && (
                 <Button variant="danger" leftIcon={<Trash2 className="size-4" aria-hidden="true" />} onClick={() => setDeleteOpen(true)}>
                   Sil
                 </Button>

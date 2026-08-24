@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\Concerns\ExposesAbilities;
 use App\Models\Deal;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -18,6 +19,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class DealResource extends JsonResource
 {
+    use ExposesAbilities;
+
     /**
      * @return array<string, mixed>
      */
@@ -69,6 +72,14 @@ class DealResource extends JsonResource
                 && $deal->expected_close_date->lt(today()),
             'created_at' => $deal->created_at?->toIso8601String(),
             'updated_at' => $deal->updated_at?->toIso8601String(),
+            // Bu kullanıcının bu kayıtta neyi YAPABİLDİĞİ — arayüz kuralı
+            // yeniden yazmasın (gerekçe: ExposesAbilities).
+            'can' => $this->abilities($request, $deal, [
+                'update' => 'update',
+                'move' => 'move',
+                'delete' => 'delete',
+                'assign' => 'assign',
+            ]),
         ];
     }
 }

@@ -85,6 +85,13 @@ inkâr-edilemezlik (`session_logs`/`activity_log` — bkz. AUTH-FLOWS §2); 2) y
 (RBAC/Policy/Gate her uçta); 3) müşteri PII (leads/contacts/companies); 4) finansal veri
 (deals tutarları, quotes/quote_items); 5) rol/izin matrisi (yetki yükseltme yüzeyi).
 
+**Yatay izolasyon kararının yorumu (Model C — bkz. PROGRESS karar günlüğü 2026-08-25 #1):**
+`PRODUCT-BRIEF.md:36`'daki "her kayıt erişiminde sahiplik/yetki kontrolü" ifadesi,
+OKUMADA yetki / YAZMADA sahiplik+yetki olarak yorumlandı; bu okuma aynı belgenin
+paylaşılan-Kanban (satır 63) ve kayda-bağlı-sohbet (satır 75) gereksinimleriyle tek tutarlı
+okumadır. Okuma tarafında sahiplik aranmaması, satır 36'nın en katı okumasından BİLİNÇLİ BİR
+SAPMADIR ve gerekçesi burada kayıtlıdır.
+
 **Kapsam dışı (bilinçli):** Dış ağ/altyapı sertleştirme (tek makine, işletim sistemi/XAMPP
 konfigürasyonu organizasyonel), DDoS/hacimsel saldırı, fiziksel güvenlik, dış e-posta kanalı
 (yok). Bunlar bu CRM'in tehdit yüzeyinde değil.
@@ -99,32 +106,32 @@ regresyon testi yazılmadan kapatılmış sayılmaz). "Durum" alanı yürütmede
 
 ### A1 — Kimlik Doğrulama / Oturum
 
-| # | Saldırı | Yöntem (uç/dosya) | Beklenen |
-|---|---|---|---|
-| A1.1 | CSRF'siz mutasyon | `POST /api/leads` (X-XSRF-TOKEN'sız) | 419 `CSRF_TOKEN_MISMATCH`; axios yalnızca 1 kez retry eder (`axios.ts`) |
-| A1.2 | Session fixation | `POST /login` öncesi/sonrası session id | Login `session()->regenerate()` yapar (AUTH-FLOWS §1); id değişir |
-| A1.3 | `password.changed` atlama | `routes/api.php`'deki grubun DIŞINDA uç var mı? `route:list` ile tara; whitelist yalnız `logout`/`me`/`password/change` olmalı | Grup dışı veri ucu = 🔴 kritik (R11). Şu an yapı beyaz-listeli — doğrula |
-| A1.4 | Deaktive edilmiş kullanıcının canlı oturumu | Kullanıcı pasifleştir → sonraki istek | `active` middleware 403 `USER_DEACTIVATED`; `UserDeactivated` WS ile düşürme |
-| A1.5 | Login brute-force | `throttle:login` (email+IP), artan bekleme 1→2→4→8→16→32→60 dk (`AppServiceProvider`) | Kilitleme + `session_logs` `locked_out` kaydı |
-| A1.6 | `current_password` oracle'ı | `POST /api/password/change` tekrarlı | `throttle:6,1` sınırlar (routes/api.php:82) |
-| A1.7 | Diğer oturumların şifre değişiminde düşmesi | Şifre değiştir → başka oturumdan istek | Sanctum `AuthenticateSession` hash uyuşmazlığında 401 (config/sanctum.php) |
-| A1.8 | `/broadcasting/auth` üzerinden yetki sızıntısı | `password.changed` bilinçle YOK (bootstrap/app.php) | Yalnız kimlik + zaten sahip olunan izinler; veri ucu değil — doğrula |
+| # | Saldırı | Yöntem (uç/dosya) | Beklenen | Durum |
+|---|---|---|---|---|
+| A1.1 | CSRF'siz mutasyon | `POST /api/leads` (X-XSRF-TOKEN'sız) | 419 `CSRF_TOKEN_MISMATCH`; axios yalnızca 1 kez retry eder (`axios.ts`) | ✅ |
+| A1.2 | Session fixation | `POST /login` öncesi/sonrası session id | Login `session()->regenerate()` yapar (AUTH-FLOWS §1); id değişir | ✅ |
+| A1.3 | `password.changed` atlama | `routes/api.php`'deki grubun DIŞINDA uç var mı? `route:list` ile tara; whitelist yalnız `logout`/`me`/`password/change` olmalı | Grup dışı veri ucu = 🔴 kritik (R11). Şu an yapı beyaz-listeli — doğrula | ✅ |
+| A1.4 | Deaktive edilmiş kullanıcının canlı oturumu | Kullanıcı pasifleştir → sonraki istek | `active` middleware 403 `USER_DEACTIVATED`; `UserDeactivated` WS ile düşürme | ✅ |
+| A1.5 | Login brute-force | `throttle:login` (email+IP), artan bekleme 1→2→4→8→16→32→60 dk (`AppServiceProvider`) | Kilitleme + `session_logs` `locked_out` kaydı | ✅ |
+| A1.6 | `current_password` oracle'ı | `POST /api/password/change` tekrarlı | `throttle:6,1` sınırlar (routes/api.php:82) | ✅ |
+| A1.7 | Diğer oturumların şifre değişiminde düşmesi | Şifre değiştir → başka oturumdan istek | Sanctum `AuthenticateSession` hash uyuşmazlığında 401 (config/sanctum.php) | ✅ |
+| A1.8 | `/broadcasting/auth` üzerinden yetki sızıntısı | `password.changed` bilinçle YOK (bootstrap/app.php) | Yalnız kimlik + zaten sahip olunan izinler; veri ucu değil — doğrula | ✅ |
 
 ### A2 — Yetkilendirme / IDOR
 
 Her `show/update/destroy` ve `assign/status/move/convert` ucu için sahiplik + izin turu.
 `routes/api.php`'deki tüm parametreli uçlar hedeftir.
 
-| # | Saldırı | Yöntem | Beklenen |
-|---|---|---|---|
-| A2.1 | Başkasının kaydını okuma | Satış Temsilcisi A → `GET /api/deals/{B'nin_deal}`, aynısı leads/contacts/companies/quotes/tasks/tickets/activities | Policy sahiplik/görünürlük kuralı; yetkisizse 403/404 |
-| A2.2 | Başkasının kaydını güncelleme/silme | `PATCH`/`DELETE` çapraz sahip | 403 |
-| A2.3 | Yatay atama manipülasyonu | `PATCH /api/deals/{id}/assign` ile kaydı kendine/başkasına atama | İzin + Policy; yetkisiz atama 403 |
-| A2.4 | İzleyici yazma denemesi | İzleyici rolü (15 izin, yazma yok) tüm `POST/PATCH/DELETE` | Hepsinde 403 |
-| A2.5 | Super Admin muafiyeti kapsamı | `Gate::before` (`AppServiceProvider:145-153`) `null` döndürüyor mu (short-circuit yok)? | Yalnız Super Admin `true`; diğerleri `null` → normal Gate akışı. **Recon: SAFE** |
-| A2.6 | Yetki yükseltme (yukarı) | `settings.manage` olan aktör `PATCH /api/settings/roles/{role}/permissions` ile kendine izin ekler | Sync yalnız var olan izinleri taşır; Super Admin rolü `ROLE_NOT_EDITABLE`; `CANNOT_REVOKE_OWN_SETTINGS_ACCESS`. **Recon: SAFE — ama "kendine yukarı yükseltme" için de açık test yaz** |
-| A2.7 | Log/rapor/dashboard izin sınırı | `logs.view`/`reports.view`/`dashboard.view` olmayan rol ilgili uçlara | 403 (kontrol `Gate::allows`/Policy) |
-| A2.8 | Kendini kilitleme / son Super Admin | `UserPolicy`: kendini pasifleştirme/silme, son aktif Super Admin koruması (Faz 2) | Engellenir |
+| # | Saldırı | Yöntem | Beklenen | Durum |
+|---|---|---|---|---|
+| A2.1 | Başkasının kaydını okuma | Satış Temsilcisi A → `GET /api/deals/{B'nin_deal}`, aynısı leads/contacts/companies/quotes/tasks/tickets/activities | 200 (bilinçli düz görünürlük — bkz. §1, Model C: yatay okuma sahiplikten bağımsız, yalnız modül `.view` izni gerekir) | ✅ |
+| A2.2 | Başkasının kaydını güncelleme/silme | `PATCH`/`DELETE` çapraz sahip | 403 (sahiplik yazmada zorunlu; `*.assign` izni olmadan çapraz-sahip yazma engellenir) | ✅ |
+| A2.3 | Yatay atama manipülasyonu | `PATCH /api/deals/{id}/assign` ile kaydı kendine/başkasına atama | İzin + Policy; yetkisiz atama 403 | ✅ |
+| A2.4 | İzleyici yazma denemesi | İzleyici rolü (15 izin, yazma yok) tüm `POST/PATCH/DELETE` | Hepsinde 403 | ✅ |
+| A2.5 | Super Admin muafiyeti kapsamı | `Gate::before` (`AppServiceProvider:145-153`) `null` döndürüyor mu (short-circuit yok)? | Yalnız Super Admin `true`; diğerleri `null` → normal Gate akışı. **Recon: SAFE** | ✅ |
+| A2.6 | Yetki yükseltme (yukarı) | `settings.manage` olan aktör `PATCH /api/settings/roles/{role}/permissions` ile kendine izin ekler | Sync yalnız var olan izinleri taşır; Super Admin rolü `ROLE_NOT_EDITABLE`; `CANNOT_REVOKE_OWN_SETTINGS_ACCESS`. **Recon: SAFE — ama "kendine yukarı yükseltme" için de açık test yaz** | ✅ |
+| A2.7 | Log/rapor/dashboard izin sınırı | `logs.view`/`reports.view`/`dashboard.view` olmayan rol ilgili uçlara | 403 (kontrol `Gate::allows`/Policy) | ✅ |
+| A2.8 | Kendini kilitleme / son Super Admin | `UserPolicy`: kendini pasifleştirme/silme, son aktif Super Admin koruması (Faz 2) | Engellenir | ✅ |
 
 ### A3 — Broadcast Kanalları (8 kanal — `routes/channels.php`)
 
@@ -132,14 +139,14 @@ Her kanal için: yetkisiz abone denemesi + payload sızıntısı denemesi. Testl
 sürücüsünü zorlar, `null` DEĞİL (R14 — `NullBroadcaster` her isteğe 200 döner ve hiçbir
 şeyi doğrulamaz).
 
-| # | Kanal | Saldırı | Beklenen |
-|---|---|---|---|
-| A3.1 | `user.{id}` | Başkasının id'sine abone (admin dahil) | Katı kimlik; `$user->id === (int)$id`. Admin override YOK |
-| A3.2 | `online` | Pasif hesapla abone | `is_active` false → reddet; payload yalnız id/name/email/role/department (PII fazlası sızmasın — doğrula) |
-| A3.3 | `record.{type}.{id}` | (a) `type` sınıf enjeksiyonu (`App\Models\...`), (b) izin yokken abone, (c) var olmayan id ile enumerasyon | Whitelist (ChannelRegistry) → izin → varlık; üçü de reddet (IDOR sızıntısı yok) |
-| A3.4 | `conversation.{id}` (Faz 12) | Katılımcı olmayan abone; `chat.use` yokken | Pivot kontrolü + `chat.use`; ikisi de gerekli |
-| A3.5 | `logs` / `dashboard` / `deals` / `tickets` | İlgili `.view` izni olmadan abone | 403 (her callback `is_active` + izin) |
-| A3.6 | Payload sızıntısı | Her event payload'ı — model değil düz skaler dizi mi? Fazla alan var mı? | `DealMoved`/`Ticket*` payload'ları düz; hassas alan yok — doğrula |
+| # | Kanal | Saldırı | Beklenen | Durum |
+|---|---|---|---|---|
+| A3.1 | `user.{id}` | Başkasının id'sine abone (admin dahil) | Katı kimlik; `$user->id === (int)$id`. Admin override YOK | ✅ |
+| A3.2 | `online` | Pasif hesapla abone | `is_active` false → reddet; payload yalnız id/name/email/role/department (PII fazlası sızmasın — doğrula) | ✅ |
+| A3.3 | `record.{type}.{id}` | (a) `type` sınıf enjeksiyonu (`App\Models\...`), (b) izin yokken abone, (c) var olmayan id ile enumerasyon | Whitelist (ChannelRegistry) → izin → varlık; üçü de reddet (IDOR sızıntısı yok) | ✅ |
+| A3.4 | `conversation.{id}` (Faz 12) | Katılımcı olmayan abone; `chat.use` yokken | Pivot kontrolü + `chat.use`; ikisi de gerekli | ✅ |
+| A3.5 | `logs` / `dashboard` / `deals` / `tickets` | İlgili `.view` izni olmadan abone | 403 (her callback `is_active` + izin) | ✅ |
+| A3.6 | Payload sızıntısı | Her event payload'ı — model değil düz skaler dizi mi? Fazla alan var mı? | `DealMoved`/`Ticket*` payload'ları düz; hassas alan yok — doğrula | ✅ |
 
 ### A4 — Mass Assignment
 
@@ -147,54 +154,54 @@ Tüm modellerde `$fillable` denetimi + FormRequest kesişimi. **Recon bulgusu: S
 hassas alanlar `$fillable`'da olsa da `UpdateXRequest`'lerde `['missing']` kuralıyla
 istemciden gelirse 422; controller yalnız `$request->validated()` geçirir.
 
-| # | Alan | Model / koruma | Beklenen |
-|---|---|---|---|
-| A4.1 | `pipeline_stage_id`, `position`, `version`, `status` | `Deal` — `UpdateDealRequest:38-41` `missing` | Gönderilirse 422 (yalnız `/move` değiştirir) |
-| A4.2 | `status` + 8 `sla_*` | `Ticket` — `UpdateTicketRequest:55-64` `missing` | 422 (yalnız `/status` ve servis) |
-| A4.3 | `status`, totals, `parent_quote_id`, `revision` | `Quote` — `UpdateQuoteRequest` `missing` | 422 |
-| A4.4 | `role`, `is_active` | `User` — mass assignment DIŞI (`UserService` `unset($data['role'])`, `toggleActive` ayrı) | Store/update'te sessizce yok sayılır / ayrı Policy'li uç |
-| A4.5 | `must_change_password` | `User` `$fillable`'da — dış uçtan set edilebiliyor mu? | Yalnız admin reset akışı yazmalı; store/update gövdesinden set → engellenmeli (doğrula, test yaz) |
-| A4.6 | `owner_id`, `assigned_to`, `is_primary` | Deal/Lead/Ticket/Contact | Yalnız yetkili atama ucundan; çapraz atama 403 (A2.3 ile örtüşür) |
+| # | Alan | Model / koruma | Beklenen | Durum |
+|---|---|---|---|---|
+| A4.1 | `pipeline_stage_id`, `position`, `version`, `status` | `Deal` — `UpdateDealRequest:38-41` `missing` | Gönderilirse 422 (yalnız `/move` değiştirir) | ✅ |
+| A4.2 | `status` + 8 `sla_*` | `Ticket` — `UpdateTicketRequest:55-64` `missing` | 422 (yalnız `/status` ve servis) | ✅ |
+| A4.3 | `status`, totals, `parent_quote_id`, `revision` | `Quote` — `UpdateQuoteRequest` `missing` | 422 | ✅ |
+| A4.4 | `role`, `is_active` | `User` — mass assignment DIŞI (`UserService` `unset($data['role'])`, `toggleActive` ayrı) | Store/update'te sessizce yok sayılır / ayrı Policy'li uç | 🔴 (bkz. §4.1 F7 — `create()` rol yükseltmesi, KAPATILDI) |
+| A4.5 | `must_change_password` | `User` `$fillable`'da — dış uçtan set edilebiliyor mu? | Yalnız admin reset akışı yazmalı; store/update gövdesinden set → engellenmeli (doğrula, test yaz) | ✅ |
+| A4.6 | `owner_id`, `assigned_to`, `is_primary` | Deal/Lead/Ticket/Contact | Yalnız yetkili atama ucundan; çapraz atama 403 (A2.3 ile örtüşür) | 🔴 (bkz. §4.1 F8 — `.update` üzerinden `.assign` atlatma, KAPATILDI) |
 
 ### A5 — Injection / XSS
 
-| # | Yüzey | Yöntem | Beklenen |
-|---|---|---|---|
-| A5.1 | Rapor `group_by`/`sort` | `GET /api/reports/*?group_by=` sahte değer; `?sort=` sahte kolon | `GroupByPeriod::validate()` whitelist (day/week/month) → 422; `resolveSort()` bilinmeyen kolonu güvenli varsayılana düşürür. **Recon: SAFE** |
-| A5.2 | Ham SQL | `app/` altında `selectRaw`/`DB::raw`/`whereRaw` taraması | Yalnız statik parça veya çözümlenmiş whitelist sabiti; kullanıcı stringi asla raw'a girmez. **Recon: SAFE** |
-| A5.3 | E-posta şablonu `body_html` XSS | `EmailTemplateFormModal.tsx:185` `dangerouslySetInnerHTML`; `StoreEmailTemplateRequest` sanitizasyon YOK | **ÖN BULGU (§4-F5).** Şu an `settings.manage` arkasında + posta gönderimi yok (self-XSS); yine de sanitize + `dangerouslySetInnerHTML` kaldırma/izole render |
-| A5.4 | Chat mesaj gövdesi XSS (Faz 12) | Mesaj `body` gönder → başka istemcide render | Frontend metni escape etmeli; `dangerouslySetInnerHTML` KULLANILMAMALI (kalite çizgisi) |
-| A5.5 | Teklif PDF | `resources/views/pdf/quote.blade.php` | Tüm dinamik alan `{{ }}` (escaped); `{!! !!}` YOK. **Recon: SAFE** |
-| A5.6 | CSV/XLSX formül enjeksiyonu | Kullanıcı adını/firma/notu `=cmd|...`/`=HYPERLINK(...)` yap → export'ta hücre | **ÖN BULGU (§4-F1).** `=+-@`, tab, CR ile başlayan hücre `'` ile nötrlenmeli |
-| A5.7 | Custom field değeri XSS | `custom_field_values` metni ekranlarda render | Escape doğrula |
-| A5.8 | XXE (yalnız tehdit sınıfı olarak kataloglanır) | Bu repoda bugün XML ayrıştırma yüzeyi YOK; TCMB kur ayrıştırıcısı **Faz 14'te doğar** | Somut XXE testi (A5.8) + sertleştirme (H7) **Faz 14'te**, tek yerde: `docs/PHASE-INTL.md` §2.5. Burada yalnız kayıt altına alınır |
+| # | Yüzey | Yöntem | Beklenen | Durum |
+|---|---|---|---|---|
+| A5.1 | Rapor `group_by`/`sort` | `GET /api/reports/*?group_by=` sahte değer; `?sort=` sahte kolon | `GroupByPeriod::validate()` whitelist (day/week/month) → 422; `resolveSort()` bilinmeyen kolonu güvenli varsayılana düşürür. **Recon: SAFE** | ✅ |
+| A5.2 | Ham SQL | `app/` altında `selectRaw`/`DB::raw`/`whereRaw` taraması | Yalnız statik parça veya çözümlenmiş whitelist sabiti; kullanıcı stringi asla raw'a girmez. **Recon: SAFE** | ✅ |
+| A5.3 | E-posta şablonu `body_html` XSS | `EmailTemplateFormModal.tsx:185` `dangerouslySetInnerHTML`; `StoreEmailTemplateRequest` sanitizasyon YOK | **ÖN BULGU (§4-F5).** Şu an `settings.manage` arkasında + posta gönderimi yok (self-XSS); yine de sanitize + `dangerouslySetInnerHTML` kaldırma/izole render | 🔴 (F5, KAPATILDI) |
+| A5.4 | Chat mesaj gövdesi XSS (Faz 12) | Mesaj `body` gönder → başka istemcide render | Frontend metni escape etmeli; `dangerouslySetInnerHTML` KULLANILMAMALI (kalite çizgisi) | ✅ |
+| A5.5 | Teklif PDF | `resources/views/pdf/quote.blade.php` | Tüm dinamik alan `{{ }}` (escaped); `{!! !!}` YOK. **Recon: SAFE** | ✅ |
+| A5.6 | CSV/XLSX formül enjeksiyonu | Kullanıcı adını/firma/notu `=cmd|...`/`=HYPERLINK(...)` yap → export'ta hücre | **ÖN BULGU (§4-F1).** `=+-@`, tab, CR ile başlayan hücre `'` ile nötrlenmeli | 🔴 (F1, KAPATILDI) |
+| A5.7 | Custom field değeri XSS | `custom_field_values` metni ekranlarda render | Escape doğrula | ✅ |
+| A5.8 | XXE (yalnız tehdit sınıfı olarak kataloglanır) | Bu repoda bugün XML ayrıştırma yüzeyi YOK; TCMB kur ayrıştırıcısı **Faz 14'te doğar** | Somut XXE testi (A5.8) + sertleştirme (H7) **Faz 14'te**, tek yerde: `docs/PHASE-INTL.md` §2.5. Burada yalnız kayıt altına alınır | ⬜ (Faz 14'te — bu fazda yüzey yok) |
 
 ### A6 — Dosya Yükleme
 
-| # | Saldırı | Yöntem | Beklenen |
-|---|---|---|---|
-| A6.1 | CSV import kötü MIME/uzantı | `POST /api/leads/import` — `ImportLeadsRequest` `mimes:csv,txt` + `mimetypes:` çift + `max:5120` | Reddet. **Recon: SAFE** (uuid isim, `local` private disk) |
-| A6.2 | Chat dosya yükleme (Faz 12) | Çift uzantı (`x.php.jpg`), polyglot, path traversal isim, >boyut | MIME+uzantı beyaz liste, rastgele isim, public-DIŞI saklama |
-| A6.3 | Yüklenen dosyanın public erişimi | Doğrudan URL ile erişim denemesi | Yalnız imzalı URL; süre sınırlı (Faz 13-H6) |
-| A6.4 | İmzalı URL süresi/manipülasyon | Süresi geçmiş / imza değiştirilmiş URL | 403 |
+| # | Saldırı | Yöntem | Beklenen | Durum |
+|---|---|---|---|---|
+| A6.1 | CSV import kötü MIME/uzantı | `POST /api/leads/import` — `ImportLeadsRequest` `mimes:csv,txt` + `mimetypes:` çift + `max:5120` | Reddet. **Recon: SAFE** (uuid isim, `local` private disk) | ✅ |
+| A6.2 | Chat dosya yükleme (Faz 12) | Çift uzantı (`x.php.jpg`), polyglot, path traversal isim, >boyut | MIME+uzantı beyaz liste, rastgele isim, public-DIŞI saklama | ✅ |
+| A6.3 | Yüklenen dosyanın public erişimi | Doğrudan URL ile erişim denemesi | Yalnız imzalı URL; süre sınırlı (Faz 13-H6) | ✅ (imzalı URL yerine oturum çerezi + `AttachmentPolicy` ile korunuyor — bkz. A6.4 notu ve PROGRESS karar günlüğü 2026-08-25 #3) |
+| A6.4 | İmzalı URL süresi/manipülasyon | Süresi geçmiş / imza değiştirilmiş URL | 403 | ⬜ — **bilinçli olarak UYGULANMADI.** İmzalı URL taşıyıcı yetkidir (referrer/tarayıcı geçmişinde sızar, paylaşılınca iptal edilemez); ekler yerine oturum çerezi + `AttachmentPolicy` ile korunuyor. Gerekçe: PROGRESS karar günlüğü 2026-08-25 #3 |
 
 ### A7 — Kaynak Tüketimi
 
-| # | Saldırı | Yöntem | Beklenen |
-|---|---|---|---|
-| A7.1 | Sayfalama üst sınırı | `?per_page=100000` tüm liste uçları | `max:100` her `Index*Request`'te. **Recon: SAFE** |
-| A7.2 | Sınırsız rapor tarih aralığı | `GET /api/reports/*?from=2000-01-01&to=2026-12-31` | **ÖN BULGU (§4-F4).** `DateRangeResolver`'da MAX SPAN yok — üst sınır eklenmeli (ör. 366 gün + `insights` için daha uzun kural) |
-| A7.3 | Export sıklık istismarı | `GET /api/logs/export`, `/reports/export`, `POST /api/leads/import` art arda | **ÖN BULGU (§4-F3).** Throttle YOK; yalnız izin var. Rate limit eklenmeli |
-| A7.4 | Chat geçmişi / N+1 | Mesaj listesi derin sayfalama; timeline (R19) | Keyset/limit; N+1 teste bağlanmalı |
+| # | Saldırı | Yöntem | Beklenen | Durum |
+|---|---|---|---|---|
+| A7.1 | Sayfalama üst sınırı | `?per_page=100000` tüm liste uçları | `max:100` her `Index*Request`'te. **Recon: SAFE** | ✅ |
+| A7.2 | Sınırsız rapor tarih aralığı | `GET /api/reports/*?from=2000-01-01&to=2026-12-31` | **ÖN BULGU (§4-F4).** `DateRangeResolver`'da MAX SPAN yok — üst sınır eklenmeli (ör. 366 gün + `insights` için daha uzun kural) | 🔴 (F4, KAPATILDI) |
+| A7.3 | Export sıklık istismarı | `GET /api/logs/export`, `/reports/export`, `POST /api/leads/import` art arda | **ÖN BULGU (§4-F3).** Throttle YOK; yalnız izin var. Rate limit eklenmeli | 🔴 (F3, KAPATILDI) |
+| A7.4 | Chat geçmişi / N+1 | Mesaj listesi derin sayfalama; timeline (R19) | Keyset/limit; N+1 teste bağlanmalı | ✅ |
 
 ### A8 — Sırlar / Konfig
 
-| # | Kontrol | Yöntem | Beklenen |
-|---|---|---|---|
-| A8.1 | `.env` sızıntısı | Repo + build çıktısı | `.env` git'te yok (kabul kriteri) |
-| A8.2 | `APP_DEBUG` | `.env.example:4` = `true` | **ÖN BULGU (§4-F2).** `.env.example` `false` olmalı (`config/app.php` fallback zaten `false`) |
-| A8.3 | Hata yanıtı stack trace | 500 tetikle | Generic `SERVER_ERROR`; trace/SQL/path sızmaz — debug'da bile yalnız `exception`+`message`. **Recon: SAFE** (`bootstrap/app.php`) |
-| A8.4 | Bağımlılık açıkları | `composer audit` + `npm audit` | Temiz; açık varsa kaydet/karar ver |
+| # | Kontrol | Yöntem | Beklenen | Durum |
+|---|---|---|---|---|
+| A8.1 | `.env` sızıntısı | Repo + build çıktısı | `.env` git'te yok (kabul kriteri) | ✅ |
+| A8.2 | `APP_DEBUG` | `.env.example:4` = `true` | **ÖN BULGU (§4-F2).** `.env.example` `false` olmalı (`config/app.php` fallback zaten `false`) | 🔴 (F2, KAPATILDI) |
+| A8.3 | Hata yanıtı stack trace | 500 tetikle | Generic `SERVER_ERROR`; trace/SQL/path sızmaz — debug'da bile yalnız `exception`+`message`. **Recon: SAFE** (`bootstrap/app.php`) | ✅ |
+| A8.4 | Bağımlılık açıkları | `composer audit` + `npm audit` | Temiz; açık varsa kaydet/karar ver | ✅ |
 
 ---
 
@@ -216,7 +223,7 @@ görmediğini** doğrulamak. Demo hesap şifresi `Demo!2026Syncra`, `must_change
 | Super Admin | Her şey (Gate::before) | — |
 | Admin (57) | Tüm modüller + ayarlar + kullanıcı yönetimi | (Super Admin'e özel korumalar) |
 | Satış Müdürü (41) | Lead/deal/quote/report tam; ekip görünürlüğü | Ayarlar/kullanıcı yönetimi sınırı; logs? |
-| Satış Temsilcisi (26) | Kendi lead/deal/quote/task | Başka temsilci verisi, ayarlar, loglar, rol matrisi |
+| Satış Temsilcisi (26) | Lead/deal/quote/task — **okuma tüm ekip** (düz görünürlük, bilinçli — bkz. §1 not, Model C), **yazma yalnız kendi kaydı** | Ayarlar, loglar, kullanıcı yönetimi, rol matrisi |
 | Destek Temsilcisi (14) | Ticket + ilgili aktivite | Deal/quote finansalı, ayarlar, raporlar |
 | İzleyici (15) | Salt-okuma | **Her türlü yazma** (tüm POST/PATCH/DELETE 403) |
 
@@ -249,7 +256,13 @@ bırakılır; bu fazda güvenlik regresyonları backend'de kilitlenir.
 > Bunlar planlama sırasında OKUMA ile bulundu; **hiçbiri şimdi düzeltilmedi.** Ciddiyet
 > sırasıyla:
 
-**F1 — CSV/XLSX formül enjeksiyonu (GERÇEK, düşük maliyetli).**
+**F1 — CSV/XLSX formül enjeksiyonu (GERÇEK, düşük maliyetli). 🔴 KAPATILDI.**
+Düzeltme: `app/Support/CsvFormulaGuard.php` (yeni, tek merkezî yardımcı). Kilitleyen testler:
+`tests/Unit/CsvFormulaGuardTest.php`, `tests/Feature/Security/CsvFormulaInjectionTest.php`.
+**Ek bulgu (yürütmede saptandı):** PhpSpreadsheet, `=` ile başlayan bir string'i otomatik
+`TYPE_FORMULA` olarak işaretleyip XLSX'e GERÇEK bir formül düğümü yazıyordu — yani XLSX yolu
+CSV'den daha tehlikeliydi (CSV'de nötrleme yeterliyken XLSX'te PhpSpreadsheet'in kendi tip
+algılamasını da bastırmak gerekti).
 Export hattında `=`/`+`/`-`/`@` ile başlayan hücreler nötrlenmiyor; `fputcsv()` ham değere
 çağrılıyor.
 - `app/Services/Logging/LogQueryService.php:124` (`fputcsv($handle, $mapper($row))`); mapper'lar
@@ -262,22 +275,36 @@ Herhangi bir kimlikli kullanıcı kendi adını/firmasını/notunu `=HYPERLINK(.
 bu değerler admin'in Excel'de açtığı export'a düşer → sömürülebilir. **Düzeltme:** hücre
 `=+-@`/tab/CR ile başlıyorsa başına `'` ekle (tek merkezî yardımcı).
 
-**F2 — `.env.example` `APP_DEBUG=true` gönderiyor (`.env.example:4`).**
+**F2 — `.env.example` `APP_DEBUG=true` gönderiyor (`.env.example:4`). 🔴 KAPATILDI.**
+Düzeltme: `.env.example`'da `APP_DEBUG=false`. Kilitleyen test: `tests/Feature/Security/EnvExampleTest.php`.
 `config/app.php:42` fallback `false` (kod güvenli) ama örnek şablonun literal değeri `true`;
 dikkatsiz kopyada stack trace sızabilir. **Düzeltme:** örnekte `APP_DEBUG=false`.
 
-**F3 — `leads/import`, `logs/export`, `reports/export` uçlarında rate limit YOK.**
+**F3 — `leads/import`, `logs/export`, `reports/export` uçlarında rate limit YOK. 🔴 KAPATILDI.**
+Düzeltme: `POST /leads/import` → `throttle:5,1,leads-import`; `GET /logs/export` +
+`GET /reports/export` → ortak `throttle:10,1,heavy-export`. Anahtar kullanıcı bazlı (Laravel
+kimlikli isteklerde zaten user id ile anahtarlıyor). Kilitleyen test:
+`tests/Feature/Security/ExportThrottleTest.php`.
 `routes/api.php:155`, `:133`, `:400` — yalnız izinle korunuyor; sıklık sınırı yok. Pahalı,
 DB/CPU-ağır işlemler → maliyet/DoS yüzeyi. `LogQueryService::EXPORT_ROW_LIMIT=50000` satır
 sayısını sınırlar ama istek SIKLIĞINI değil. **Düzeltme:** uygun `throttle:` ekle.
 
-**F4 — Rapor/dashboard tarih aralığında MAX SPAN yok.**
+**F4 — Rapor/dashboard tarih aralığında MAX SPAN yok. 🔴 KAPATILDI.**
+Düzeltme: `DateRangeResolver::MAX_WINDOW_DAYS = 366`, aşımda 422. **Ek bulgu (yürütmede
+saptandı):** Carbon 3'ün `diffInDays()` metodu float döndürüyor; `endOfDay()` ile alınan diff
+365.999… çıkıp off-by-one üretiyordu — tam 366 günlük geçerli bir aralık yanlışlıkla
+reddediliyordu. `startOfDay()` ile diff alınarak düzeltildi. Kilitleyen test:
+`tests/Feature/Security/ReportDateRangeTest.php`.
 `app/Services/Reports/Support/DateRangeResolver.php:34-38` — `from`/`to` biçim doğrulanır ve
 `from>to` reddedilir, ama üst sınır yok; `from=2000-01-01&to=2026-12-31` sınırsız aralık
 agregasyonu tetikler. **Düzeltme:** makul üst sınır (ör. ≤366 gün; gerekiyorsa rapor tipine
 göre) + 422.
 
-**F5 — Sanitize edilmemiş `body_html` + `dangerouslySetInnerHTML` (düşük patlama yarıçapı, ŞİMDİ).**
+**F5 — Sanitize edilmemiş `body_html` + `dangerouslySetInnerHTML` (düşük patlama yarıçapı, ŞİMDİ). 🔴 KAPATILDI.**
+Düzeltme: sunucuda HTMLPurifier beyaz listesi + istemcide `dangerouslySetInnerHTML` KALDIRILDI,
+yerine `<iframe sandbox="" srcDoc>` (izole render, `allow-scripts`/`allow-same-origin` birlikte
+verilmedi — bkz. PROGRESS karar günlüğü 2026-08-25 #6). Kilitleyen testler:
+`tests/Unit/HtmlSanitizerTest.php`, `tests/Feature/Security/EmailTemplateXssTest.php`.
 `StoreEmailTemplateRequest` yalnız `['required','string','max:65535']`; sanitizasyon yok.
 `frontend/src/features/settings/components/EmailTemplateFormModal.tsx:185`
 `<div dangerouslySetInnerHTML={{ __html: bodyHtml }} />`. Şu an düşük: yalnız `settings.manage`
@@ -287,7 +314,14 @@ yetkili önizleyiciye render edilirse stored XSS olur. **Düzeltme:** sunucuda H
 (izinli etiket beyaz listesi) + `dangerouslySetInnerHTML`'i kaldır/izole et; kalite çizgisi
 ihlalini gider.
 
-**F6 — Türkçe İ/ı büyük-küçük harf katlaması bozuk (mevcut hata, i18n'den bağımsız).**
+**F6 — Türkçe İ/ı büyük-küçük harf katlaması bozuk (mevcut hata, i18n'den bağımsız). 🔴 KAPATILDI.**
+Düzeltme: `app/Support/TurkishCase.php` + `frontend/src/lib/turkishCase.ts`, agresif katlama
+(`İ`/`I`/`ı`/`i` → `i`). **Bilinen sınır (ölçüldü):** `utf8mb4_unicode_ci` collation `İ`=`i`
+sayıyor ama `I`=`ı` SAYMIYOR; bu yüzden yalnız-isimle aranan `Irmak`/`ırmak` çifti SQL
+ön-filtresinde takılıp PHP katlamasına hiç ulaşamıyor. Collation kapsam dışı (bu bölümün
+kendisi zaten öyle diyor). Kapatma yolu: telefon eşleştirmede kullanılan "SQL'de garantili
+üst küme + PHP'de kesin doğrulama" deseni isimlere de uygulanabilir — **Faz 15 adayı** olarak
+kaydedildi (bkz. PROGRESS "Bir Sonraki Adım").
 `app/Services/Leads/DuplicateDetector.php:407` (`sameText`, isim/firma karşılaştırması) ve
 `:371` (`normalizeEmail`) `mb_strtolower` kullanıyor; `frontend/.../chat/components/MessageComposer.tsx:51`
 mention filtresinde `.toLowerCase()` var. PHP `mb_strtolower` ve JS `toLowerCase` Türkçe kuralını
@@ -303,6 +337,51 @@ rapor SQL enjeksiyonu (`GroupByPeriod` + `resolveSort` whitelist), PDF escape (h
 sayfalama tavanı (`max:100`), CSV import upload (uuid + private disk + çift MIME), login
 rate limiting (email+IP + artan bekleme), exception handler (trace sızmaz). `SecurityHeaders`
 middleware'i **yok** (beklendiği gibi — bu fazda eklenecek).
+
+---
+
+## 4.1 Yürütmede Bulunan Yeni Açıklar (F7–F8)
+
+> Ön bulgular (§4, F1–F6) kod OKUNARAK bulunmuştu. Aşağıdakiler denetim **YÜRÜTÜLÜRKEN**
+> (gerçek istek atılarak) bulundu — recon'da görünmeyen, yalnız çalıştırınca ortaya çıkan sınıf.
+
+**F7 (YÜKSEK) — Admin → Super Admin yetki yükseltmesi. 🔴 KAPATILDI.**
+`UserService::update()` rol değişiminde `Gate::authorize('manageRoles')` çağırıyordu ama
+`create()` çağırmıyordu; doğrudan `syncRoles([$role])`. `Admin` rolü `users.create` taşıyor ama
+`users.manage_roles` TAŞIMIYOR. İstismar: Admin `POST /api/users` ile `role: "Super Admin"` +
+kendi seçtiği şifreyle hesap açar, o hesaba girer, tam Super Admin olur. Canlı doğrulandı
+(201 + gerçekten Super Admin).
+**Kapatıldı:** `assertActorMayGrantRole()` — "rol tavanı": `users.manage_roles` yoksa
+(a) `Super Admin` her hâlükârda yasak (yetkisi `Gate::before`'dan geldiği için izin kümesi boş,
+alt-küme testi sahte geçerdi), (b) atanacak rolün izin kümesi aktörün etkin izinlerinin ALT
+KÜMESİ olmalı; aksi 403. Düz "rol gönderirse 403" seçilmedi çünkü `role` alanı `required` ve bu
+Admin'in `users.create` iznini tamamen işlevsiz bırakırdı. Konsol/seeder bağlamı (aktör yok)
+muaf.
+Test: `MassAssignmentTest::admin_without_manage_roles_cannot_mint_a_super_admin` +
+aşırı-düzeltme koruması.
+
+**F8 (ORTA) — `.assign` izninin `update` üzerinden atlatılması. 🔴 KAPATILDI.**
+`/assign` uçları `deals.assign` istiyordu ama `PATCH /api/deals/{id}` (yalnız `deals.update`)
+gövdede `owner_id` kabul ediyordu. Ölçülen etki: Satış Temsilcisi → deals/leads/tasks; Destek
+Temsilcisi → tasks.
+**Kapatıldı:** `Update{Deal,Lead,Task,Ticket}Request`'lerde `owner_id`/`assigned_to`
+`['missing']` (422); create tarafında yeni `ForcesRecordOwnerOnCreate` trait'i `*.assign` izni
+yoksa alanı `auth()->id()`'ye zorluyor.
+Test: `MassAssignmentTest` + `OwnershipIsolationTest`.
+
+**F9 (DÜŞÜK, yan bulgu) — `LeadConversionService` oluşturduğu deal'a sahip yazmıyordu.** 🔴 KAPATILDI.
+Contact/company'ye yazıyordu, deal'a yazmıyordu. Sahipsiz lead'den doğan fırsat sahipsiz
+kalıyor, yeni yazma kuralı (F8'in getirdiği sahiplik zorlaması) altında "herkesin yazabildiği"
+kayıt olarak doğuyordu. Kapatıldı.
+
+**F10 (DÜŞÜK, UI savunma katmanı) — `TicketStatusControl.tsx` hiçbir izin kontrolü taşımıyordu.** 🔴 KAPATILDI.
+Salt-okuma rolüne durum geçiş kontrolü görünüyordu (backend zaten 403 veriyordu, yani sızıntı
+yok). `usePermission('tickets.update')` + `ticket.can.status` ile bağlandı.
+
+**F11 (BİLGİ) — `CustomFieldController::index` yetkilendirme çağrısı taşımıyor.** ⬜ KAPATILMADI (kabul edilen bilgi durumu.)
+Kimliği doğrulanmış herkes herhangi bir `entity_type` için aktif özel alan TANIMLARINI
+listeleyebiliyor. Müşteri verisi değil, şema metadata'sı; kapalı devre + davetle giriş nedeniyle
+düşük. Karar: kabul edilebilir, ama kayda geçiriliyor (bkz. PROGRESS "Bir Sonraki Adım").
 
 ---
 
@@ -349,23 +428,51 @@ not/aktivite timeline (`activities`), custom_fields + tags, rol/izin matrisi edi
 trail (JSON diff), CSV/XLSX export, PDF, uçtan uca realtime. Bunlar Attio'da da var ama bizde
 kurulu — kabul listesine alınmadı.
 
+### 5.4 Faz 14'e devredilen güvenlik kısıtları
+
+> §5.1 (kabul C1–C4) ve §5.2 (red) listesi ONAYLANDI; İNŞA Faz 14'te
+> (`docs/PHASE-INTL.md` §3, İz F). Aşağıdakiler bu Faz 13 denetiminin İz C çıktısıdır ve
+> Faz 14'teki inşanın **bağlayıcı** güvenlik kısıtlarıdır — sözleşme ihlal edilirse Faz 14
+> kabul edilmez.
+
+- **C1 global arama:** tek uç 7 modülü birleştirdiği için tek bir hata TÜM veriyi sızdırır.
+  Sonuçlar modül bazlı `.view` izniyle filtrelenmeli ve bu bir feature testiyle kilitlenmeli;
+  izinsiz modül sonuç kümesinde HİÇ görünmemeli (sayı/varlık sızıntısı dahil).
+- **C2 kayıtlı görünümler (`is_shared`):** paylaşılan bir görünüm AÇAN kullanıcının yetkisiyle
+  çalışmalı, OLUŞTURANIN yetkisiyle değil — aksi hâlde "confused deputy" ile yetki yükseltme
+  olur. `query_json` sunucuda yeniden doğrulanmalı, ham filtre olarak sorguya gömülmemeli.
+- **C4 otomasyon kuralları:** bir kural, onu OLUŞTURAN kullanıcının kendi yapamayacağı bir
+  eylemi tetikleyememeli (ör. `deals.assign` izni olmayan biri "aşamaya gelince sahibi
+  değiştir" kuralı yazamamalı). Tetikleyici ve eylem kataloğu sabit ve izin-eşlemeli olmalı;
+  keyfi kod YOK.
+
 ---
 
 ## 6. Kabul Kriterleri (Faz 13)
 
-- [ ] §2 (A1–A8) matrisindeki her satır çalıştırıldı; sonuç ⬜/✅/🔴 olarak işaretlendi.
-- [ ] §4'teki 6 ön bulgunun (F1–F6) her biri düzeltildi **ve** düzeltmeyi kilitleyen bir
+- [x] §2 (A1–A8) matrisindeki her satır çalıştırıldı; sonuç ⬜/✅/🔴 olarak işaretlendi.
+- [x] §4'teki 6 ön bulgunun (F1–F6) her biri düzeltildi **ve** düzeltmeyi kilitleyen bir
       regresyon testi (`tests/Feature/Security/`) yeşil.
-- [ ] Güvenlik header'ları (CSP, HSTS, X-Frame-Options: DENY, X-Content-Type-Options: nosniff,
-      Referrer-Policy) her yanıtta doğrulandı (H1).
-- [ ] IDOR turu: her `show/update/destroy/assign/status/move/convert` ucunda sahiplik/yetki
-      testi var; çapraz-sahip erişim 403/404.
-- [ ] 8 broadcast kanalının her biri için yetkisiz-abone testi var ve `reverb` sürücüsüyle koşuyor.
+- [x] Güvenlik header'ları (CSP, HSTS, X-Frame-Options: DENY, X-Content-Type-Options: nosniff,
+      Referrer-Policy) her yanıtta doğrulandı (H1). `SecurityHeadersTest.php` ile kilitli.
+- [x] IDOR turu: her `show/update/destroy/assign/status/move/convert` ucunda sahiplik/yetki
+      testi var; çapraz-sahip erişim 403/404. `AuthzIdorTest.php`, `OwnershipIsolationTest.php`,
+      `MassAssignmentTest.php` (F7/F8 dahil).
+- [x] 8 broadcast kanalının her biri için yetkisiz-abone testi var ve `reverb` sürücüsüyle koşuyor.
+      `ChannelAuthorizationTest.php`, `ChannelPayloadLeakTest.php`.
 - [ ] 6 rolün her biri için "görmemesi gerekeni görmüyor" turu (backend testi + elle) tamamlandı.
-- [ ] `composer audit` + `npm audit` temiz (veya açık kararı kayıtlı).
-- [ ] Attio §5 kabul/red listesi karara bağlandı (analiz çıktısı); kabul edilen C1–C4'ün İNŞASI
+      **KISMİ.** Backend tarafı `RoleAcceptanceTest.php` ile kilitli; ama İz B'nin elle (UI
+      üzerinden gerçek kullanıcı) 6-rol kabul turu henüz BİTMEDİ — bu yüzden Faz 13 durumu
+      PROGRESS'te 🟨 Devam olarak işaretlendi. Kalan iş: elle tur + bulunacak yeni bulguların
+      kapatılması.
+- [x] `composer audit` + `npm audit` temiz (veya açık kararı kayıtlı).
+- [x] Attio §5 kabul/red listesi karara bağlandı (analiz çıktısı); kabul edilen C1–C4'ün İNŞASI
       Faz 14'e (`PHASE-INTL` §3) devredildi. **Bu fazda hiçbir Attio özelliği inşa edilmez.**
+      §5.4'te Faz 14'e devredilen güvenlik kısıtları (C1/C2/C4) kayda geçirildi.
 - [ ] Tüm mevcut test suiti (Faz 12 sonrası) hâlâ yeşil; yeni testlerle birlikte sayı arttı.
+      **KISMİ.** Son ölçüm 1087 test / 8650 assertion, 0 hata (899'dan arttı) — ama bu Faz 13'ün
+      SON sayısı DEĞİL; İz B elle turu ve son doğrulama sürdükçe sayı değişebilir. Faz kapanışında
+      bu satır güncellenip [x] yapılacak.
 
 > İz D (i18n) ve İz E (para birimi) kabul kriterleri Faz 14'tedir — bkz. `docs/PHASE-INTL.md` §4.
 

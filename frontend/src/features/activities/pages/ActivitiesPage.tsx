@@ -25,7 +25,6 @@ import {
 } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
 import { usePermission } from '../../auth/hooks/usePermission'
-import { useAuthStore } from '../../auth/store'
 import { useTaskUserOptions } from '../../tasks/api/tasksApi'
 import { relatedRecordMeta, RELATED_RECORD_SELECTABLE_TYPES, relatedRecordTypeLabel } from '../../tasks/components/relatedRecordMeta'
 import { ActivityTypeBadge } from '../components/ActivityTypeBadge'
@@ -52,7 +51,6 @@ type FormModalState = { mode: 'create' } | { mode: 'edit'; activity: Activity } 
 export function ActivitiesPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { can } = usePermission()
-  const currentUserId = useAuthStore((state) => state.user?.id)
 
   const [searchDraft, setSearchDraft] = useState(searchParams.get('q') ?? '')
   const debouncedSearch = useDebouncedValue(searchDraft, SEARCH_DEBOUNCE_MS)
@@ -125,11 +123,6 @@ export function ActivitiesPage() {
   const activities = data?.data ?? []
   const total = data?.meta.pagination.total ?? 0
   const isEmpty = !isLoading && !isError && activities.length === 0
-
-  function canDelete(activity: Activity): boolean {
-    if (can('activities.delete')) return true
-    return !!activity.user && activity.user.id === currentUserId
-  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -297,12 +290,28 @@ export function ActivitiesPage() {
                           <Td className="max-w-40 truncate">{activity.outcome ?? '—'}</Td>
                           <Td align="right">
                             <div className="flex items-center justify-end gap-1">
+                              {/* Faz 13: `activities.update` izni yeterli değil — kaydı yazan kişi ya da
+                                  `activities.delete` taşıyan bir yönetici düzenleyebilir (bkz.
+                                  `ActivityPolicy::update`). İzin varken sadece bu yüzden engellendiğinde
+                                  buton GİZLENMEZ, devre dışı + tooltip gösterilir. */}
                               {can('activities.update') && (
-                                <IconButton label="Düzenle" onClick={() => setFormModal({ mode: 'edit', activity })}>
+                                <IconButton
+                                  label="Düzenle"
+                                  disabled={!activity.can.update}
+                                  title={activity.can.update ? 'Düzenle' : 'Bu aktiviteyi yazan kişi değilsiniz, düzenleyemezsiniz.'}
+                                  onClick={() => setFormModal({ mode: 'edit', activity })}
+                                >
                                   <Pencil className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
-                              {canDelete(activity) && (
+                              {/* ÖZEL DURUM — diğer tüm modüllerden FARKLI: `ActivityPolicy::delete`
+                                  `activities.delete` İZNİNİ ŞART KOŞMAZ, kaydı yazan kişi izinsiz de
+                                  silebilir. Bu yüzden burada `can('activities.delete')` ÖN KOŞUL olarak
+                                  ARANMAZ (aranırsa yazarın kendi kaydını silme hakkı yanlışlıkla
+                                  gizlenirdi) — doğrudan backend'in `activity.can.delete`'ine güvenilir;
+                                  eskiden burada aynı mantığı istemcide yeniden kuran yerel bir
+                                  `canDelete()` fonksiyonu vardı, artık gerek yok. */}
+                              {activity.can.delete && (
                                 <IconButton label="Sil" danger onClick={() => setDeleteActivityState(activity)}>
                                   <Trash2 className="size-4" aria-hidden="true" />
                                 </IconButton>
@@ -374,22 +383,30 @@ function IconButton({
   onClick,
   children,
   danger,
+  disabled,
+  title,
 }: {
   label: string
   onClick: () => void
   children: ReactNode
   danger?: boolean
+  /** Faz 13: izin var ama bu kayıtta `can.*` false — buton görünür kalır, tıklanamaz olur. */
+  disabled?: boolean
+  /** Varsayılan tooltip `label`'dır; devre dışı durumda nedeni açıklayan bir metinle geçilebilir. */
+  title?: string
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       aria-label={label}
-      title={label}
+      title={title ?? label}
       className={cn(
         'inline-flex size-8 items-center justify-center rounded-md text-fg-muted hover:bg-surface-2 hover:text-fg',
         'transition-colors duration-150 motion-reduce:transition-none',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-1',
+        'disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-fg-muted',
         danger && 'hover:text-danger'
       )}
     >

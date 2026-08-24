@@ -385,14 +385,46 @@ class TaskApiTest extends TestCase
     }
 
     /**
-     * KARAR: tasks.update iznine sahip herkes (yalnızca atanan kişi değil)
-     * başkasının görevini tamamlayabilir — bkz. TaskPolicy::complete() dokümanı.
+     * KARAR REVİZE EDİLDİ (Faz 13): bu test eskiden 200 bekliyordu —
+     * "tasks.update iznine sahip herkes başkasının görevini tamamlayabilir".
+     * Yatay yazma izolasyonuyla birlikte beklenen davranışın KENDİSİ değişti:
+     * `tasks.update` TEK BAŞINA yetmiyor, atanan kişi olmak ya da
+     * `tasks.assign` taşımak gerekiyor (bkz. TaskPolicy::complete()).
      */
-    public function test_user_with_tasks_update_permission_can_complete_others_task(): void
+    public function test_tasks_update_permission_alone_cannot_complete_others_task(): void
     {
         $actor = $this->actorWithPermissions(['tasks.update']);
         $otherAssignee = User::factory()->create();
         $task = Task::factory()->create(['assigned_to' => $otherAssignee->id, 'status' => 'pending']);
+
+        $response = $this->actingAs($actor)->patchJson("/api/tasks/{$task->id}/complete", ['completed' => true]);
+
+        $response->assertStatus(403);
+    }
+
+    /**
+     * Eski kararın KORUNAN yarısı: yönetici (Müdür/Admin, yani `tasks.assign`
+     * taşıyan aktör) ekip üyesinin görevini kapatmaya DEVAM EDER — revizyon
+     * yalnızca temsilciler arası kapatmayı kesti.
+     */
+    public function test_user_with_tasks_assign_permission_can_complete_others_task(): void
+    {
+        $actor = $this->actorWithPermissions(['tasks.update', 'tasks.assign']);
+        $otherAssignee = User::factory()->create();
+        $task = Task::factory()->create(['assigned_to' => $otherAssignee->id, 'status' => 'pending']);
+
+        $response = $this->actingAs($actor)->patchJson("/api/tasks/{$task->id}/complete", ['completed' => true]);
+
+        $response->assertStatus(200);
+    }
+
+    /**
+     * Atanmamış görev havuzdadır: `tasks.update` taşıyan herkes kapatabilir.
+     */
+    public function test_unassigned_task_can_be_completed_by_any_updater(): void
+    {
+        $actor = $this->actorWithPermissions(['tasks.update']);
+        $task = Task::factory()->create(['assigned_to' => null, 'status' => 'pending']);
 
         $response = $this->actingAs($actor)->patchJson("/api/tasks/{$task->id}/complete", ['completed' => true]);
 

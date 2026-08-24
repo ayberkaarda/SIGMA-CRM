@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Deals;
 
+use App\Http\Requests\Concerns\ForcesRecordOwnerOnCreate;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -16,6 +17,18 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class StoreDealRequest extends FormRequest
 {
+    use ForcesRecordOwnerOnCreate;
+
+    /**
+     * `owner_id` yalnızca `deals.assign` iznine sahip aktörden kabul edilir;
+     * aksi hâlde isteği yapan kullanıcıya sabitlenir (gerekçe:
+     * ForcesRecordOwnerOnCreate).
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->forceOwnerUnlessAssigner('owner_id', 'deals.assign');
+    }
+
     public function authorize(): bool
     {
         return true;

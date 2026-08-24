@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsurePasswordIsChanged;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -90,6 +91,22 @@ return Application::configure(basePath: dirname(__DIR__))
         ['middleware' => ['web', 'auth:sanctum', 'active']],
     )
     ->withMiddleware(function (Middleware $middleware) {
+        /*
+         * Güvenlik başlıkları (Faz 13 / H1) — GLOBAL ve EN DIŞTA.
+         *
+         * prepend(), append() DEĞİL: bu middleware yığının en dışında durunca
+         * içeride üretilen HER yanıt ona geri döner - rota bulunamayan 404,
+         * HandleCors'un kısa devre yaptığı preflight, bakım modu, throttle 429
+         * ve exception'dan render edilen 5xx dahil. append() edilseydi bu
+         * yolların bir kısmı başlıksız kalırdı; "her yanıtta" kabul kriteri
+         * (PHASE-AUDIT §6) beyaz listeyle karşılanamaz.
+         *
+         * TrustProxies'ten önce çalışması sorun değil: HSTS kararı $next()
+         * DÖNDÜKTEN sonra, yani TrustProxies zaten isteği işaretledikten sonra
+         * verilir (bkz. SecurityHeaders).
+         */
+        $middleware->prepend(SecurityHeaders::class);
+
         // Sanctum SPA cookie mode: requests whose Origin/Referer matches
         // config('sanctum.stateful') get the full session stack (cookies,
         // StartSession, CSRF, AuthenticateSession) on the `api` group.

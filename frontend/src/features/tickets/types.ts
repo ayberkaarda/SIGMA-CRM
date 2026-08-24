@@ -19,6 +19,14 @@ export type TicketUserRef = { id: number; name: string }
 export type TicketTag = { id: number; name: string; color: string | null }
 
 /**
+ * Faz 13 — yatay yazma izolasyonu. Backend `ExposesAbilities` trait'iyle HER ZAMAN üretir
+ * (kullanıcı yoksa tümü `false`) — opsiyonel DEĞİL. `status`, `PATCH /api/tickets/{id}/status`
+ * ucunun sorduğu `update` yeteneğine eşlenir (bkz. `TicketResource`teki gerekçe) — ayrı bir
+ * policy metodu YOKTUR, isim yalnızca uç ile eşleşsin diye farklıdır.
+ */
+export type TicketAbilities = { update: boolean; status: boolean; delete: boolean; assign: boolean }
+
+/**
  * Ticket detayı/liste satırı (`GET /api/tickets`, `GET /api/tickets/{id}`, `TicketResource`).
  *
  * SLA alanları (docs/SLA-DESIGN.md §6):
@@ -62,6 +70,7 @@ export type Ticket = {
 
   created_at: string | null
   updated_at: string | null
+  can: TicketAbilities
 }
 
 export type Pagination = {

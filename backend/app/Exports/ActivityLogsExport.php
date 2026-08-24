@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Repositories\LogRepository;
+use App\Support\CsvFormulaGuard;
 use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
@@ -47,7 +48,11 @@ class ActivityLogsExport implements FromQuery, WithChunkReading, WithHeadings, W
     public function map($row): array
     {
         /** @var ActivityLog $row */
-        return [
+        // Faz 13/H2 (F1): tek merkezî kapı — CsvFormulaGuard::sanitizeRow()
+        // XLSX yazımından hemen önce (bkz. dosya sınıfının docblock'undaki
+        // "XLSX yolu" gerekçesi — PhpSpreadsheet `=` önekini gerçek formül
+        // olarak işaretler, kendiliğinden korumaz).
+        return CsvFormulaGuard::sanitizeRow([
             $row->id,
             $row->log_name,
             $row->event,
@@ -57,7 +62,7 @@ class ActivityLogsExport implements FromQuery, WithChunkReading, WithHeadings, W
             $row->causer_id,
             $row->causer?->name,
             $row->created_at?->toIso8601String(),
-        ];
+        ]);
     }
 
     public function chunkSize(): int

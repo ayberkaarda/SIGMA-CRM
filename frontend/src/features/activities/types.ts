@@ -9,6 +9,15 @@ export type ActivityType = (typeof ACTIVITY_TYPES)[number]
 
 export type ActivityUserRef = { id: number; name: string }
 
+/**
+ * Faz 13 — yatay yazma izolasyonu. Backend `ExposesAbilities` trait'iyle HER ZAMAN üretir
+ * (kullanıcı yoksa tümü `false`) — opsiyonel DEĞİL. NOT: `delete` burada DİĞER modüllerden
+ * FARKLI kurulur — `activities.delete` İZNİ ŞART DEĞİLDİR, kaydı YAZAN kişi izinsiz de silebilir
+ * (bkz. `ActivityPolicy::delete`). Arayüz bu yüzden `delete` için modül iznini ÖN KOŞUL olarak
+ * ZORLAMAZ, doğrudan `can.delete`'e güvenir (bkz. `ActivitiesPage.tsx`teki gerekçe).
+ */
+export type ActivityAbilities = { update: boolean; delete: boolean }
+
 export type Activity = {
   id: number
   type: ActivityType
@@ -21,6 +30,7 @@ export type Activity = {
   activityable: TaskableRef | null
   created_at: string | null
   updated_at: string | null
+  can: ActivityAbilities
 }
 
 export type Pagination = {

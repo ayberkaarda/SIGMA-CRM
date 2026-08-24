@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\Concerns\ExposesAbilities;
 use App\Models\Deal;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -24,6 +25,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class DealCardResource extends JsonResource
 {
+    use ExposesAbilities;
+
     /**
      * @return array<string, mixed>
      */
@@ -60,6 +63,15 @@ class DealCardResource extends JsonResource
                 ])->values()
                 : [],
             'is_overdue' => $this->isOverdue($deal),
+            // Bu kullanıcının bu kayıtta neyi YAPABİLDİĞİ — arayüz kuralı
+            // yeniden yazmasın (gerekçe: ExposesAbilities).
+            // Panoda yalnızca kartın kendi üzerinde yapılabilen iki eylem var;
+            // `delete`/`assign` detay panelinden (DealResource) sorulur —
+            // her kart için 4 Gate çağırmanın anlamı yok.
+            'can' => $this->abilities($request, $deal, [
+                'update' => 'update',
+                'move' => 'move',
+            ]),
         ];
     }
 

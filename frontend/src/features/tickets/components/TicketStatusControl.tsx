@@ -14,12 +14,19 @@ import type { FormEvent } from 'react'
 import { Button, Modal, Textarea } from '../../../components/ui'
 import { getErrorMessage } from '../../../lib/axios'
 import { toast } from '../../../components/ui'
+import { usePermission } from '../../auth/hooks/usePermission'
 import { useCreateActivity } from '../../activities/api/activitiesApi'
 import { useChangeTicketStatus } from '../api/ticketsApi'
 import { allowedTransitions, STATUS_LABEL } from './ticketStatusMeta'
 import type { Ticket, TicketStatus } from '../types'
 
 export function TicketStatusControl({ ticket }: { ticket: Ticket }) {
+  // Faz 13: bu bileşende ÖNCEDEN hiçbir izin denetimi YOKTU — salt okunur bir rolün bile durum
+  // butonlarını görüp tıklayabilmesi (ve 403 yemesi) bir boşluktu. `tickets.update` ucu
+  // `/status` isteğini de yetkilendirdiği için (bkz. `TicketPolicy::update` dokümanı) modül
+  // kontrolü de o izne bakar; `ticket.can.status` aynı yeteneğin BU talep için sahiplik dahil
+  // gerçek sonucudur (bkz. `TicketResource`).
+  const { can } = usePermission()
   const changeStatus = useChangeTicketStatus()
   const createNote = useCreateActivity()
 
@@ -75,9 +82,21 @@ export function TicketStatusControl({ ticket }: { ticket: Ticket }) {
     }
   }
 
+  // Modül izni hiç yoksa (salt okunur rol) kontrol tamamen GİZLENİR — statü zaten üstteki
+  // `TicketStatusBadge`de görünür, buraya tıklanamaz butonlar koymanın anlamı yok.
+  if (!can('tickets.update')) {
+    return null
+  }
+
   if (targets.length === 0) {
     return <p className="text-sm text-fg-muted">"Kapandı" durumu terminaldir; bu talebin durumu artık değiştirilemez.</p>
   }
+
+  // İzin var ama BU talepte `can.status` false — kalan tek engel sahipliktir (atanan kişi,
+  // atanmamış talep ya da `tickets.assign` değilse). Butonlar GİZLENMEZ, hepsi birlikte devre
+  // dışı bırakılıp nedeni açıklayan bir tooltip/metin eklenir (tek tek buton bazında ayrı bir
+  // sahiplik anlamı yok — geçiş kümesi zaten talebin durumuna göre aynı).
+  const lockedByOwnership = !ticket.can.status
 
   return (
     <>
@@ -90,13 +109,17 @@ export function TicketStatusControl({ ticket }: { ticket: Ticket }) {
             variant="secondary"
             size="sm"
             loading={changeStatus.isPending && pendingTarget === target}
-            disabled={changeStatus.isPending && pendingTarget !== target}
+            disabled={lockedByOwnership || (changeStatus.isPending && pendingTarget !== target)}
+            title={lockedByOwnership ? 'Bu talebin sahibi değilsiniz, durumunu değiştiremezsiniz.' : undefined}
             onClick={() => handleClick(target)}
           >
             {STATUS_LABEL[target]}
           </Button>
         ))}
       </div>
+      {lockedByOwnership && (
+        <p className="text-xs text-fg-muted">Bu talebin sahibi değilsiniz, durumunu değiştiremezsiniz.</p>
+      )}
 
       <Modal
         open={resolveOpen}

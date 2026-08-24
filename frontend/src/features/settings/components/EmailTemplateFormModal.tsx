@@ -7,17 +7,80 @@
 // biçimiyle görünür, altındaki rozet listesi hangi değişkenlerin kullanılabilir olduğunu ayrıca
 // gösterir.
 //
+// ============================================================================
+// FAZ 13 / H6 (PHASE-AUDIT §4-F5, §2-A5.3) — ÖNİZLEME ARTIK İZOLE
+// ============================================================================
+// ÖNCE: `<div dangerouslySetInnerHTML={{ __html: bodyHtml }} />`. Bu, reponun
+// geri kalanının açıkça uyduğu "dangerouslySetInnerHTML KULLANILMAZ" çizgisinin
+// (bkz. MessageBubble.tsx, chatShared.ts, ActivityDetailModal.tsx) TEK
+// istisnasıydı ve yazarın kendi HTML'ini aynı origin'de çalıştırıyordu.
+//
+// ŞİMDİ: `<iframe sandbox="" srcDoc={...}>`. Değerlendirilen üç seçenek:
+//   (a) Yalnız sunucuda sanitize edip `dangerouslySetInnerHTML`'i BIRAKMAK —
+//       reddedildi: önizlemede gösterilen metin HENÜZ KAYDEDİLMEMİŞ, yani
+//       sunucudan geçmemiş ham girdidir; sunucu sanitizasyonu bu ekranı hiç
+//       korumaz. Üstelik kalite çizgisi ihlali aynen kalırdı.
+//   (c) Önizlemeyi kaldırıp ham kaynağı `<pre>` içinde göstermek — reddedildi:
+//       HTML şablonu düzenlemenin tek amacı sonucu GÖRMEK; bu, güvenlik
+//       kazancını özelliği yok ederek satın almak olurdu.
+//   (b) SEÇİLDİ. `sandbox=""` (BOŞ değer) tüm sandbox kısıtlarını açık bırakır:
+//       script çalıştırma yok, form gönderimi yok, üst pencereye erişim yok,
+//       opak (unique) origin. `allow-scripts` HİÇBİR KOŞULDA eklenmemeli;
+//       `allow-scripts` + `allow-same-origin` birlikte verilirse iframe kendi
+//       sandbox özniteliğini DOM'dan silip kaçabilir — yani sandbox'ı anlamsız
+//       kılar. Burada ikisi de yok.
+//
+// Bilinen sınırlar (kabul edildi):
+//   * Opak origin + script yasağı => iframe kendi yüksekliğini üst pencereye
+//     bildiremez, üst pencere de `contentDocument`'ı okuyamaz. Otomatik
+//     yükseklik İMKÂNSIZ; sabit yükseklik (h-80, eski `max-h-80` ile aynı) +
+//     iframe'in kendi içinde kaydırma kullanılıyor.
+//   * Göreli URL'ler ve harici görseller: `<img>` yüklemesi sandbox tarafından
+//     engellenmez, dolayısıyla mutlak `https://` görseller görünür. Sunucu
+//     sanitizasyonu zaten yalnız http/https/mailto şemalarına izin veriyor.
+//     Üst belgenin CSP'si srcdoc iframe'ine MİRAS KALIR — `img-src` daraltılırsa
+//     önizlemedeki harici görseller sessizce görünmez olur.
+//
 // 2. TUR DÜZELTME: `variables` GÖNDERİLMEZSE sunucu `body_html` içindeki `{{değişken}}` yer
 // tutucularından otomatik türetiyor. Bu yüzden kullanıcı hiç değişken eklemediyse (liste boş)
 // `handleSubmit` bu anahtarı payload'a HİÇ KOYMAZ — boş dizi (`[]`) göndermek "değişken yok"
 // anlamına gelir ve otomatik türetmeyi geçersiz kılardı, oysa istenen davranış budur.
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Plus, X } from 'lucide-react'
 import { Badge, Button, Input, Modal, Textarea } from '../../../components/ui'
 import { getFieldErrors } from '../../../lib/axios'
 import { useCreateEmailTemplate, useUpdateEmailTemplate } from '../hooks/useEmailTemplates'
 import type { EmailTemplate } from '../types'
+
+// Önizleme iframe'inin taban belgesi. `body_html` HAM olarak buraya gömülür ve
+// KAÇIŞLANMAZ — amaç zaten HTML'i render etmek; güvenliği sağlayan şey kaçış
+// değil, iframe'in `sandbox=""` kısıtlaması (bkz. PreviewFrame).
+//
+// Stil kasıtlı olarak uygulama temasından BAĞIMSIZ: iframe ayrı bir belgedir,
+// Tailwind/tema değişkenleri oraya sızmaz ve sızmamalı. Beyaz zemin + nötr
+// serif olmayan yazı tipi, şablonun gerçek bir posta istemcisinde nasıl
+// görüneceğine uygulamanın koyu temasından DAHA yakın bir yaklaşımdır.
+// `color-scheme: light` tarayıcının koyu modda otomatik renk çevirmesini
+// engeller — çevirse önizleme yalan söylerdi.
+function buildPreviewDocument(bodyHtml: string): string {
+  return `<!doctype html><html lang="tr"><head><meta charset="utf-8">
+<style>
+  :root { color-scheme: light; }
+  html, body { margin: 0; }
+  body {
+    padding: 12px;
+    background: #ffffff;
+    color: #111827;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+  img { max-width: 100%; height: auto; }
+  table { border-collapse: collapse; max-width: 100%; }
+</style></head><body>${bodyHtml}</body></html>`
+}
 
 export type EmailTemplateFormModalProps = {
   open: boolean
@@ -53,6 +116,10 @@ export function EmailTemplateFormModal({ open, onClose, template }: EmailTemplat
   }
 
   const isPending = createTemplate.isPending || updateTemplate.isPending
+
+  // Her tuş vuruşunda yeni bir belge dizesi kurmak iframe'i gereksiz yere
+  // yeniden yükletir (`srcDoc` değişince belge baştan ayrıştırılır).
+  const previewDocument = useMemo(() => buildPreviewDocument(bodyHtml), [bodyHtml])
 
   function fieldError(f: string): string | undefined {
     return fieldErrors[f]?.[0]
@@ -179,14 +246,24 @@ export function EmailTemplateFormModal({ open, onClose, template }: EmailTemplat
               <p className="text-xs text-fg-muted">Konu</p>
               <p className="text-sm font-medium text-fg">{subject || '—'}</p>
             </div>
-            <div className="max-h-80 overflow-y-auto rounded-md bg-surface-1 p-3 text-sm text-fg">
-              {bodyHtml ? (
-                // eslint-disable-next-line react/no-danger
-                <div dangerouslySetInnerHTML={{ __html: bodyHtml }} />
-              ) : (
+            {bodyHtml ? (
+              <iframe
+                title="E-posta şablonu önizlemesi"
+                sandbox=""
+                srcDoc={previewDocument}
+                referrerPolicy="no-referrer"
+                className="h-80 w-full rounded-md border-0 bg-white"
+              />
+            ) : (
+              <div className="rounded-md bg-surface-1 p-3 text-sm">
                 <p className="text-fg-muted">İçerik girildikçe burada görünecek.</p>
-              )}
-            </div>
+              </div>
+            )}
+            <p className="text-xs text-fg-muted">
+              Önizleme yazdığınız ham HTML'i gösterir. Kaydederken sunucu güvenli olmayan
+              etiket/öznitelikleri (script, stil, olay işleyicileri) temizler; kaydedilen içerik
+              önizlemeden daha sade olabilir.
+            </p>
             {variables.filter((v) => v.trim()).length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {variables

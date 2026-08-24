@@ -26,9 +26,13 @@ use Illuminate\Validation\Rule;
  * TicketService::update() içinde §5.2'ye göre `sla_due_at`'in yeniden
  * hesaplanmasını tetikler.
  *
- * `assigned_to` da kabul edilir — Faz 7'de UpdateDealRequest'in `owner_id`'yi
- * kabul etmesiyle aynı desen; ayrıca `/assign` ucu `tickets.assign` izniyle
- * ayrı olarak durur (devrin SLA'ya etkisi yoktur, §2).
+ * `assigned_to` DA BU UÇTAN DEĞİŞTİRİLEMEZ (Faz 13 / F8): eskiden kabul
+ * ediliyordu — "Faz 7'de UpdateDealRequest'in `owner_id`'yi kabul etmesiyle
+ * aynı desen" gerekçesiyle. O emsalin KENDİSİ bir açıktı ve aynı fazda
+ * kapatıldı: devretme AYRI bir izin kapısıdır (`tickets.assign`) ve AYRI bir
+ * ucu vardır (`PATCH /api/tickets/{ticket}/assign`); alan burada kabul
+ * edildiği sürece o kapı, yalnız `tickets.update` iznine sahip biri tarafından
+ * baypas edilebiliyordu. Devrin SLA'ya etkisi yoktur (§2), ama yetkiye vardır.
  */
 class UpdateTicketRequest extends FormRequest
 {
@@ -49,13 +53,13 @@ class UpdateTicketRequest extends FormRequest
             'category' => ['sometimes', 'nullable', 'string', 'max:255'],
             'contact_id' => ['sometimes', 'nullable', 'integer', 'exists:contacts,id'],
             'company_id' => ['sometimes', 'nullable', 'integer', 'exists:companies,id'],
-            'assigned_to' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
             'tag_ids' => ['sometimes', 'nullable', 'array'],
             'tag_ids.*' => ['integer', 'exists:tags,id'],
             'custom_fields' => ['sometimes', 'nullable', 'array'],
 
             // Bunların HİÇBİRİ gövdede bulunmamalı (değeri boş/null olsa dahi).
             'status' => ['missing'],
+            'assigned_to' => ['missing'],
             'ticket_number' => ['missing'],
             'sla_due_at' => ['missing'],
             'sla_paused_at' => ['missing'],
@@ -84,12 +88,13 @@ class UpdateTicketRequest extends FormRequest
             'priority.in' => 'Seçilen öncelik geçerli değil.',
             'contact_id.exists' => 'Seçilen kişi geçerli değil.',
             'company_id.exists' => 'Seçilen firma geçerli değil.',
-            'assigned_to.exists' => 'Seçilen atanan kişi geçerli değil.',
             'tag_ids.array' => 'Etiketler bir liste olmalıdır.',
             'tag_ids.*.exists' => 'Seçilen etiketlerden biri geçerli değil.',
             'custom_fields.array' => 'Özel alanlar bir liste olmalıdır.',
 
             'status.missing' => $statusMessage,
+            'assigned_to.missing' => 'Atanan kişi bu uçtan değiştirilemez. '.
+                'PATCH /api/tickets/{ticket}/assign ucunu kullanın.',
             'ticket_number.missing' => 'Talep numarası sunucu tarafından üretilir ve değiştirilemez.',
             'sla_due_at.missing' => $slaMessage,
             'sla_paused_at.missing' => $slaMessage,

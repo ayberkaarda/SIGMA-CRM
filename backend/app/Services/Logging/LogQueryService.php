@@ -6,6 +6,7 @@ use App\Exports\ActivityLogsExport;
 use App\Exports\PageVisitLogsExport;
 use App\Exports\SessionLogsExport;
 use App\Repositories\LogRepository;
+use App\Support\CsvFormulaGuard;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -121,7 +122,10 @@ class LogQueryService
 
             $query->chunkById(500, function ($rows) use ($handle, $mapper) {
                 foreach ($rows as $row) {
-                    fputcsv($handle, $mapper($row));
+                    // Faz 13/H2 (F1): tek merkezî kapı — hangi log tipi/mapper
+                    // olursa olsun, hücreler fputcsv'ye gitmeden HEMEN önce
+                    // burada nötrlenir (bkz. CsvFormulaGuard docblock'u).
+                    fputcsv($handle, CsvFormulaGuard::sanitizeRow($mapper($row)));
                 }
             });
 

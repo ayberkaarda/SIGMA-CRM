@@ -92,7 +92,6 @@ export function DealDetailPage() {
     )
   }
 
-  const isClosed = deal.status !== 'open'
   const isWon = deal.status === 'won'
   const isLost = deal.status === 'lost'
 
@@ -139,17 +138,30 @@ export function DealDetailPage() {
               <Button variant="secondary" leftIcon={<LayoutGrid className="size-4" aria-hidden="true" />} onClick={() => navigate('/deals')}>
                 Panoda Göster
               </Button>
-              {can('deals.assign') && (
+              {/* `deals.assign` saf izin kontrolüdür (sahiplik boyutu yok), bkz. `DealPolicy::assign` —
+                  `deal.can.assign` her zaman modül izniyle aynıdır, gizlemek yeterli. */}
+              {can('deals.assign') && deal.can.assign && (
                 <Button variant="secondary" leftIcon={<Users className="size-4" aria-hidden="true" />} onClick={() => setAssignOpen(true)}>
                   Sahip Ata
                 </Button>
               )}
+              {/* Faz 13: izin var ama `can.update` false ise (sahip/sahipsiz/atama yetkisi yok)
+                  buton GİZLENMEZ — devre dışı + tooltip ile neden anlaşılır kılınır. */}
               {can('deals.update') && (
-                <Button variant="secondary" leftIcon={<Pencil className="size-4" aria-hidden="true" />} onClick={() => setEditOpen(true)}>
+                <Button
+                  variant="secondary"
+                  leftIcon={<Pencil className="size-4" aria-hidden="true" />}
+                  onClick={() => setEditOpen(true)}
+                  disabled={!deal.can.update}
+                  title={deal.can.update ? undefined : 'Bu kaydın sahibi değilsiniz, düzenleyemezsiniz.'}
+                >
                   Düzenle
                 </Button>
               )}
-              {!isClosed && can('deals.delete') && (
+              {/* Kapanmış (won/lost) fırsat silinemez — sahiplikten bağımsız, herkes için geçerli bir
+                  durum kuralı (bkz. `DealPolicy::delete`); bu yüzden disabled değil GİZLEME. İstemci
+                  artık kendi `isClosed` kopyasını tutmaz, backend'in `can.delete`'ine güvenir. */}
+              {can('deals.delete') && deal.can.delete && (
                 <Button variant="danger" leftIcon={<Trash2 className="size-4" aria-hidden="true" />} onClick={() => setDeleteOpen(true)}>
                   Sil
                 </Button>

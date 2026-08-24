@@ -4,14 +4,21 @@ namespace App\Policies;
 
 use App\Models\Deal;
 use App\Models\User;
+use App\Policies\Concerns\ChecksRecordOwnership;
 
 class DealPolicy
 {
+    use ChecksRecordOwnership;
+
     public function viewAny(User $user): bool
     {
         return $user->can('deals.view');
     }
 
+    /**
+     * Okuma BİLEREK düz: pipeline paylaşılan bir panodur, ekip birbirinin
+     * kartını görebilmelidir (bkz. ChecksRecordOwnership dokümanı).
+     */
     public function view(User $user, Deal $deal): bool
     {
         return $user->can('deals.view');
@@ -22,9 +29,18 @@ class DealPolicy
         return $user->can('deals.create');
     }
 
+    /**
+     * Yatay yazma izolasyonu: `deals.update` izni TEK BAŞINA yetmez —
+     * kullanıcı deal'in sahibi olmalı, deal sahipsiz olmalı ya da kullanıcı
+     * `deals.assign` taşımalıdır (gerekçe: ChecksRecordOwnership).
+     */
     public function update(User $user, Deal $deal): bool
     {
-        return $user->can('deals.update');
+        if (! $user->can('deals.update')) {
+            return false;
+        }
+
+        return $this->ownsOrManages($user, $deal->owner_id, 'deals.assign');
     }
 
     /**
@@ -39,6 +55,10 @@ class DealPolicy
      * kararını tek yerde (Policy) toplamak, "kim silebilir" ile "hangi kayıt
      * silinebilir" mantığını Controller/Service katmanına bölünmüş ayrı bir
      * 422 kuralına dağıtmaktan daha tutarlıdır.
+     *
+     * Silme KASITLI olarak yatay sınırın DIŞINDA: `deals.delete` bugünkü izin
+     * matrisinde yalnızca Müdür/Admin/Super Admin'de; sahiplik kontrolü eklemek
+     * no-op olurdu (bu roller zaten `deals.assign` taşıyor).
      */
     public function delete(User $user, Deal $deal): bool
     {
@@ -50,12 +70,21 @@ class DealPolicy
     }
 
     /**
-     * `PATCH /api/deals/{deal}/move` — controller'ı A şeridinin
-     * (DealMoveController), ama yetki kararı burada, tek DealPolicy'de.
+     * `PATCH /api/deals/{deal}/move` — controller'ı ayrı (DealMoveController),
+     * ama yetki kararı burada, tek DealPolicy'de.
+     *
+     * `update` ile AYNI yatay sınır: temsilci panoda herkesin kartını GÖRÜR,
+     * ama yalnızca kendi (ya da sahipsiz) kartını TAŞIYABİLİR. Aksi halde bir
+     * temsilci, başkasının deal'ini "kazanıldı" aşamasına sürükleyip onun
+     * rakamını ve raporunu değiştirebilirdi.
      */
     public function move(User $user, Deal $deal): bool
     {
-        return $user->can('deals.move');
+        if (! $user->can('deals.move')) {
+            return false;
+        }
+
+        return $this->ownsOrManages($user, $deal->owner_id, 'deals.assign');
     }
 
     public function assign(User $user, Deal $deal): bool
