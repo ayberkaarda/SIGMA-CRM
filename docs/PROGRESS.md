@@ -1,7 +1,7 @@
 # SIGMA-CRM — İlerleme Durumu (PROGRESS)
 
 **Son güncelleme:** 2026-08-24
-**Durum özeti:** Faz 0-8 tamamlandı — görev/aktivite yönetimi, takvim ve SLA'lı destek talepleri dahil. Sıradaki: Faz 9 (Ürünler & Teklifler).
+**Durum özeti:** Faz 0-9 tamamlandı — ürün kataloğu, fiyat listeleri, teklif hesabı ve PDF çıktısı dahil. Sıradaki: Faz 10 (Bildirimler & Ayarlar) ve Faz 11 (Raporlar & Dashboard) birlikte.
 
 > Ayrıntılı plan: `docs/ROADMAP.md`. Bu dosya her oturum başında okunur (docs/ENGINEERING-RULES.md kuralı).
 
@@ -20,7 +20,7 @@
 | 6 | Leads + Contacts/Companies | ✅ Bitti | Duplicate tespiti (4/4 gerçek veride doğrulandı), lead dönüşümü, CSV import, timeline. 279 test (2026-08-24) |
 | 7 | Deals & Kanban Pipeline | ✅ Bitti | Fractional index, optimistic locking, 409 çakışma çözümü, realtime senkron. R4 kapandı. 357 test (2026-08-24) |
 | 8 | Tasks/Activities + Tickets | ✅ Bitti | Görev/aktivite + takvim, in-app hatırlatıcı, SLA duraklama semantiği, durum makinesi, iç notlar activities üzerinden. 470 test (2026-08-24) |
-| 9 | Products & Quotes | ⬜ Bekliyor | — |
+| 9 | Products & Quotes | ✅ Bitti | KDV matrahı düzeltildi (demo veride 37.645 TL fazla KDV bulundu), fiyat listeleri, PDF (R7 kapandı). 646 test (2026-08-24) |
 | 10 | Notifications + Settings | ⬜ Bekliyor | Faz 11 ile paralel yürütülebilir |
 | 11 | Reports + Dashboard | ⬜ Bekliyor | Faz 10 ile paralel yürütülebilir |
 | 12 | Chat | ⬜ Bekliyor | — |
@@ -45,12 +45,13 @@ Durum simgeleri: ⬜ Bekliyor · 🟨 Devam · ✅ Bitti · 🚫 Bloke
 | Veritabanı | sigma_crm | ✅ | utf8mb4_unicode_ci. Test DB'si ayrı: sigma_crm_test (phpunit.xml'de sabit). 39 tablo, 40 FK, demo veri yüklü |
 | Reverb | v1.11.1 | ✅ | Windows'ta yerel çalışıyor, ws://127.0.0.1:8080. WSL/pcntl gerekmedi |
 | Zamanlanmış görevler | 3 komut | ✅ | logs:prune (03:17), tasks:dispatch-reminders (dakikalık), tickets:scan-sla (5 dk) — schedule:work gerekir |
+| PDF | dompdf v3.1.2 | ✅ | DejaVu Sans, Türkçe + ₺ doğrulandı; font subsetting açık (860KB → 30KB) |
 
 ---
 
 ## Şu Anki Odak
 
-Faz 9 — Ürünler & Teklifler: ürün kataloğu, fiyat listeleri, teklif oluşturma ve PDF çıktısı (barryvdh/laravel-dompdf), teklif→fırsat bağlantısı.
+Faz 10 + Faz 11 birlikte: bildirim merkezi, ayarlar (pipeline aşama editörü, özel alan yönetimi, rol/izin matrisi) ve raporlar + canlı dashboard.
 
 ## Açık Bloklar
 
@@ -58,12 +59,14 @@ Faz 9 — Ürünler & Teklifler: ürün kataloğu, fiyat listeleri, teklif oluş
 
 ## Bir Sonraki Adım
 
-1. **Faz 9 — Ürünler & Teklifler:** ürün kataloğu, fiyat listeleri, teklif oluşturma ve PDF çıktısı (`barryvdh/laravel-dompdf`), teklif→fırsat bağlantısı.
-2. Faz 9 için hazır: products, quotes, quote_items tabloları; quote_items.name ürün adının anlık kopyası (ürün değişse/silinse geçmiş teklif bozulmaz); demo veride 20 ürün ve 15 teklif (57 kalem) var.
-3. Teklif matematiği DemoDataSeeder'da zaten tutarlı üretiliyor ve assertConsistency() ile doğrulanıyor — QuoteCalculator aynı kuralları uygulamalı (satır toplamı → indirim → KDV → genel toplam, kuruş yuvarlaması).
-4. Deal timeline ucu YOK — Faz 6'da kişi/firma için yazıldı, deal için yazılmadı. Detay sayfası şu an bağlı kişinin timeline'ına bağlantı veriyor.
-5. Etiket/aşama renkleri için components/shared/tokenBadgeVariant.ts hazır — pipeline_stages.color aynı token adlarını taşıyor.
-6. Demo hesaplarla giriş: demo kullanıcıların şifresi Demo!2026Sigma, must_change_password=false — farklı rollerin UI'da ne gördüğünü test etmek için kullanılabilir.
+1. **Faz 10 — Bildirimler & Ayarlar:** bildirim merkezi (`database` + `broadcast` kanalları, `private-user.{id}` push, okunmamış sayaç), Ayarlar: pipeline aşama editörü (mevcut deal'ları koruyarak sıralama/ekleme/pasifleştirme), özel alan yönetimi, e-posta şablonları, rol/izin matrisi.
+2. **Faz 11 — Raporlar & Dashboard:** satış performansı/kullanıcı performansı/kaynak analizi/dönüşüm raporları (tarih filtreli + export), KPI kartları, satış hunisi, gelir trendi (Recharts), canlı dashboard (WebSocket ile).
+3. Faz 10/11 kesişimi: bildirim tetikleyicileri Faz 6/7/8 servislerinin içinde — dosya sahipliği çakışmasın diye mevcut event'leri dinleyen ayrı listener'lar yazılacak, servislere dispatch satırı eklenmeyecek.
+4. Karar bekliyor: Ayarlar'daki pipeline aşama editörü, açık kartları olan bir aşamayı pasifleştirmek istendiğinde ne yapmalı? Pasifleştirme silme değil — kartlar aşamada kalır ama pano onları göstermez, yani sessizce kaybolurlar.
+5. Frontend'de test altyapısı YOK (vitest/jest kurulu değil) — 646 backend testi var, frontend'de sıfır. Orijinal gereksinim yalnızca backend feature testleri istiyordu; Faz 13'te değerlendirilebilir.
+6. Deal timeline ucu YOK — Faz 6'da kişi/firma için yazıldı, deal için yazılmadı. Detay sayfası şu an bağlı kişinin timeline'ına bağlantı veriyor.
+7. Etiket/aşama renkleri için components/shared/tokenBadgeVariant.ts hazır — pipeline_stages.color aynı token adlarını taşıyor.
+8. Demo hesaplarla giriş: demo kullanıcıların şifresi Demo!2026Sigma, must_change_password=false — farklı rollerin UI'da ne gördüğünü test etmek için kullanılabilir.
 
 **Uyarı:** Faz 3+ endpoint'leri `routes/api.php` içinde `password.changed` grubunun İÇİNE yazılmalı — dışına yazılan uç zorunlu şifre değişimini atlar.
 
@@ -114,6 +117,10 @@ Faz 9 — Ürünler & Teklifler: ürün kataloğu, fiyat listeleri, teklif oluş
 | 2026-08-24 | SLA ihlali kalıcı bayrak değil, türetilmiş değer | Bayrak tutulsaydı duraklama sonrası güncellemeyi unutan her kod yolu sessizce yanlış veri üretirdi. Tek predicate SlaService'te, filtre/stats/tarayıcı aynı tanımı paylaşır |
 | 2026-08-24 | İç notlar için yeni tablo açılmadı, activities kullanıldı | Sistem kapalı devre; müşteri portalı olmadığı için her not zaten iç nottur ve is_internal ayrımı anlamsızdır. Bir migration'dan tasarruf edildi, Faz 6 timeline altyapısıyla uyumlu kaldı |
 | 2026-08-24 | SLA geri sayımı istemcide performance.now() ile | Date.now() ile sla_due_at karşılaştırılırsa kullanıcının sistem saati bozuksa SLA durumu tamamen yanlış görünür ve hiçbir test bunu yakalayamaz. Monoton saat sistem saatinden bağımsız ilerler |
+| 2026-08-24 | KDV matrahı indirim SONRASI hesaplanıyor | KDVK md. 25/a: iskonto matraha dahil edilmez. Faz 3'teki formül indirim öncesi matrah kullanıyordu ve demo veride 15 teklifin 4'ünde toplam 37.645,12 TL fazla KDV üretiyordu. Tasarım: docs/QUOTE-FINANCIALS.md |
+| 2026-08-24 | Para hesabında int-kuruş + bcmath iş bölümü | Toplama/karşılaştırma int (kayıpsız), çarpma/bölme bcmath. Saf int taşardı: quantity × unit_price × (10000-indirim) 10²⁷ mertebesine çıkıp 64-bit sınırını aşar ve sessizce float'a döner. Ayrıca bccomp'un varsayılan ölçeği 0'dır ve ondalığı yok sayar — COMPARE_SCALE=10 ile kapatıldı |
+| 2026-08-24 | Teklif toplamları istemcide hesaplanmıyor | KDV grubu bazlı largest-remainder dağıtımını JavaScript'te yeniden üretmek ikinci doğruluk kaynağı yaratırdı. POST /api/quotes/calculate kalıcı olmayan önizleme sağlıyor; satır toplamı (basit çarpım) istemcide, toplamlar sunucuda |
+| 2026-08-24 | Soft delete çocuk kayıtları korur, cascade yalnızca forceDelete'te | PriceList soft delete kullandığı için FK cascade tetiklenmiyordu; kalemleri elle silmek soft delete'i yıkıcı yapardı (liste geri yüklenince boş dönerdi). quotes/quote_items ve conversations/messages ile aynı desen |
 
 ---
 

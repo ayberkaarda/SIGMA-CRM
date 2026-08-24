@@ -28,6 +28,7 @@ import {
   Tr,
 } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
+import { formatMoney } from '../../../lib/money'
 import { usePermission } from '../../auth/hooks/usePermission'
 import { DealStageBadge } from '../components/DealStageBadge'
 import { DealStatusBadge } from '../components/DealStatusBadge'
@@ -43,13 +44,7 @@ import type { Deal } from '../types'
 const DEFAULT_PER_PAGE = 10
 const SEARCH_DEBOUNCE_MS = 300
 
-function formatCurrency(amount: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat('tr-TR', { style: 'currency', currency }).format(amount)
-  } catch {
-    return `${amount} ${currency}`
-  }
-}
+const formatCurrency = formatMoney
 
 /**
  * `GET /api/deals` yanıtına `meta.totals` eklenmesi B şeridin PARALEL işiydi — bu görev

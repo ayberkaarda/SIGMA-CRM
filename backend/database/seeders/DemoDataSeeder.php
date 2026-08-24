@@ -11,6 +11,7 @@ use App\Models\Quote;
 use App\Models\Setting;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Services\Quotes\QuoteCalculator;
 use Carbon\CarbonImmutable;
 use Faker\Factory as FakerFactory;
 use Faker\Generator;
@@ -686,13 +687,21 @@ class DemoDataSeeder extends Seeder
     }
 
     /**
-     * 15 teklif + kalemleri. Tüm tutarlar kalemlerden hesaplanır:
-     *   line_total  = round(quantity * unit_price * (1 - discount_percent/100), 2)
-     *   subtotal    = Σ line_total
-     *   tax_amount  = Σ round(line_total * tax_rate / 100, 2)
-     *   total       = subtotal - discount_amount + tax_amount
-     * Kuruş yuvarlaması her adımda 2 haneye sabitlenir.
-     * `quote_items.name` ilgili ürünün o anki adının SNAPSHOT'ıdır.
+     * 15 teklif + kalemleri.
+     *
+     * HESAP BURADA YAPILMAZ: seeder yalnızca kalem girdilerini üretir, tutarları
+     * `App\Services\Quotes\QuoteCalculator` hesaplar. Formülün ikinci bir
+     * kopyası burada yaşasaydı iki yol ancak biri diğerini yanlışlarken
+     * ayrışırdı ve o an hangisinin doğru olduğu belli olmazdı — docs/
+     * QUOTE-FINANCIALS.md'nin TEK uygulaması calculator'dır.
+     *
+     * Calculator KDV'yi İNDİRİM SONRASI matrahtan hesaplar (KDVK md. 25/a) ve
+     * teklif geneli indirimi KDV oranı gruplarına ciro payıyla dağıtır
+     * (largest-remainder). Ürünlerdeki karışık KDV dağılımı (%10 / %20)
+     * bilerek korunur: demo veride çok-oranlı dağıtım yolunu canlı tutar.
+     *
+     * `quote_items.name` ilgili ürünün o anki adının SNAPSHOT'ıdır;
+     * `quote_items.line_total` da calculator tarafından doldurulur.
      */
     private function seedQuotes(): void
     {
@@ -718,43 +727,38 @@ class DemoDataSeeder extends Seeder
                 ? $this->now->subDays(120)
                 : $this->between($this->dealCreatedAt[$dealId], $this->now->subDays(5));
 
-            // --- Kalemler ---
+            // --- Kalemler: yalnızca girdi alanları; tutarları calculator doldurur ---
             $itemCount = $this->faker->numberBetween(2, 5);
             $chosen = $this->faker->randomElements($this->productIds, $itemCount);
             $items = [];
-            $subtotal = 0.0;
-            $taxAmount = 0.0;
 
             foreach ($chosen as $position => $productId) {
                 $product = $this->productInfo[$productId];
-                $quantity = (float) $this->faker->numberBetween(1, 20);
-                $unitPrice = (float) $product['unit_price'];
-                $discountPercent = (float) $this->faker->randomElement([0, 0, 0, 5, 10, 15]);
-                $taxRate = (float) $product['tax_rate'];
-
-                $lineTotal = round($quantity * $unitPrice * (1 - $discountPercent / 100), 2);
-                $lineTax = round($lineTotal * $taxRate / 100, 2);
-
-                $subtotal = round($subtotal + $lineTotal, 2);
-                $taxAmount = round($taxAmount + $lineTax, 2);
 
                 $items[] = [
                     'product_id' => $productId,
                     'name' => $product['name'], // snapshot
                     'description' => $product['name'].' kapsamı standart sözleşme koşullarına tabidir.',
-                    'quantity' => $quantity,
-                    'unit_price' => $unitPrice,
-                    'discount_percent' => $discountPercent,
-                    'tax_rate' => $taxRate,
-                    'line_total' => $lineTotal,
+                    'quantity' => (float) $this->faker->numberBetween(1, 20),
+                    'unit_price' => (float) $product['unit_price'],
+                    'discount_percent' => (float) $this->faker->randomElement([0, 0, 0, 5, 10, 15]),
+                    'tax_rate' => (float) $product['tax_rate'],
                     'position' => $position + 1,
                     'created_at' => $createdAt,
                     'updated_at' => $createdAt,
                 ];
             }
 
-            $discountAmount = $i % 4 === 0 ? round($subtotal * 0.05, 2) : 0.00;
-            $total = round($subtotal - $discountAmount + $taxAmount, 2);
+            // Her 4. teklif %5 teklif geneli indirimli (QTE-000001/5/9/13),
+            // diğerlerinde indirim yok. Demo veride revizyon zinciri YOKTUR.
+            $isDiscounted = $i % 4 === 0;
+            $discountType = $isDiscounted ? QuoteCalculator::DISCOUNT_PERCENT : QuoteCalculator::DISCOUNT_AMOUNT;
+            $discountValue = $isDiscounted ? 5.00 : 0.00;
+
+            // Calculator kalemleri `line_total` ile zenginleştirip geri verir;
+            // tanımadığı anahtarlara (name, position, created_at, ...) dokunmaz.
+            $calculated = QuoteCalculator::calculate($items, $discountValue, $discountType);
+            $items = $calculated['items'];
 
             $sentAt = $status === 'draft' ? null : $this->between($createdAt, $createdAt->addDays(4));
             $acceptedAt = $status === 'accepted' ? $this->between($sentAt->addDay(), $sentAt->addDays(15)->min($this->now)) : null;
@@ -768,11 +772,15 @@ class DemoDataSeeder extends Seeder
                 'contact_id' => $deal['contact_id'],
                 'status' => $status,
                 'valid_until' => $createdAt->addDays($validityDays)->toDateString(),
-                'subtotal' => $subtotal,
-                'discount_amount' => $discountAmount,
-                'tax_amount' => $taxAmount,
-                'total' => $total,
+                'subtotal' => $calculated['subtotal'],
+                'discount_type' => $calculated['discount_type'],
+                'discount_value' => $calculated['discount_value'],
+                'discount_amount' => $calculated['discount_amount'],
+                'tax_amount' => $calculated['tax_amount'],
+                'total' => $calculated['total'],
                 'currency' => 'TRY',
+                'parent_quote_id' => null,
+                'revision' => 1,
                 'notes' => 'Fiyatlar teklif tarihindeki kur ve stok durumuna göre hazırlanmıştır.',
                 'terms' => $terms,
                 'sent_at' => $sentAt,
@@ -1479,7 +1487,6 @@ class DemoDataSeeder extends Seeder
             'aynı aşamada tekrarlanan position' => 'SELECT COUNT(*) AS c FROM (SELECT pipeline_stage_id, position FROM deals GROUP BY pipeline_stage_id, position HAVING COUNT(*) > 1) x',
             'converted lead, converted_at boş' => 'SELECT COUNT(*) AS c FROM leads WHERE status = \'converted\' AND converted_at IS NULL',
             'converted olmayan lead, converted_contact_id dolu' => 'SELECT COUNT(*) AS c FROM leads WHERE status <> \'converted\' AND converted_contact_id IS NOT NULL',
-            'teklif toplamı kalemlerle uyuşmuyor' => 'SELECT COUNT(*) AS c FROM quotes q JOIN (SELECT quote_id, ROUND(SUM(line_total), 2) AS sub, ROUND(SUM(ROUND(line_total * tax_rate / 100, 2)), 2) AS tax FROM quote_items GROUP BY quote_id) i ON i.quote_id = q.id WHERE ABS(q.total - (i.sub - q.discount_amount + i.tax)) > 0.01',
             'dm konuşmada katılımcı sayısı 2 değil' => 'SELECT COUNT(*) AS c FROM (SELECT c.id FROM conversations c JOIN conversation_user cu ON cu.conversation_id = c.id WHERE c.type = \'dm\' GROUP BY c.id HAVING COUNT(*) <> 2) x',
             'last_message_at son mesajla uyuşmuyor' => 'SELECT COUNT(*) AS c FROM conversations c LEFT JOIN (SELECT conversation_id, MAX(created_at) AS m FROM messages GROUP BY conversation_id) mm ON mm.conversation_id = c.id WHERE (c.last_message_at IS NULL AND mm.m IS NOT NULL) OR (c.last_message_at IS NOT NULL AND (mm.m IS NULL OR c.last_message_at <> mm.m))',
             'unread_count tutarsız' => 'SELECT COUNT(*) AS c FROM conversation_user cu WHERE cu.unread_count <> (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = cu.conversation_id AND (cu.last_read_message_id IS NULL OR m.id > cu.last_read_message_id))',
@@ -1494,12 +1501,99 @@ class DemoDataSeeder extends Seeder
             }
         }
 
+        $this->assertQuoteTotals();
+
         $this->assertMorphIntegrity('tasks', 'taskable');
         $this->assertMorphIntegrity('activities', 'activityable');
         $this->assertMorphIntegrity('attachments', 'attachable');
         $this->assertMorphIntegrity('taggables', 'taggable');
         $this->assertMorphIntegrity('custom_field_values', 'customizable');
         $this->assertMorphIntegrity('conversations', 'conversable');
+    }
+
+    /**
+     * Teklif tutarlarını PHP tarafında yeniden hesaplayarak doğrular.
+     *
+     * Neden SQL DEĞİL: teklif geneli indirimi KDV oranı gruplarına dağıtan
+     * largest-remainder algoritması (kesir → net → oran şeklinde üç kademeli
+     * tie-break) tek bir SQL ifadesine çevrilemez. Eski
+     * `ABS(total - (sub - discount + tax)) > 0.01` kontrolü KDV'yi indirim
+     * ÖNCESİ matrahtan doğruluyordu; yeni modelde yanlış pozitif üretirdi.
+     *
+     * TOLERANS YOK: hesap deterministik olduğu için karşılaştırma tam
+     * eşitliktir. Kuruş düzeyinde string karşılaştırması yapılır ki DB'den
+     * gelen decimal(15,2) ile calculator'ın float çıktısı arasında float
+     * karşılaştırması hiç devreye girmesin.
+     */
+    private function assertQuoteTotals(): void
+    {
+        $itemsByQuote = DB::table('quote_items')
+            ->orderBy('quote_id')
+            ->orderBy('position')
+            ->get(['quote_id', 'quantity', 'unit_price', 'discount_percent', 'tax_rate', 'line_total'])
+            ->groupBy('quote_id');
+
+        $quotes = DB::table('quotes')
+            ->orderBy('id')
+            ->get(['id', 'quote_number', 'subtotal', 'discount_type', 'discount_value', 'discount_amount', 'tax_amount', 'total']);
+
+        foreach ($quotes as $quote) {
+            $rows = $itemsByQuote[$quote->id] ?? collect();
+
+            if ($rows->isEmpty()) {
+                throw new RuntimeException("DemoDataSeeder teklif ihlali [{$quote->quote_number}]: kalemi yok.");
+            }
+
+            $expected = QuoteCalculator::calculate(
+                $rows->map(fn ($row): array => [
+                    'quantity' => $row->quantity,
+                    'unit_price' => $row->unit_price,
+                    'discount_percent' => $row->discount_percent,
+                    'tax_rate' => $row->tax_rate,
+                ])->all(),
+                $quote->discount_value,
+                $quote->discount_type,
+            );
+
+            foreach (['subtotal', 'discount_amount', 'tax_amount', 'total'] as $field) {
+                $stored = $this->kurus($quote->{$field});
+                $computed = $this->kurus($expected[$field]);
+
+                if ($stored !== $computed) {
+                    throw new RuntimeException(sprintf(
+                        'DemoDataSeeder teklif ihlali [%s.%s]: kayıtlı %s, hesaplanan %s.',
+                        $quote->quote_number,
+                        $field,
+                        $stored,
+                        $computed
+                    ));
+                }
+            }
+
+            foreach ($rows->values() as $index => $row) {
+                $stored = $this->kurus($row->line_total);
+                $computed = $this->kurus($expected['items'][$index]['line_total']);
+
+                if ($stored !== $computed) {
+                    throw new RuntimeException(sprintf(
+                        'DemoDataSeeder teklif ihlali [%s kalem #%d.line_total]: kayıtlı %s, hesaplanan %s.',
+                        $quote->quote_number,
+                        $index + 1,
+                        $stored,
+                        $computed
+                    ));
+                }
+            }
+        }
+    }
+
+    /**
+     * Tutarı sabit biçimli kuruş string'ine çevirir; tam eşitlik
+     * karşılaştırması float'a hiç dokunmadan yapılabilsin diye.
+     */
+    private function kurus(int|float|string $amount): string
+    {
+        return number_format((float) $amount, 2, '.', '');
     }
 
     /**

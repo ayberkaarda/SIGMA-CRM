@@ -6,6 +6,7 @@
 // LİTERAL sınıf adları taşıyan sabit bir tablodan okunur.
 import { tokenBadgeVariant } from '../../../../components/shared/tokenBadgeVariant'
 import type { BadgeVariant } from '../../../../components/shared/tokenBadgeVariant'
+import { formatMoneyCompact } from '../../../../lib/money'
 
 const STAGE_ACCENT_CLASSES: Record<BadgeVariant, string> = {
   primary: 'bg-primary',
@@ -24,20 +25,10 @@ export { tokenBadgeVariant }
 
 /**
  * Para biçimi. Kuruş GÖSTERİLMEZ: pano sütun başlıklarında yüz binlik toplamlar var ve
- * ",00" kuyruğu dar sütunda taşmaktan başka bir şey yapmıyor.
+ * ",00" kuyruğu dar sütunda taşmaktan başka bir şey yapmıyor. Merkezi `lib/money.ts`teki
+ * `formatMoneyCompact`'e devredilir — davranış aynı, artık modülün sessiz kararı değil.
  */
-export function formatAmount(amount: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat('tr-TR', {
-      style: 'currency',
-      currency,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  } catch {
-    // Tanınmayan bir para birimi kodu gelirse Intl fırlatır; sayı yine de gösterilmeli.
-    return `${new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(amount)} ${currency}`
-  }
-}
+export const formatAmount = formatMoneyCompact
 
 export function formatDate(value: string | null): string {
   if (!value) return '—'

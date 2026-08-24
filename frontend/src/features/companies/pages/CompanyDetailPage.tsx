@@ -27,23 +27,15 @@ import {
   Tr,
 } from '../../../components/ui'
 import { Timeline } from '../../../components/shared/Timeline'
+import { formatMoney, formatNumber as formatNumberShared } from '../../../lib/money'
 import { tokenBadgeVariant } from '../../../components/shared/tokenBadgeVariant'
 import type { TimelineItem } from '../../../components/shared/Timeline'
 import { usePermission } from '../../auth/hooks/usePermission'
 import { useCompany, useCompanyContacts, useCompanyTimeline, useCustomFields, useDeleteCompany } from '../api/companiesApi'
 import { CompanyFormModal } from '../components/CompanyFormModal'
 
-const currencyFormatter = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' })
-
-function formatCurrency(value: number | null): string {
-  if (value === null) return '—'
-  return currencyFormatter.format(value)
-}
-
-function formatNumber(value: number | null): string {
-  if (value === null) return '—'
-  return new Intl.NumberFormat('tr-TR').format(value)
-}
+const formatCurrency = formatMoney
+const formatNumber = formatNumberShared
 
 export function CompanyDetailPage() {
   const { id } = useParams<{ id: string }>()

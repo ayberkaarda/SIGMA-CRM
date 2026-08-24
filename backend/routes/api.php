@@ -13,6 +13,9 @@ use App\Http\Controllers\Api\LogController;
 use App\Http\Controllers\Api\PageVisitController;
 use App\Http\Controllers\Api\PipelineStageController;
 use App\Http\Controllers\Api\PresenceController;
+use App\Http\Controllers\Api\PriceListController;
+use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\QuoteController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\TaskController;
@@ -266,5 +269,69 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('/activities/{activity}', [ActivityController::class, 'show'])->name('activities.show');
         Route::patch('/activities/{activity}', [ActivityController::class, 'update'])->name('activities.update');
         Route::delete('/activities/{activity}', [ActivityController::class, 'destroy'])->name('activities.destroy');
+
+        /*
+         * Ürünler / Products (Faz 9 / B) — controller/service/repository B
+         * şeridinin.
+         *
+         * Route sırası KASITLIDIR: `/products/categories` sabit segmenti
+         * `/products/{product}` route-model-binding parametresinden ÖNCE
+         * tanımlanmalı, yoksa Laravel `categories`'i bir product id'si sanıp
+         * 404 üretir — Faz 6 (`leads/check-duplicates`), Faz 7
+         * (`deals/board`) ve Faz 8 (`tasks/calendar`, `tickets/stats`) ile
+         * AYNI tuzak (dört fazda dört kez yaşandı); ProductApiTest bunu
+         * doğrulayan bir test taşır. `/products/{product}/price` zaten
+         * `{product}`'a bağlı bir alt-yol olduğu için bu sıra sorununu
+         * YAŞAMAZ.
+         */
+        Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+        Route::get('/products/categories', [ProductController::class, 'categories'])->name('products.categories');
+        Route::post('/products', [ProductController::class, 'store'])->name('products.store');
+        Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
+        Route::patch('/products/{product}', [ProductController::class, 'update'])->name('products.update');
+        Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+        Route::get('/products/{product}/price', [ProductController::class, 'price'])->name('products.price');
+
+        /*
+         * Fiyat listeleri / Price Lists (Faz 9 / B) — controller/service/
+         * repository B şeridinin. `price_list_id` teklife DEĞİL kaleme
+         * bağlanır (bkz. QuoteItemController/A) — burası yalnızca fiyat
+         * listesi CRUD'u ve kalem yönetimidir.
+         */
+        Route::get('/price-lists', [PriceListController::class, 'index'])->name('price-lists.index');
+        Route::post('/price-lists', [PriceListController::class, 'store'])->name('price-lists.store');
+        Route::get('/price-lists/{priceList}', [PriceListController::class, 'show'])->name('price-lists.show');
+        Route::patch('/price-lists/{priceList}', [PriceListController::class, 'update'])->name('price-lists.update');
+        Route::delete('/price-lists/{priceList}', [PriceListController::class, 'destroy'])->name('price-lists.destroy');
+        Route::get('/price-lists/{priceList}/products', [PriceListController::class, 'products'])->name('price-lists.products');
+        Route::put('/price-lists/{priceList}/products/{product}', [PriceListController::class, 'setPrice'])->name('price-lists.products.set-price');
+        Route::delete('/price-lists/{priceList}/products/{product}', [PriceListController::class, 'removePrice'])->name('price-lists.products.remove-price');
+
+        /*
+         * Teklifler / Quotes (Faz 9 / A) — controller/service/repository A
+         * şeridinin; route sözleşmesi burada sabitlenir (B şeridi).
+         */
+        Route::get('/quotes', [QuoteController::class, 'index'])->name('quotes.index');
+        Route::post('/quotes', [QuoteController::class, 'store'])->name('quotes.store');
+        // `calculate` sabit segmenti KASITLI OLARAK `{quote}` route-model-binding
+        // parametresinden ÖNCE tanımlı — yoksa Laravel `calculate`'i bir teklif
+        // id'si sanıp 404 üretir. Faz 6 (`check-duplicates`), Faz 7 (`board`),
+        // Faz 8 (`calendar`, `stats`) ve Faz 9 (`categories`) ile AYNI tuzak —
+        // beşinci kez. Hiçbir şey KAYDETMEZ: formda canlı toplam göstermek için
+        // QuoteCalculator'ı çağırıp toplamları/tax_breakdown'ı döner (bkz.
+        // docs/QUOTE-FINANCIALS.md §3) — JavaScript'te ikinci bir doğruluk
+        // kaynağı olarak yeniden uygulanmasın diye.
+        Route::post('/quotes/calculate', [QuoteController::class, 'calculate'])->name('quotes.calculate');
+        Route::get('/quotes/{quote}', [QuoteController::class, 'show'])->name('quotes.show');
+        Route::patch('/quotes/{quote}', [QuoteController::class, 'update'])->name('quotes.update');
+        Route::delete('/quotes/{quote}', [QuoteController::class, 'destroy'])->name('quotes.destroy');
+        Route::post('/quotes/{quote}/send', [QuoteController::class, 'send'])->name('quotes.send');
+        Route::patch('/quotes/{quote}/status', [QuoteController::class, 'status'])->name('quotes.status');
+        // `revise` yeni bir teklif KAYDI üretir (bir öncekinin revizyonu) —
+        // bu yüzden `quotes.update` değil `quotes.create` izniyle korunur
+        // (A şeridinin kararı; yetki kontrolü QuoteController::revise() içinde
+        // Policy ile yapılır).
+        Route::post('/quotes/{quote}/revise', [QuoteController::class, 'revise'])->name('quotes.revise');
+        Route::get('/quotes/{quote}/pdf', [QuoteController::class, 'pdf'])->name('quotes.pdf');
     });
 });

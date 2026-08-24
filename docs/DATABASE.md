@@ -2,7 +2,7 @@
 
 Bu doküman, `backend/database/migrations/` altındaki migration dosyalarından üretilen SIGMA-CRM veritabanı şemasını belgeler. Kaynak: `migrate:fresh` ile kurulan `sigma_crm` şeması (MariaDB 10.4.32).
 
-> **Sayım notu:** Uygulama migration dosyaları **38 tablo** oluşturur (40 foreign key ile). Buna ek olarak Laravel'in migration çalıştırıcısının kendisinin oluşturduğu, herhangi bir migration dosyasına karşılık gelmeyen `migrations` defter (ledger) tablosu vardır — bu doküman onu da "Laravel altyapı" grubunda ayrıca listeler, dolayısıyla veritabanında fiziksel olarak **39 tablo** görünür. `information_schema` üzerinden salt okunur doğrulama: `table_count = 39`, `fk_count = 40`.
+> **Sayım notu:** Uygulama migration dosyaları **40 tablo** oluşturur (43 foreign key ile — Faz 9'da `price_lists`/`price_list_items` ve `quotes.parent_quote_id` ile 3 FK eklendi). Buna ek olarak Laravel'in migration çalıştırıcısının kendisinin oluşturduğu, herhangi bir migration dosyasına karşılık gelmeyen `migrations` defter (ledger) tablosu vardır — bu doküman onu da "Laravel altyapı" grubunda ayrıca listeler, dolayısıyla veritabanında fiziksel olarak **41 tablo** görünür. `information_schema` üzerinden salt okunur doğrulama: `table_count = 41`, `fk_count = 43`.
 
 ## 1. Genel Bakış
 
@@ -15,7 +15,7 @@ Tablolar altı gruba ayrılır:
 `companies`, `contacts`, `leads`, `pipeline_stages`, `deals`, `tasks`, `activities`, `tickets`
 
 ### (c) Ticaret
-`products`, `quotes`, `quote_items`
+`products`, `price_lists`, `price_list_items`, `quotes`, `quote_items`
 
 ### (d) Destek Altyapısı
 `conversations`, `conversation_user`, `messages`, `attachments`, `notifications`, `tags`, `taggables`, `custom_fields`, `custom_field_values`, `settings`
@@ -303,8 +303,48 @@ FK: `contact_id`, `company_id`, `assigned_to`, `created_by` (hepsi nullOnDelete)
 İndeksler: `name`, `sku` (unique), `category`, `is_active`.
 FK: yok.
 
+#### `price_lists` (Faz 9)
+Ürün kataloğunun üzerine kanal/müşteri bazlı fiyat ezmesi tanımlayan liste (ör. PERAKENDE, TOPTAN).
+
+| Kolon | Tip | Null | Varsayılan | Açıklama |
+| --- | --- | --- | --- | --- |
+| id | bigint unsigned (PK) | hayır | — | |
+| name | string | hayır | — | |
+| code | string | hayır | — | unique, insan-okunur |
+| description | text | evet | null | |
+| currency | char(3) | hayır | `TRY` | |
+| is_default | boolean | hayır | false | index — yalnızca bir liste varsayılan olabilir (bkz. §3) |
+| is_active | boolean | hayır | true | index |
+| valid_from | date | evet | null | |
+| valid_until | date | evet | null | |
+| deleted_at | timestamp | evet | null | softDeletes |
+| created_at / updated_at | timestamp | evet | null | |
+
+İndeksler: `code` (unique), `is_default`, `is_active`.
+FK: yok.
+Kaynak migration: `2026_08_24_200001_create_price_lists_table.php`.
+
+#### `price_list_items` (Faz 9)
+Bir fiyat listesindeki ürün başına özel fiyat (kalem).
+
+| Kolon | Tip | Null | Varsayılan | Açıklama |
+| --- | --- | --- | --- | --- |
+| id | bigint unsigned (PK) | hayır | — | |
+| price_list_id | bigint unsigned (FK) | hayır | — | → `price_lists.id`, **cascadeOnDelete** |
+| product_id | bigint unsigned (FK) | hayır | — | → `products.id`, **cascadeOnDelete** |
+| unit_price | decimal(15,2) | hayır | — | |
+| created_at / updated_at | timestamp | evet | null | |
+
+İndeksler: **`(price_list_id, product_id)`** unique — aynı listede bir ürün iki kez fiyatlanamaz.
+FK: `price_list_id → price_lists.id` (cascadeOnDelete), `product_id → products.id` (cascadeOnDelete).
+Kaynak migration: `2026_08_24_200002_create_price_list_items_table.php`.
+
 #### `quotes`
-Teklif belgesi; bir deal/company/contact'a bağlanabilir.
+Teklif belgesi; bir deal/company/contact'a bağlanabilir. Hesap modeli (KDV matrahı, indirim
+dağıtımı, yuvarlama) **`docs/QUOTE-FINANCIALS.md`'de bağlayıcı sözleşme olarak tanımlıdır** —
+bu tablodaki `discount_*`/`subtotal`/`tax_amount`/`total` kolonlarının anlamı o dokümana göre okunmalıdır.
+`discount_type`, `discount_value`, `parent_quote_id`, `revision` kolonları Faz 9'da additive
+migration ile eklendi: `2026_08_24_300001_add_discount_and_revision_to_quotes_table.php`.
 
 | Kolon | Tip | Null | Varsayılan | Açıklama |
 | --- | --- | --- | --- | --- |
@@ -312,12 +352,16 @@ Teklif belgesi; bir deal/company/contact'a bağlanabilir.
 | quote_number | string | hayır | — | unique |
 | title | string | hayır | — | |
 | deal_id | bigint unsigned (FK) | evet | null | → `deals.id`, nullOnDelete |
+| parent_quote_id | bigint unsigned (FK) | evet | null | → `quotes.id`, nullOnDelete — revizyon zinciri, bir öncekini gösterir (Faz 9) |
+| revision | unsigned smallint | hayır | 1 | revizyon numarası (Faz 9) |
 | company_id | bigint unsigned (FK) | evet | null | → `companies.id`, nullOnDelete |
 | contact_id | bigint unsigned (FK) | evet | null | → `contacts.id`, nullOnDelete |
 | status | string | hayır | `draft` | index (`draft`/`sent`/`accepted`/`rejected`/`expired`) |
 | valid_until | date | evet | null | |
 | subtotal | decimal(15,2) | hayır | 0 | |
-| discount_amount | decimal(15,2) | hayır | 0 | |
+| discount_amount | decimal(15,2) | hayır | 0 | uygulanan indirimin TL karşılığı — her zaman `QuoteCalculator` tarafından yazılır |
+| discount_type | string | hayır | `amount` | (`amount`/`percent`) — kullanıcının indirim giriş biçimi (Faz 9) |
+| discount_value | decimal(15,2) | hayır | 0 | girilen ham değer (yüzdeyse 0–100, tutarsa TL) (Faz 9) |
 | tax_amount | decimal(15,2) | hayır | 0 | |
 | total | decimal(15,2) | hayır | 0 | |
 | currency | char(3) | hayır | `TRY` | |
@@ -331,7 +375,7 @@ Teklif belgesi; bir deal/company/contact'a bağlanabilir.
 | created_at / updated_at | timestamp | evet | null | |
 
 İndeksler: `quote_number` (unique), `status`.
-FK: `deal_id`, `company_id`, `contact_id`, `created_by` (hepsi nullOnDelete).
+FK: `deal_id`, `parent_quote_id`, `company_id`, `contact_id`, `created_by` (hepsi nullOnDelete).
 
 #### `quote_items`
 Teklif kalemi — teklifle birlikte yaşar/ölür (cascade).
@@ -569,6 +613,24 @@ Bir pipeline aşaması silinebilseydi, o aşamadaki tüm deal kayıtları FK bü
 
 **`quote_items.name` neden ürünün anlık kopyası:**
 `quote_items.product_id` nullable bir FK'dir ve ürün silinebilir ya da adı/fiyatı sonradan değişebilir. Eğer teklif kalemi ürün adını her seferinde `products` tablosundan canlı okusaydı, geçmişte gönderilmiş bir teklif, ürün kataloğunda yapılan bir değişiklikle sessizce değişmiş olurdu — bu, hem muhasebe/hukuki açıdan hem de müşteri iletişimi açısından kabul edilemez. Bu yüzden `name` (ve `unit_price`, `tax_rate` gibi diğer fiyat alanları) teklif oluşturulduğu andaki değerin **anlık kopyasını (snapshot)** tutar; ürün sonradan silinse (`nullOnDelete`) veya güncellense bile teklif olduğu gibi kalır.
+
+**`quotes` tablosuna `price_list_id` neden eklenmedi (Faz 9):**
+Bir fiyat listesi seçildiğinde, listeden çözülen fiyat teklif kalemine (`quote_items`) **kopyalanır** —
+tıpkı `quote_items.name`'in ürün adının anlık kopyası olması gibi. `quotes` tablosunda ayrı bir
+`price_list_id` kolonu tutulmadı: teklif kaydedildikten sonra uygulanan fiyat kalemde kalıcıdır,
+fiyat listesi sonradan değişse veya silinse (soft delete) geçmiş teklif etkilenmez. Teklif↔liste
+arasında canlı bir FK ilişkisi olsaydı, listenin güncellenmesi geçmiş teklifin tutarını sessizce
+değiştirebilirdi — muhasebe/hukuki açıdan kabul edilemez, tıpkı ürün adı örneğinde olduğu gibi.
+
+**Soft delete ile `cascadeOnDelete` uyuşmazlığı (Faz 9, `price_lists`/`price_list_items`):**
+`PriceList` modeli `softDeletes()` kullandığı için `->delete()` çağrısı veritabanı seviyesinde bir
+**UPDATE**'tir (`deleted_at` doldurulur), bir `DELETE` değildir — dolayısıyla `price_list_items.price_list_id`
+üzerindeki `cascadeOnDelete()` FK'si **hiç tetiklenmez**. İlk düşünülen çözüm (liste soft-silinirken
+kalemleri elle silmek) yanlıştı: bu, soft delete'i fiilen yıkıcı hale getirir — liste geri yüklenince
+(`restore()`) kalemleri boş döner. Doğru davranış: soft delete çocuk kayıtları (`price_list_items`)
+**korur**; FK cascade'i yalnızca `forceDelete()` çağrıldığında (kalıcı silme) tetiklenir. Bu desen
+`quotes`/`quote_items` ve `conversations`/`messages` ile tutarlıdır — oradaki üst kayıtlar da soft
+delete kullanır ve cascade yalnızca gerçek (force) silmede devreye girer.
 
 **`page_visit_logs` neden soft delete kullanmaz ve heartbeat neden yeni satır eklemek yerine `duration_seconds` günceller:**
 Bu tablo analitik/telemetri verisidir, iş kaydı değildir — "silinmiş ama arşivde tutulsun" ihtiyacı yoktur, bu yüzden `softDeletes()` yoktur (ve `user_id` FK'si de istisnai olarak `cascadeOnDelete` taşır, kullanıcı silinince kendi ziyaret geçmişi de temizlenir). Heartbeat mekanizması, kullanıcı bir sayfada kaldığı sürece periyodik olarak (ör. 30 saniyede bir) sunucuya sinyal gönderir; bu sinyal her seferinde yeni bir satır olarak eklenseydi, aktif bir kullanıcı tabanında tablo günler içinde milyonlarca satıra şişer, hem yazma hem okuma performansını düşürürdü. Bunun yerine her heartbeat, o ziyaretin **mevcut son satırındaki** `duration_seconds` ve `last_heartbeat_at` alanlarını GÜNCELLER (UPDATE), yeni satır INSERT etmez — satır sayısı ziyaret sayısıyla orantılı kalır, heartbeat sıklığıyla değil. Bu tasarım ROADMAP R5 riskine yanıttır; ayrıca 90 günlük bir retention politikası (zamanlanmış `php artisan logs:prune` komutu, Faz 5 kapsamı) tabloyu sınırlı tutmayı hedefler.

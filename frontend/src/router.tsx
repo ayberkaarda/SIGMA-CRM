@@ -16,6 +16,12 @@ import { TasksPage } from './features/tasks/pages/TasksPage'
 import { ActivitiesPage } from './features/activities/pages/ActivitiesPage'
 import { TicketsListPage } from './features/tickets/pages/TicketsListPage'
 import { TicketDetailPage } from './features/tickets/pages/TicketDetailPage'
+import { QuotesListPage } from './features/quotes/pages/QuotesListPage'
+import { QuoteDetailPage } from './features/quotes/pages/QuoteDetailPage'
+import { QuoteFormPage } from './features/quotes/pages/QuoteFormPage'
+import { ProductsPage } from './features/products/pages/ProductsPage'
+import { PriceListsPage } from './features/price-lists/pages/PriceListsPage'
+import { PriceListDetailPage } from './features/price-lists/pages/PriceListDetailPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import Showcase from './pages/Showcase'
@@ -132,6 +138,68 @@ export const router = createBrowserRouter([
         element: (
           <RequireAuth permission="tickets.view">
             <TicketDetailPage />
+          </RequireAuth>
+        ),
+      },
+      // Ürün kataloğu ve fiyat listeleri (Faz 9 / D). `price-lists` ve `price-lists/:id`
+      // arasında `deals/list` vs `deals/:id` tarzı bir belirsizlik YOK: ikisi de kendi
+      // segment derinliğinde sabit/parametreli, aralarında çakışan bir literal yok.
+      {
+        path: 'products',
+        element: (
+          <RequireAuth permission="products.view">
+            <ProductsPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'price-lists',
+        element: (
+          <RequireAuth permission="products.view">
+            <PriceListsPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'price-lists/:id',
+        element: (
+          <RequireAuth permission="products.view">
+            <PriceListDetailPage />
+          </RequireAuth>
+        ),
+      },
+      // Teklifler (Faz 9 / E). Rota sırası KASITLI: sabit `quotes/new` ve `quotes/:id/edit`
+      // segmentleri `quotes/:id`den ÖNCE tanımlı — aksi hâlde "new" bir teklif id'si sanılıp
+      // detay sayfasına düşer (deals'taki `list` ve tickets'taki `:id` ile AYNI tuzak).
+      {
+        path: 'quotes',
+        element: (
+          <RequireAuth permission="quotes.view">
+            <QuotesListPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'quotes/new',
+        element: (
+          <RequireAuth permission="quotes.create">
+            <QuoteFormPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'quotes/:id/edit',
+        element: (
+          <RequireAuth permission="quotes.update">
+            <QuoteFormPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'quotes/:id',
+        element: (
+          <RequireAuth permission="quotes.view">
+            <QuoteDetailPage />
           </RequireAuth>
         ),
       },

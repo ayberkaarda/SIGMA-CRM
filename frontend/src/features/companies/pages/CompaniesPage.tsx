@@ -25,6 +25,7 @@ import {
   Tr,
 } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
+import { formatMoney } from '../../../lib/money'
 import { tokenBadgeVariant } from '../../../components/shared/tokenBadgeVariant'
 import { usePermission } from '../../auth/hooks/usePermission'
 import { useCompanies, useDeleteCompany, useTags, useUserOptions } from '../api/companiesApi'
@@ -35,12 +36,7 @@ import type { Company, CompaniesQuery } from '../types'
 const DEFAULT_PER_PAGE = 10
 const SEARCH_DEBOUNCE_MS = 300
 
-const currencyFormatter = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' })
-
-function formatCurrency(value: number | null): string {
-  if (value === null) return '—'
-  return currencyFormatter.format(value)
-}
+const formatCurrency = formatMoney
 
 function IconButton({
   label,

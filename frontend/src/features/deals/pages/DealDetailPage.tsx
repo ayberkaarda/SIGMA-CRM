@@ -22,6 +22,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { Badge, Button, Card, CardBody, CardHeader, Modal, Skeleton } from '../../../components/ui'
+import { formatMoney } from '../../../lib/money'
 import { usePermission } from '../../auth/hooks/usePermission'
 import { DealStageBadge } from '../components/DealStageBadge'
 import { DealStatusBadge } from '../components/DealStatusBadge'
@@ -29,13 +30,7 @@ import { DealFormModal } from '../components/DealFormModal'
 import { AssignDealOwnerModal } from '../components/AssignDealOwnerModal'
 import { useDeal, useDeleteDeal } from '../api/dealsApi'
 
-function formatCurrency(amount: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat('tr-TR', { style: 'currency', currency }).format(amount)
-  } catch {
-    return `${amount} ${currency}`
-  }
-}
+const formatCurrency = formatMoney
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—'

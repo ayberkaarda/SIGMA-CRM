@@ -34,6 +34,7 @@ SIGMA-CRM, kapalı devre (yalnızca davetle erişilen) bir kurumsal CRM sistemid
 | Araç | Node.js | 26.7.0 |
 | Loglama | spatie/laravel-activitylog ^4.12 + maatwebsite/excel ^3.1 | audit trail, CSV/XLSX export |
 | Sürükle-bırak | @dnd-kit/core ^6.3 + sortable ^10 | Kanban panosu, klavye erişilebilirliği ile |
+| PDF | barryvdh/laravel-dompdf ^3.1 | teklif çıktısı, DejaVu Sans (Türkçe + ₺), font subsetting açık |
 
 > **Not:** Proje başlangıçta Laravel 11 hedefliyordu. Laravel 11.x'te yamalanmamış güvenlik açıkları (CVE-2026-48019 dahil) bulunduğu ve 11.x hattında düzeltme olmadığı için Laravel 12'ye geçildi. Ayrıntı: `docs/PROGRESS.md` karar günlüğü.
 
@@ -135,10 +136,13 @@ Zamanlanmış görevler için `php artisan schedule:work` gerekir — 3 komut ç
 - **Kartı kayıp aşamasına sürükleyince neden soruyor** → `lost_reason` zorunludur; kayıp nedeni olmadan taşıma sunucu tarafından reddedilir (422). Kazanma nedeni opsiyoneldir.
 - **Görev hatırlatıcıları gelmiyor** → `php artisan schedule:work` çalışıyor olmalı (dakikalık `tasks:dispatch-reminders` komutu). Ayrıca hatırlatıcı in-app'tir: Reverb (`reverb:start`) ve queue worker (`queue:work`) da açık olmalı.
 - **SLA sayacı yanlış görünüyor** → Sayaç sunucudan gelen kalan süreyi `performance.now()` ile eritir, bilgisayarınızın saatinden bağımsızdır. Yanlış görünüyorsa sayfayı yenileyin; kalan süre 60 saniyede bir sunucuyla yeniden senkronlanır.
+- **PDF'te Türkçe karakterler bozuk görünüyor** → Şablon `font-family: 'DejaVu Sans'` kullanmalı. `config/dompdf.php` → `default_font` da bu olmalı. Çekirdek PDF fontları (Helvetica/Times) Türkçe glyph'leri içermez.
+- **Gönderilmiş teklifte kalem değiştiremiyorum** → Kasıtlı: `sent` sonrası tutarı etkileyen alanlar kilitli (422 QUOTE_LOCKED). Başlık, notlar, şartlar ve geçerlilik tarihi düzenlenebilir; tutar değişikliği için "Revizyon Oluştur" kullanın.
+- **Teklif toplamı beklediğimden düşük** → KDV, teklif geneli indirim düşüldükten SONRAKİ matrah üzerinden hesaplanır (KDVK md. 25/a). Ayrıntı: docs/QUOTE-FINANCIALS.md
 
 ## API Endpoint Listesi
 
-_Faz 2, 4, 5, 6, 7 ve 8 uçları eklendi; kalanı Faz 13'te tamamlanacak._
+_Faz 2, 4, 5, 6, 7, 8 ve 9 uçları eklendi; kalanı Faz 13'te tamamlanacak._
 
 | Metot | Yol | İzin / Koruma | Açıklama |
 | --- | --- | --- | --- |
@@ -220,6 +224,31 @@ _Faz 2, 4, 5, 6, 7 ve 8 uçları eklendi; kalanı Faz 13'te tamamlanacak._
 | GET | `/api/activities/{id}` | `activities.view` | Aktivite detayını döner |
 | PATCH | `/api/activities/{id}` | `activities.update` | Aktiviteyi günceller |
 | DELETE | `/api/activities/{id}` | oluşturan kişi veya `activities.delete` | Aktiviteyi soft-delete yapar |
+| GET | `/api/products` | `products.view` | Ürünleri sayfalı/sıralı/filtreli/aramalı listeler |
+| GET | `/api/products/categories` | `products.view` | Mevcut ürünlerin benzersiz kategori listesini döner (filtre dropdown'ı için) |
+| POST | `/api/products` | `products.create` | Yeni ürün oluşturur |
+| GET | `/api/products/{id}` | `products.view` | Ürün detayını döner |
+| PATCH | `/api/products/{id}` | `products.update` | Ürünü günceller |
+| DELETE | `/api/products/{id}` | `products.delete` | Ürünü soft-delete yapar |
+| GET | `/api/products/{id}/price` | `products.view` | Teklif kalemi için fiyat çözer (`?price_list_id=` verilirse listeden, verilmezse üründen) |
+| GET | `/api/price-lists` | `products.view` | Fiyat listelerini sayfalı/sıralı/filtreli listeler |
+| POST | `/api/price-lists` | `products.create` | Yeni fiyat listesi oluşturur |
+| GET | `/api/price-lists/{id}` | `products.view` | Fiyat listesi detayını döner |
+| PATCH | `/api/price-lists/{id}` | `products.update` | Fiyat listesini günceller |
+| DELETE | `/api/price-lists/{id}` | `products.delete` | Fiyat listesini soft-delete yapar (varsayılan liste silinemez — 422) |
+| GET | `/api/price-lists/{id}/products` | `products.view` | Listedeki ürün fiyatlarını (kalemleri) sayfalı döner |
+| PUT | `/api/price-lists/{id}/products/{productId}` | `products.update` | Listedeki bir ürün fiyatını ekler/günceller (upsert) |
+| DELETE | `/api/price-lists/{id}/products/{productId}` | `products.update` | Listedeki bir ürün fiyat kaydını kaldırır (ürünün kendisini silmez) |
+| GET | `/api/quotes` | `quotes.view` | Teklifleri sayfalı/sıralı/filtreli/aramalı listeler |
+| POST | `/api/quotes` | `quotes.create` | Yeni teklif oluşturur |
+| POST | `/api/quotes/calculate` | `quotes.create` veya `quotes.update` | Teklif toplamlarını hesaplar — **kalıcı değil, yalnızca hesaplar**, hiçbir şey kaydetmez |
+| GET | `/api/quotes/{id}` | `quotes.view` | Teklif detayını döner |
+| PATCH | `/api/quotes/{id}` | `quotes.update` | Teklifi günceller — **422 QUOTE_LOCKED dönebilir** (gönderilmiş teklifte tutarı etkileyen alanlar kilitli) |
+| DELETE | `/api/quotes/{id}` | `quotes.delete` | Teklifi soft-delete yapar (`accepted`/`rejected` teklif 403) |
+| POST | `/api/quotes/{id}/send` | `quotes.send` | Teklifi `sent` durumuna geçirir (kalemsiz teklif 422 QUOTE_HAS_NO_ITEMS) |
+| PATCH | `/api/quotes/{id}/status` | `quotes.update` | Teklif durumunu değiştirir (422 INVALID_STATUS_TRANSITION dönebilir) |
+| POST | `/api/quotes/{id}/revise` | `quotes.create` | Teklifin yeni bir revizyonunu oluşturur. **422 QUOTE_NOT_REVISABLE dönebilir** |
+| GET | `/api/quotes/{id}/pdf` | `quotes.view` | Teklifin PDF çıktısını döner (`inline` disposition) |
 
 ## ER Diyagramı
 

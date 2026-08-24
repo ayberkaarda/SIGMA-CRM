@@ -39,6 +39,10 @@ class Quote extends Model
         'accepted_at',
         'rejected_at',
         'created_by',
+        'discount_type',
+        'discount_value',
+        'parent_quote_id',
+        'revision',
     ];
 
     /**
@@ -57,6 +61,8 @@ class Quote extends Model
             'sent_at' => 'datetime',
             'accepted_at' => 'datetime',
             'rejected_at' => 'datetime',
+            'discount_value' => 'decimal:2',
+            'revision' => 'integer',
         ];
     }
 
@@ -84,6 +90,17 @@ class Quote extends Model
     public function items(): HasMany
     {
         return $this->hasMany(QuoteItem::class)->orderBy('position');
+    }
+
+    // Revizyon zinciri: parent_quote_id bir öncekini gösterir (köke değil).
+    public function parentQuote(): BelongsTo
+    {
+        return $this->belongsTo(Quote::class, 'parent_quote_id');
+    }
+
+    public function revisions(): HasMany
+    {
+        return $this->hasMany(Quote::class, 'parent_quote_id');
     }
 
     public function scopeDraft(Builder $query): Builder
