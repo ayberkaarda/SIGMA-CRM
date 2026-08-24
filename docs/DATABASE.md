@@ -1,6 +1,6 @@
 # Veritabanı Şeması
 
-Bu doküman, `backend/database/migrations/` altındaki migration dosyalarından üretilen SIGMA-CRM veritabanı şemasını belgeler. Kaynak: `migrate:fresh` ile kurulan `sigma_crm` şeması (MariaDB 10.4.32).
+Bu doküman, `backend/database/migrations/` altındaki migration dosyalarından üretilen Syncra veritabanı şemasını belgeler. Kaynak: `migrate:fresh` ile kurulan `syncra_crm` şeması (MariaDB 10.4.32).
 
 > **Sayım notu:** Uygulama migration dosyaları **40 tablo** oluşturur (43 foreign key ile — Faz 9'da `price_lists`/`price_list_items` ve `quotes.parent_quote_id` ile 3 FK eklendi). Buna ek olarak Laravel'in migration çalıştırıcısının kendisinin oluşturduğu, herhangi bir migration dosyasına karşılık gelmeyen `migrations` defter (ledger) tablosu vardır — bu doküman onu da "Laravel altyapı" grubunda ayrıca listeler, dolayısıyla veritabanında fiziksel olarak **41 tablo** görünür. `information_schema` üzerinden salt okunur doğrulama: `table_count = 41`, `fk_count = 43`.
 

@@ -22,7 +22,7 @@ class DealApiTest extends TestCase
         parent::setUp();
 
         // Rol/izin sözlüğünü kur — ayrı test veritabanı (phpunit.xml), ana
-        // sigma_crm verisine dokunulmaz.
+        // syncra_crm verisine dokunulmaz.
         $this->seed(RolePermissionSeeder::class);
     }
 
@@ -506,13 +506,13 @@ class DealApiTest extends TestCase
         $stage = $this->openStage();
 
         // title eşleşir ama status eşleşmez -> dönmemeli.
-        Deal::factory()->won()->create(['pipeline_stage_id' => PipelineStage::factory()->won()->create()->id, 'title' => 'Sigma Projesi']);
+        Deal::factory()->won()->create(['pipeline_stage_id' => PipelineStage::factory()->won()->create()->id, 'title' => 'Syncra Projesi']);
         // title ve status ikisi de eşleşir -> dönmeli.
-        $match = Deal::factory()->create(['pipeline_stage_id' => $stage->id, 'title' => 'Sigma Projesi', 'status' => 'open']);
+        $match = Deal::factory()->create(['pipeline_stage_id' => $stage->id, 'title' => 'Syncra Projesi', 'status' => 'open']);
         // title eşleşmez -> dönmemeli.
         Deal::factory()->create(['pipeline_stage_id' => $stage->id, 'title' => 'Başka Fırsat', 'status' => 'open']);
 
-        $response = $this->actingAs($actor)->getJson('/api/deals?q=Sigma&filter[status]=open');
+        $response = $this->actingAs($actor)->getJson('/api/deals?q=Syncra&filter[status]=open');
 
         $response->assertStatus(200)->assertJsonCount(1, 'data');
         $this->assertSame($match->id, $response->json('data.0.id'));

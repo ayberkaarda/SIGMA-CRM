@@ -18,7 +18,7 @@ class UserManagementTest extends TestCase
         parent::setUp();
 
         // Rol/izin sözlüğünü kur (63 izin, 6 rol) — proje kuralı: ayrı test veritabanı,
-        // ana sigma_crm verisine dokunulmaz (RefreshDatabase + phpunit.xml testing DB).
+        // ana syncra_crm verisine dokunulmaz (RefreshDatabase + phpunit.xml testing DB).
         $this->seed(RolePermissionSeeder::class);
     }
 

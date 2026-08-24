@@ -8,7 +8,7 @@ import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 import { usePageTracking } from '../../hooks/usePageTracking'
 
-const SIDEBAR_STORAGE_KEY = 'sigma-crm-sidebar'
+const SIDEBAR_STORAGE_KEY = 'syncra-sidebar'
 const DESKTOP_MEDIA_QUERY = '(min-width: 1024px)' // Tailwind `lg` kırılım noktası
 
 function readStoredCollapsed(): boolean {

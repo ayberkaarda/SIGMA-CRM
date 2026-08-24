@@ -16,7 +16,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->command?->newLine();
-        $this->command?->info('=== SIGMA CRM veritabanı seed ediliyor ===');
+        $this->command?->info('=== Syncra veritabanı seed ediliyor ===');
 
         $this->call([
             RolePermissionSeeder::class,

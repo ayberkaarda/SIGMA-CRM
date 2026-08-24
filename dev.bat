@@ -3,7 +3,7 @@ chcp 65001 >nul
 setlocal enabledelayedexpansion
 
 echo ============================================
-echo  SIGMA-CRM - Gelistirme Ortami Baslatiliyor
+echo  Syncra - Gelistirme Ortami Baslatiliyor
 echo ============================================
 echo.
 
@@ -41,16 +41,16 @@ echo.
 
 REM --- Surecleri ayri pencerelerde baslat ---------------------------------
 echo API baslatiliyor (port 8000)...
-start "SIGMA API" cmd /k "cd /d "%~dp0backend" && "%PHP%" artisan serve"
+start "Syncra API" cmd /k "cd /d "%~dp0backend" && "%PHP%" artisan serve"
 
 echo Reverb (WebSocket) baslatiliyor (port 8080)...
-start "SIGMA Reverb" cmd /k "cd /d "%~dp0backend" && "%PHP%" artisan reverb:start"
+start "Syncra Reverb" cmd /k "cd /d "%~dp0backend" && "%PHP%" artisan reverb:start"
 
 echo Queue worker baslatiliyor...
-start "SIGMA Queue" cmd /k "cd /d "%~dp0backend" && "%PHP%" artisan queue:work"
+start "Syncra Queue" cmd /k "cd /d "%~dp0backend" && "%PHP%" artisan queue:work"
 
 echo Frontend baslatiliyor (port 5173)...
-start "SIGMA Frontend" cmd /k "cd /d "%~dp0frontend" && npm run dev"
+start "Syncra Frontend" cmd /k "cd /d "%~dp0frontend" && npm run dev"
 
 echo.
 echo ============================================

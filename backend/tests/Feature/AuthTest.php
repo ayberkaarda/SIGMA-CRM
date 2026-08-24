@@ -17,7 +17,7 @@ use Tests\TestCase;
 /**
  * Sanctum SPA (cookie session) authentication.
  *
- * These run against the dedicated `sigma_crm_test` database configured in
+ * These run against the dedicated `syncra_crm_test` database configured in
  * phpunit.xml - never the development database.
  */
 class AuthTest extends TestCase
@@ -173,7 +173,7 @@ class AuthTest extends TestCase
 
         $wrongPassword = $this->login($user, ['password' => 'definitely-not-it']);
         $unknownEmail = $this->login($user, [
-            'email' => 'nobody-here@sigma-crm.local',
+            'email' => 'nobody-here@syncra.local',
             'password' => 'definitely-not-it',
         ]);
 
@@ -350,7 +350,7 @@ class AuthTest extends TestCase
             ->assertStatus(202)
             ->assertJsonPath('message', 'Talebiniz alındı. Sistem yöneticisi sizinle iletişime geçecek.');
 
-        $this->postJson('/api/password/forgot', ['email' => 'ghost@sigma-crm.local'])
+        $this->postJson('/api/password/forgot', ['email' => 'ghost@syncra.local'])
             ->assertStatus(202)
             ->assertJsonPath('message', 'Talebiniz alındı. Sistem yöneticisi sizinle iletişime geçecek.');
     }

@@ -153,19 +153,19 @@ class PruneLogs extends Command
                 // sürekli değiştiği için "kaç gündür var" ölçütü olarak
                 // ziyaretin gerçek başlangıcı kullanılır.
                 'date_column' => 'entered_at',
-                'config_key' => 'sigma.log_retention.page_visits',
+                'config_key' => 'syncra.log_retention.page_visits',
             ],
             'sessions' => [
                 'model' => SessionLog::class,
                 'label' => 'session_logs',
                 'date_column' => 'created_at',
-                'config_key' => 'sigma.log_retention.sessions',
+                'config_key' => 'syncra.log_retention.sessions',
             ],
             'activities' => [
                 'model' => Activity::class,
                 'label' => config('activitylog.table_name', 'activity_log'),
                 'date_column' => 'created_at',
-                'config_key' => 'sigma.log_retention.activities',
+                'config_key' => 'syncra.log_retention.activities',
             ],
         ];
 

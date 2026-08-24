@@ -15,7 +15,7 @@ use Tests\TestCase;
 /**
  * Forced password change (`must_change_password`) - docs/AUTH-FLOWS.md §6.
  *
- * Runs against the dedicated `sigma_crm_test` database (phpunit.xml).
+ * Runs against the dedicated `syncra_crm_test` database (phpunit.xml).
  */
 class ChangePasswordTest extends TestCase
 {

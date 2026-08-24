@@ -20,7 +20,7 @@ class LogApiTest extends TestCase
         parent::setUp();
 
         // Rol/izin sözlüğünü kur — proje kuralı: ayrı test veritabanı, ana
-        // sigma_crm verisine dokunulmaz (RefreshDatabase + phpunit.xml testing DB).
+        // syncra_crm verisine dokunulmaz (RefreshDatabase + phpunit.xml testing DB).
         $this->seed(RolePermissionSeeder::class);
     }
 

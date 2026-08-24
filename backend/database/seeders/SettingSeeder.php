@@ -19,8 +19,8 @@ class SettingSeeder extends Seeder
      */
     public const SETTINGS = [
         // Şirket profili
-        'company.name' => ['Sigma Teknoloji A.Ş.', 'string', 'company', true, 'Şirket ticari unvanı'],
-        'company.email' => ['info@sigma-crm.local', 'string', 'company', true, 'Şirket iletişim e-postası'],
+        'company.name' => ['Syncra Teknoloji A.Ş.', 'string', 'company', true, 'Şirket ticari unvanı'],
+        'company.email' => ['info@syncra.local', 'string', 'company', true, 'Şirket iletişim e-postası'],
         'company.phone' => ['+90 212 000 00 00', 'string', 'company', true, 'Şirket telefon numarası'],
         'company.address' => ['Maslak Mah. Büyükdere Cad. No:1 Sarıyer / İstanbul', 'string', 'company', true, 'Şirket adresi'],
         'company.tax_number' => ['1234567890', 'string', 'company', false, 'Vergi kimlik numarası'],

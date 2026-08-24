@@ -7,9 +7,9 @@ return [
     /*
      * If set to false, no activities will be saved to the database.
      *
-     * SIGMA note: this is the switch a data importer / seeder should flip (or
+     * Syncra note: this is the switch a data importer / seeder should flip (or
      * better: `activity()->withoutLogs(fn () => ...)`, which flips it for the
-     * duration of a closure only). See `sigma_max_property_length` below and
+     * duration of a closure only). See `syncra_max_property_length` below and
      * docs in App\Support\ActivityLogging\LogsCrmActivity.
      */
     'enabled' => env('ACTIVITY_LOGGER_ENABLED', true),
@@ -40,7 +40,7 @@ return [
     /*
      * If set to true, the subject returns soft deleted models.
      *
-     * SIGMA: deliberately TRUE. Every CRM entity soft-deletes, so the very row
+     * Syncra: deliberately TRUE. Every CRM entity soft-deletes, so the very row
      * an audit entry describes ("deleted Deal #42") is soft-deleted by the
      * time anyone reads the log. With the package default (false) the morphTo
      * would resolve to null and the Logs page would show a deletion with no
@@ -70,7 +70,7 @@ return [
 
     /*
      |--------------------------------------------------------------------------
-     | SIGMA CRM additions (not part of the upstream package config)
+     | Syncra additions (not part of the upstream package config)
      |--------------------------------------------------------------------------
      */
 
@@ -89,5 +89,5 @@ return [
      *
      * Applied by App\Observers\ActivityLogObserver via PropertyTruncator.
      */
-    'sigma_max_property_length' => (int) env('ACTIVITY_LOGGER_MAX_PROPERTY_LENGTH', 1024),
+    'syncra_max_property_length' => (int) env('ACTIVITY_LOGGER_MAX_PROPERTY_LENGTH', 1024),
 ];

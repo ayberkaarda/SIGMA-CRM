@@ -36,9 +36,9 @@ use Throwable;
  * round-trip per call) and always available (it dies with the Reverb process).
  * Both are handled by Redis, which is also this app's cache and session store:
  *
- *   - `sigma:online:ids` (5s TTL) absorbs bursts. A dashboard polling every
+ *   - `syncra:online:ids` (5s TTL) absorbs bursts. A dashboard polling every
  *     second, or ten users loading the roster at once, costs Reverb one call.
- *   - `sigma:online:snapshot` (5m TTL) is refreshed on every successful fetch
+ *   - `syncra:online:snapshot` (5m TTL) is refreshed on every successful fetch
  *     and read only when Reverb is unreachable. A Reverb restart then degrades
  *     the roster to "slightly stale" instead of "empty", and `stale` in the
  *     response tells the SPA to say so.
@@ -50,10 +50,10 @@ use Throwable;
 final class OnlineUserRegistry
 {
     /** Short-lived de-duplication of the Reverb HTTP call. */
-    public const IDS_KEY = 'sigma:online:ids';
+    public const IDS_KEY = 'syncra:online:ids';
 
     /** Last known good roster, read only when Reverb cannot be reached. */
-    public const SNAPSHOT_KEY = 'sigma:online:snapshot';
+    public const SNAPSHOT_KEY = 'syncra:online:snapshot';
 
     private const IDS_TTL = 5;
 
@@ -174,7 +174,7 @@ final class OnlineUserRegistry
         sort($ids);
 
         return Cache::remember(
-            'sigma:online:profiles:'.md5(implode(',', $ids)),
+            'syncra:online:profiles:'.md5(implode(',', $ids)),
             self::PROFILE_TTL,
             static fn (): array => User::query()
                 ->active()

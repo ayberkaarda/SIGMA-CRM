@@ -56,7 +56,7 @@ class LeadImportController extends Controller
 
         return response($csv, Response::HTTP_OK, [
             'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="sigma-crm-lead-sablonu.csv"',
+            'Content-Disposition' => 'attachment; filename="syncra-lead-sablonu.csv"',
         ]);
     }
 

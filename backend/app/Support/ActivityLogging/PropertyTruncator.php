@@ -59,7 +59,7 @@ final class PropertyTruncator
      */
     public static function limit(): int
     {
-        $limit = (int) config('activitylog.sigma_max_property_length', self::DEFAULT_LIMIT);
+        $limit = (int) config('activitylog.syncra_max_property_length', self::DEFAULT_LIMIT);
 
         return $limit > 0 ? $limit : self::DEFAULT_LIMIT;
     }

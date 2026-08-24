@@ -35,7 +35,7 @@ class QuoteApiTest extends TestCase
         parent::setUp();
 
         // Rol/izin sözlüğünü kur — ayrı test veritabanı (phpunit.xml), ana
-        // sigma_crm verisine dokunulmaz.
+        // syncra_crm verisine dokunulmaz.
         $this->seed(RolePermissionSeeder::class);
     }
 

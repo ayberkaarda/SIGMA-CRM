@@ -332,7 +332,7 @@ export default function Showcase() {
           >
             <div className="flex flex-col gap-4">
               <Input label="Ad Soyad" placeholder="Örn. Elif Demir" />
-              <Input label="E-posta" placeholder="ornek@sigma.com" leftIcon={<AtSign className="size-4" aria-hidden="true" />} />
+              <Input label="E-posta" placeholder="ornek@syncra.com" leftIcon={<AtSign className="size-4" aria-hidden="true" />} />
             </div>
           </Modal>
         </SectionCard>

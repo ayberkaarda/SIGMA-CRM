@@ -13,10 +13,10 @@ class SuperAdminSeeder extends Seeder
     public function run(): void
     {
         $user = User::firstOrCreate(
-            ['email' => 'admin@sigma-crm.local'],
+            ['email' => 'admin@syncra.local'],
             [
                 'name' => 'Sistem Yöneticisi',
-                'password' => 'SigmaAdmin!2026',
+                'password' => 'SyncraAdmin!2026',
                 'department' => 'Yönetim',
                 'is_active' => true,
                 'must_change_password' => true,
@@ -30,7 +30,7 @@ class SuperAdminSeeder extends Seeder
 
         $this->command->info('Super Admin hazır:');
         $this->command->info('  Email: '.$user->email);
-        $this->command->info('  Şifre: SigmaAdmin!2026 (ilk girişte değiştirilmesi zorunlu)');
+        $this->command->info('  Şifre: SyncraAdmin!2026 (ilk girişte değiştirilmesi zorunlu)');
         $this->command->info('  Rol: Super Admin');
     }
 }

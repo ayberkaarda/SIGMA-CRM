@@ -154,14 +154,14 @@ class SessionLogTest extends TestCase
     public function test_unknown_email_writes_a_failed_login_row_with_null_user_id(): void
     {
         $this->login($this->makeUser(), [
-            'email' => 'nobody-here@sigma-crm.local',
+            'email' => 'nobody-here@syncra.local',
             'password' => 'irrelevant',
         ])->assertStatus(422);
 
         $row = SessionLog::query()->where('event', 'failed_login')->firstOrFail();
 
         $this->assertNull($row->user_id);
-        $this->assertSame('nobody-here@sigma-crm.local', $row->email);
+        $this->assertSame('nobody-here@syncra.local', $row->email);
     }
 
     public function test_sixth_failed_attempt_writes_exactly_one_locked_out_row(): void

@@ -38,7 +38,7 @@ use RuntimeException;
 class DemoDataSeeder extends Seeder
 {
     /** Tüm demo hesapların ortak şifresi. */
-    public const PASSWORD = 'Demo!2026Sigma';
+    public const PASSWORD = 'Demo!2026Syncra';
 
     private const FAKER_SEED = 20260823;
 
@@ -272,14 +272,14 @@ class DemoDataSeeder extends Seeder
         $hash = Hash::make(self::PASSWORD);
 
         $definitions = [
-            ['Admin', 'Deniz Aksoy', 'deniz.aksoy@sigma-crm.local', 'Yönetim'],
-            ['Satış Müdürü', 'Elif Yıldırım', 'elif.yildirim@sigma-crm.local', 'Satış'],
-            ['Satış Müdürü', 'Mert Korkmaz', 'mert.korkmaz@sigma-crm.local', 'Satış'],
-            ['Satış Temsilcisi', 'Zeynep Demir', 'zeynep.demir@sigma-crm.local', 'Satış'],
-            ['Satış Temsilcisi', 'Burak Şahin', 'burak.sahin@sigma-crm.local', 'Satış'],
-            ['Satış Temsilcisi', 'Ayşe Kaya', 'ayse.kaya@sigma-crm.local', 'Satış'],
-            ['Destek Temsilcisi', 'Emre Çelik', 'emre.celik@sigma-crm.local', 'Destek'],
-            ['İzleyici', 'Selin Arslan', 'selin.arslan@sigma-crm.local', 'Yönetim'],
+            ['Admin', 'Deniz Aksoy', 'deniz.aksoy@syncra.local', 'Yönetim'],
+            ['Satış Müdürü', 'Elif Yıldırım', 'elif.yildirim@syncra.local', 'Satış'],
+            ['Satış Müdürü', 'Mert Korkmaz', 'mert.korkmaz@syncra.local', 'Satış'],
+            ['Satış Temsilcisi', 'Zeynep Demir', 'zeynep.demir@syncra.local', 'Satış'],
+            ['Satış Temsilcisi', 'Burak Şahin', 'burak.sahin@syncra.local', 'Satış'],
+            ['Satış Temsilcisi', 'Ayşe Kaya', 'ayse.kaya@syncra.local', 'Satış'],
+            ['Destek Temsilcisi', 'Emre Çelik', 'emre.celik@syncra.local', 'Destek'],
+            ['İzleyici', 'Selin Arslan', 'selin.arslan@syncra.local', 'Yönetim'],
         ];
 
         foreach ($definitions as $index => [$role, $name, $email, $department]) {
@@ -1456,7 +1456,7 @@ class DemoDataSeeder extends Seeder
                 'email' => $isFailed ? 'bilinmeyen'.$i.'@ornekmail.com' : DB::table('users')->where('id', $userId)->value('email'),
                 'event' => $isFailed ? 'failed_login' : ($isLogout ? 'logout' : 'login'),
                 'ip_address' => $this->faker->ipv4(),
-                'user_agent' => 'Mozilla/5.0 (compatible; SigmaCRM demo)',
+                'user_agent' => 'Mozilla/5.0 (compatible; Syncra demo)',
                 'device' => $devices[$i % count($devices)],
                 'browser' => $browsers[$i % count($browsers)],
                 'platform' => $platforms[$i % count($platforms)],
@@ -1641,7 +1641,7 @@ class DemoDataSeeder extends Seeder
         }
 
         $this->command?->table(['Tablo', 'Kayıt'], $rows);
-        $this->command?->info('Demo kullanıcı şifresi: '.self::PASSWORD.' (örn. elif.yildirim@sigma-crm.local)');
+        $this->command?->info('Demo kullanıcı şifresi: '.self::PASSWORD.' (örn. elif.yildirim@syncra.local)');
     }
 
     // ---------------------------------------------------------------- helpers

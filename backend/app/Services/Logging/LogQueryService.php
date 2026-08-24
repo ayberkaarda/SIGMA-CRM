@@ -102,7 +102,7 @@ class LogQueryService
 
     protected function filename(string $type, string $format): string
     {
-        return sprintf('sigma-crm-%s-%s.%s', $type, now()->format('Y-m-d'), $format);
+        return sprintf('syncra-%s-%s.%s', $type, now()->format('Y-m-d'), $format);
     }
 
     /**

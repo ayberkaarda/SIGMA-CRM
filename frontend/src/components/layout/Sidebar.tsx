@@ -110,11 +110,16 @@ export function Sidebar({ collapsed, mobileOpen, onCloseMobile }: SidebarProps) 
         )}
       >
         <div className="flex h-14 shrink-0 items-center gap-2 border-b border-border-subtle px-4">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-fg">
-            S
-          </div>
+          <img
+            src="/logo-mark.png"
+            alt=""
+            aria-hidden="true"
+            width={320}
+            height={165}
+            className="w-8 shrink-0"
+          />
           <span className={cn('truncate text-base font-semibold text-fg', collapsed && 'lg:hidden')}>
-            SIGMA-CRM
+            Syncra
           </span>
         </div>
 

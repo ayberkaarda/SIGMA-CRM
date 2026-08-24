@@ -1,4 +1,4 @@
-# SIGMA-CRM — İlerleme Durumu (PROGRESS)
+# Syncra — İlerleme Durumu (PROGRESS)
 
 **Son güncelleme:** 2026-08-24
 **Durum özeti:** Faz 0-9 tamamlandı — ürün kataloğu, fiyat listeleri, teklif hesabı ve PDF çıktısı dahil. Sıradaki: Faz 10 (Bildirimler & Ayarlar) ve Faz 11 (Raporlar & Dashboard) birlikte.
@@ -42,7 +42,7 @@ Durum simgeleri: ⬜ Bekliyor · 🟨 Devam · ✅ Bitti · 🚫 Bloke
 | PHP `redis` eklentisi | — | ❌ yok | `predis/predis` (saf PHP) kullanılacak |
 | PATH | — | ✅ | `C:\xampp\php` kullanıcı PATH'inde (3 kez tekrarlı — zararsız). Açık terminaller oturum başındaki eski PATH'i taşır; `php`/`composer` bulunamazsa yeni terminal aç |
 | UI bağımlılıkları | — | ✅ | @fontsource/poppins (self-host), clsx, tailwind-merge, lucide-react, sonner |
-| Veritabanı | sigma_crm | ✅ | utf8mb4_unicode_ci. Test DB'si ayrı: sigma_crm_test (phpunit.xml'de sabit). 39 tablo, 40 FK, demo veri yüklü |
+| Veritabanı | syncra_crm | ✅ | utf8mb4_unicode_ci. Test DB'si ayrı: syncra_crm_test (phpunit.xml'de sabit). 39 tablo, 40 FK, demo veri yüklü |
 | Reverb | v1.11.1 | ✅ | Windows'ta yerel çalışıyor, ws://127.0.0.1:8080. WSL/pcntl gerekmedi |
 | Zamanlanmış görevler | 3 komut | ✅ | logs:prune (03:17), tasks:dispatch-reminders (dakikalık), tickets:scan-sla (5 dk) — schedule:work gerekir |
 | PDF | dompdf v3.1.2 | ✅ | DejaVu Sans, Türkçe + ₺ doğrulandı; font subsetting açık (860KB → 30KB) |
@@ -66,7 +66,7 @@ Faz 10 + Faz 11 birlikte: bildirim merkezi, ayarlar (pipeline aşama editörü, 
 5. Frontend'de test altyapısı YOK (vitest/jest kurulu değil) — 646 backend testi var, frontend'de sıfır. Orijinal gereksinim yalnızca backend feature testleri istiyordu; Faz 13'te değerlendirilebilir.
 6. Deal timeline ucu YOK — Faz 6'da kişi/firma için yazıldı, deal için yazılmadı. Detay sayfası şu an bağlı kişinin timeline'ına bağlantı veriyor.
 7. Etiket/aşama renkleri için components/shared/tokenBadgeVariant.ts hazır — pipeline_stages.color aynı token adlarını taşıyor.
-8. Demo hesaplarla giriş: demo kullanıcıların şifresi Demo!2026Sigma, must_change_password=false — farklı rollerin UI'da ne gördüğünü test etmek için kullanılabilir.
+8. Demo hesaplarla giriş: demo kullanıcıların şifresi Demo!2026Syncra, must_change_password=false — farklı rollerin UI'da ne gördüğünü test etmek için kullanılabilir.
 
 **Uyarı:** Faz 3+ endpoint'leri `routes/api.php` içinde `password.changed` grubunun İÇİNE yazılmalı — dışına yazılan uç zorunlu şifre değişimini atlar.
 

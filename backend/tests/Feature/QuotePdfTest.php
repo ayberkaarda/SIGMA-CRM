@@ -122,7 +122,7 @@ class QuotePdfTest extends TestCase
     {
         Setting::query()->updateOrCreate(
             ['key' => 'company.name'],
-            ['value' => 'Sigma Test Şirketi', 'type' => 'string', 'group' => 'company']
+            ['value' => 'Syncra Test Şirketi', 'type' => 'string', 'group' => 'company']
         );
         Setting::query()->updateOrCreate(
             ['key' => 'company.tax_number'],
@@ -135,7 +135,7 @@ class QuotePdfTest extends TestCase
         $pdf = app(QuotePdfService::class)->render($quote->fresh(['items']));
         $text = $this->extractText($pdf);
 
-        $this->assertStringContainsString('Sigma Test Şirketi', $text);
+        $this->assertStringContainsString('Syncra Test Şirketi', $text);
         $this->assertStringContainsString('9998887776', $text);
         $this->assertStringContainsString($quote->quote_number, $text);
         $this->assertStringContainsString('Benzersiz Kalem Adı XYZ', $text);

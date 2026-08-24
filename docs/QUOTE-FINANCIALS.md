@@ -317,7 +317,7 @@ Her madde `QuoteCalculator` birim testine birebir çevrilir. Tüm karşılaştı
 - **KDV tevkifatı (kısmi tevkifat oranları), ÖTV, konaklama/iletişim vergisi
   gibi ek vergiler:** teklif belgesi düzeyinde gereksinim yok; fatura
   entegrasyonu gündeme gelirse ele alınır.
-- **e-Fatura / e-Arşiv / GİB entegrasyonu:** SIGMA-CRM kapalı devre; teklif
+- **e-Fatura / e-Arşiv / GİB entegrasyonu:** Syncra kapalı devre; teklif
   PDF'i resmi belge değildir. (Model, oran-bazlı matrah özeti üretebildiği
   için ileride UBL-TR eşlemesine hazırdır.)
 - **Negatif kalem / iade satırı:** validation ile engellenir; ihtiyaç doğarsa

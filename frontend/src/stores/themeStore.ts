@@ -15,7 +15,7 @@ export const useThemeStore = create<ThemeState>()(
       setTheme: (theme) => set({ theme }),
     }),
     {
-      name: 'sigma-crm-theme',
+      name: 'syncra-theme',
     },
   ),
 )

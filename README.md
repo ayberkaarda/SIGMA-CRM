@@ -1,6 +1,6 @@
-# SIGMA-CRM
+# Syncra
 
-SIGMA-CRM, kapalı devre (yalnızca davetle erişilen) bir kurumsal CRM sistemidir. Laravel 12 + React 18 tabanlı bir monorepo olarak geliştirilir.
+Syncra, kapalı devre (yalnızca davetle erişilen) bir kurumsal CRM sistemidir. Laravel 12 + React 18 tabanlı bir monorepo olarak geliştirilir.
 
 ## Proje Yapısı
 
@@ -28,7 +28,7 @@ SIGMA-CRM, kapalı devre (yalnızca davetle erişilen) bir kurumsal CRM sistemid
 | Frontend | TanStack Query | Sunucu state yönetimi / veri çekme |
 | Frontend | Zustand | İstemci state yönetimi |
 | Frontend | Tailwind CSS | 4.3.3 |
-| Veritabanı | MySQL / MariaDB | 10.4.32 (MariaDB), veritabanı adı: `sigma_crm` |
+| Veritabanı | MySQL / MariaDB | 10.4.32 (MariaDB), veritabanı adı: `syncra_crm` |
 | Realtime | Laravel Reverb + Laravel Echo | WebSocket sunucusu ve istemci kütüphanesi |
 | Queue / Cache | Redis | 8.0.5 (WSL2 üzerinde) |
 | Araç | Node.js | 26.7.0 |
@@ -79,11 +79,11 @@ extension=intl
 
 1. Repoyu klonlayın.
 2. MySQL'i başlatın: XAMPP Control Panel → **MySQL** → **Start**. phpMyAdmin kullanacaksanız **Apache**'yi de başlatın.
-3. Veritabanını oluşturun (veritabanı adı **`sigma_crm`** olmalıdır):
+3. Veritabanını oluşturun (veritabanı adı **`syncra_crm`** olmalıdır):
    - phpMyAdmin üzerinden, veya
    - komut satırından:
      ```
-     mysql -u root -e "CREATE DATABASE sigma_crm CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+     mysql -u root -e "CREATE DATABASE syncra_crm CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
      ```
 4. Redis'i başlatın (WSL içinden): `sudo service redis-server start`. Doğrulamak için: `redis-cli ping` → `PONG` dönmelidir.
 5. Backend kurulumu:
@@ -121,7 +121,7 @@ Zamanlanmış görevler için `php artisan schedule:work` gerekir — 3 komut ç
 ## Sorun Giderme
 
 - **`php` komutu bulunamıyor:** PATH değişikliği yalnızca yeni açılan terminallere yansır — yeni bir terminal açın veya `C:\xampp\php\php.exe` tam yolunu kullanın.
-- **MySQL bağlantı hatası:** XAMPP Control Panel'de MySQL servisinin çalıştığından ve `sigma_crm` veritabanının oluşturulduğundan emin olun.
+- **MySQL bağlantı hatası:** XAMPP Control Panel'de MySQL servisinin çalıştığından ve `syncra_crm` veritabanının oluşturulduğundan emin olun.
 - **Redis bağlantı hatası:** WSL içinde `sudo service redis-server start` komutunu çalıştırın. `backend/.env` dosyasında `REDIS_CLIENT=predis` olmalıdır (phpredis C eklentisi kurulu değildir).
 - **Reverb'e bağlanılamıyor:** `php artisan reverb:start` sürecinin çalıştığından, `backend/.env` ve `frontend/.env` dosyalarındaki `REVERB_*` / `VITE_REVERB_*` değerlerinin birbiriyle eşleştiğinden ve 8080 portunun boş olduğundan emin olun.
 - **CORS / 419 hatası:** `backend/.env` içindeki `SANCTUM_STATEFUL_DOMAINS` ve `FRONTEND_URL` değerlerinin doğru olduğundan ve frontend isteklerinde `withCredentials: true` kullanıldığından emin olun.
@@ -335,7 +335,7 @@ erDiagram
 
 | E-posta | Şifre | Rol |
 | --- | --- | --- |
-| `admin@sigma-crm.local` | `SigmaAdmin!2026` | Super Admin |
+| `admin@syncra.local` | `SyncraAdmin!2026` | Super Admin |
 
 > **Uyarı:** Bu yalnızca yerel geliştirme içindir. Hesap `must_change_password=true` ile gelir; ilk girişte şifre değiştirme ekranı zorunludur ve değiştirilmeden hiçbir modüle erişilemez. Üretimde seeder'daki şifre mutlaka değiştirilmelidir.
 

@@ -24,7 +24,7 @@ use Tests\TestCase;
  *
  * NOT (kriter 15): `migrate:fresh --seed` bu testte KOŞTURULMAZ — bu şerit
  * demo veriye dokunmama talimatı altındadır ve testler ayrı bir veritabanında
- * (phpunit.xml -> sigma_crm_test) çalışır. Kriter 15'in özü — "yeni kolonların
+ * (phpunit.xml -> syncra_crm_test) çalışır. Kriter 15'in özü — "yeni kolonların
  * varsayılanları (null / 0) altında demo verideki ihlal dağılımı §5.3 ile
  * tutarlı kalır" — burada, migration varsayılanlarıyla oluşturulmuş
  * ticket'lardan demo verinin dağılımı (8 ihlalli / 7 açık / 8 çözülmüş /

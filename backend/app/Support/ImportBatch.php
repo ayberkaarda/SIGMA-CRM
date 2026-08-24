@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Redis;
  * ---------------------------------------------------------------------------
  * ANAHTAR VE TTL
  * ---------------------------------------------------------------------------
- * `sigma:import:{uuid}` — `sigma:` öneki, ileride Redis'te başka amaçlarla
+ * `syncra:import:{uuid}` — `syncra:` öneki, ileride Redis'te başka amaçlarla
  * (cache, oturum, kuyruk) kullanılan anahtarlarla çakışmayı önler. TTL 24
  * saat: bir kullanıcının "dün yüklediğim dosya ne olmuştu" diye bakması makul
  * bir pencere, ama sonsuza kadar tutmak Redis'i büyük dosyalardan gelen hata
@@ -39,7 +39,7 @@ use Illuminate\Support\Facades\Redis;
  */
 final class ImportBatch
 {
-    public const KEY_PREFIX = 'sigma:import:';
+    public const KEY_PREFIX = 'syncra:import:';
 
     /**
      * 24 saat — bkz. sınıf dokümantasyonu.

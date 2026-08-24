@@ -10,7 +10,7 @@ declare global {
   }
 }
 
-export type SigmaEcho = Echo<'reverb'>
+export type SyncraEcho = Echo<'reverb'>
 
 /**
  * Connection status surfaced to the rest of the app. Narrower than
@@ -23,7 +23,7 @@ export type EchoConnectionState = 'connecting' | 'connected' | 'unavailable' | '
 
 type StateListener = (state: EchoConnectionState) => void
 
-let echoInstance: SigmaEcho | null = null
+let echoInstance: SyncraEcho | null = null
 let connectionState: EchoConnectionState = 'unavailable'
 const stateListeners = new Set<StateListener>()
 
@@ -54,7 +54,7 @@ function setConnectionState(next: EchoConnectionState) {
  * but this is still not exported: callers go through `connectEcho`/
  * `disconnectEcho` so the connection lifecycle stays tied to auth state.
  */
-function createEcho(): SigmaEcho {
+function createEcho(): SyncraEcho {
   if (echoInstance) {
     return echoInstance
   }
@@ -106,7 +106,7 @@ function createEcho(): SigmaEcho {
  * open a socket for them. Safe to call again on an already-connected/
  * connecting instance (pusher-js no-ops).
  */
-export function connectEcho(): SigmaEcho {
+export function connectEcho(): SyncraEcho {
   const echo = createEcho()
   echo.connect()
   return echo
@@ -124,7 +124,7 @@ export function disconnectEcho() {
  * Feature hooks (presence, realtime session) use this to join channels —
  * only `connectEcho`/`disconnectEcho` own the connection lifecycle.
  */
-export function getEcho(): SigmaEcho | null {
+export function getEcho(): SyncraEcho | null {
   return echoInstance
 }
 
