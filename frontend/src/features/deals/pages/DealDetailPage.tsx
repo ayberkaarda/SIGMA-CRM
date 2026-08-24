@@ -24,6 +24,7 @@ import {
 import { Badge, Button, Card, CardBody, CardHeader, Modal, Skeleton } from '../../../components/ui'
 import { formatMoney } from '../../../lib/money'
 import { usePermission } from '../../auth/hooks/usePermission'
+import { RecordChatPanel } from '../../chat/record'
 import { DealStageBadge } from '../components/DealStageBadge'
 import { DealStatusBadge } from '../components/DealStatusBadge'
 import { DealFormModal } from '../components/DealFormModal'
@@ -258,6 +259,8 @@ export function DealDetailPage() {
           </div>
         </CardBody>
       </Card>
+
+      <RecordChatPanel recordType="deal" recordId={deal.id} />
 
       <DealFormModal open={editOpen} onClose={() => setEditOpen(false)} deal={deal} />
       <AssignDealOwnerModal open={assignOpen} onClose={() => setAssignOpen(false)} deal={deal} />

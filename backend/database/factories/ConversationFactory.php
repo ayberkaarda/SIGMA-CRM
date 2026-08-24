@@ -3,7 +3,9 @@
 namespace Database\Factories;
 
 use App\Models\Conversation;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<Conversation>
@@ -18,7 +20,7 @@ class ConversationFactory extends Factory
     public function definition(): array
     {
         return [
-            'type' => 'dm',
+            'type' => Conversation::TYPE_DM,
             'name' => null,
             'conversable_type' => null,
             'conversable_id' => null,
@@ -33,7 +35,7 @@ class ConversationFactory extends Factory
     public function dm(): static
     {
         return $this->state(fn (array $attributes) => [
-            'type' => 'dm',
+            'type' => Conversation::TYPE_DM,
             'name' => null,
         ]);
     }
@@ -44,7 +46,7 @@ class ConversationFactory extends Factory
     public function group(): static
     {
         return $this->state(fn (array $attributes) => [
-            'type' => 'group',
+            'type' => Conversation::TYPE_GROUP,
             'name' => fake()->randomElement([
                 'Satış Ekibi',
                 'Destek Vardiyası',
@@ -56,13 +58,48 @@ class ConversationFactory extends Factory
 
     /**
      * Indicate that the conversation is attached to a record.
-     * The conversable_* columns are wired by the seeder.
+     *
+     * The `conversable` argument is optional: the Phase 3 seeder wires the
+     * morph columns itself, while Phase 12 tests pass the deal/ticket in
+     * directly.
      */
-    public function record(): static
+    public function record(?Model $conversable = null): static
     {
         return $this->state(fn (array $attributes) => [
-            'type' => 'record',
+            'type' => Conversation::TYPE_RECORD,
             'name' => null,
+            'conversable_type' => $conversable === null ? null : $conversable::class,
+            'conversable_id' => $conversable?->getKey(),
         ]);
+    }
+
+    public function createdBy(User $user): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'created_by' => $user->getKey(),
+        ]);
+    }
+
+    /**
+     * Attach the given users as participants once the row exists.
+     *
+     * `joined_at` matters for Phase 12: when a group founder leaves,
+     * ownership passes to the OLDEST member, and that order is read from this
+     * column. Seconds are spread so the successor is deterministic in tests
+     * instead of depending on insert order.
+     *
+     * @param  array<int, User>  $users
+     */
+    public function withMembers(array $users): static
+    {
+        return $this->afterCreating(function (Conversation $conversation) use ($users): void {
+            $joinedAt = now()->subMinutes(count($users));
+
+            foreach ($users as $index => $user) {
+                $conversation->users()->attach($user->getKey(), [
+                    'joined_at' => $joinedAt->copy()->addMinutes($index),
+                ]);
+            }
+        });
     }
 }

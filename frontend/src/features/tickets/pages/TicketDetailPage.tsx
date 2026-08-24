@@ -6,6 +6,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Building2, Pencil, Trash2, User as UserIcon, Users } from 'lucide-react'
 import { Badge, Button, Card, CardBody, CardHeader, Modal, Skeleton } from '../../../components/ui'
 import { usePermission } from '../../auth/hooks/usePermission'
+import { RecordChatPanel } from '../../chat/record'
 import { TicketPriorityBadge } from '../components/TicketPriorityBadge'
 import { TicketStatusBadge } from '../components/TicketStatusBadge'
 import { TicketStatusControl } from '../components/TicketStatusControl'
@@ -204,6 +205,8 @@ export function TicketDetailPage() {
       <TicketActivityPanel ticket={ticket} />
 
       <TicketTasksPanel ticket={ticket} />
+
+      <RecordChatPanel recordType="ticket" recordId={ticket.id} />
 
       <TicketFormModal open={editOpen} onClose={() => setEditOpen(false)} ticket={ticket} />
       <AssignTicketModal open={assignOpen} onClose={() => setAssignOpen(false)} ticket={ticket} />

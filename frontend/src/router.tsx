@@ -9,6 +9,10 @@ import { UsersPage } from './features/users/pages/UsersPage'
 import { LogsPage } from './features/logs/pages/LogsPage'
 import { LeadsPage } from './features/leads/pages/LeadsPage'
 import { LeadDetailPage } from './features/leads/pages/LeadDetailPage'
+import { ContactsPage } from './features/contacts/pages/ContactsPage'
+import { ContactDetailPage } from './features/contacts/pages/ContactDetailPage'
+import { CompaniesPage } from './features/companies/pages/CompaniesPage'
+import { CompanyDetailPage } from './features/companies/pages/CompanyDetailPage'
 import { DealsBoardPage } from './features/deals/pages/DealsBoardPage'
 import { DealsListPage } from './features/deals/pages/DealsListPage'
 import { DealDetailPage } from './features/deals/pages/DealDetailPage'
@@ -16,6 +20,7 @@ import { TasksPage } from './features/tasks/pages/TasksPage'
 import { ActivitiesPage } from './features/activities/pages/ActivitiesPage'
 import { TicketsListPage } from './features/tickets/pages/TicketsListPage'
 import { TicketDetailPage } from './features/tickets/pages/TicketDetailPage'
+import { ChatPage } from './features/chat'
 import { QuotesListPage } from './features/quotes/pages/QuotesListPage'
 import { QuoteDetailPage } from './features/quotes/pages/QuoteDetailPage'
 import { QuoteFormPage } from './features/quotes/pages/QuoteFormPage'
@@ -90,6 +95,38 @@ export const router = createBrowserRouter([
           </RequireAuth>
         ),
       },
+      {
+        path: 'contacts',
+        element: (
+          <RequireAuth permission="contacts.view">
+            <ContactsPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'contacts/:id',
+        element: (
+          <RequireAuth permission="contacts.view">
+            <ContactDetailPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'companies',
+        element: (
+          <RequireAuth permission="companies.view">
+            <CompaniesPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'companies/:id',
+        element: (
+          <RequireAuth permission="companies.view">
+            <CompanyDetailPage />
+          </RequireAuth>
+        ),
+      },
       // Fırsatlar. Rota sırası KASITLI: sabit `deals/list` segmenti `deals/:id`den ÖNCE
       // gelmeli, aksi hâlde "list" bir id sanılır ve liste görünümü detay sayfasına düşer.
       {
@@ -148,6 +185,25 @@ export const router = createBrowserRouter([
         element: (
           <RequireAuth permission="tickets.view">
             <TicketDetailPage />
+          </RequireAuth>
+        ),
+      },
+      // Sohbet (Faz 12). Rota sırası KASITLI: sabit `chat` segmenti `chat/:conversationId`den
+      // ÖNCE gelmeli, aksi hâlde konuşma listesi bir conversationId sanılıp aynı bileşene
+      // (ChatPage) düşse de URL/parametre eşlemesi bozulur (deals/quotes'taki tuzakla AYNI).
+      {
+        path: 'chat',
+        element: (
+          <RequireAuth permission="chat.use">
+            <ChatPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'chat/:conversationId',
+        element: (
+          <RequireAuth permission="chat.use">
+            <ChatPage />
           </RequireAuth>
         ),
       },

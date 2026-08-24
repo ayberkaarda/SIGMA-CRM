@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\Api\ActivityController;
+use App\Http\Controllers\Api\AttachmentController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\ContactController;
+use App\Http\Controllers\Api\ConversationController;
 use App\Http\Controllers\Api\CustomFieldController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DealController;
@@ -12,6 +14,7 @@ use App\Http\Controllers\Api\EmailTemplateController;
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\LeadImportController;
 use App\Http\Controllers\Api\LogController;
+use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PageVisitController;
 use App\Http\Controllers\Api\PipelineStageController;
@@ -404,5 +407,40 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('/dashboard/revenue-trend', [DashboardController::class, 'revenueTrend'])->name('dashboard.revenue-trend');
         Route::get('/dashboard/recent-activities', [DashboardController::class, 'recentActivities'])->name('dashboard.recent-activities');
         Route::get('/dashboard/task-summary', [DashboardController::class, 'taskSummary'])->name('dashboard.task-summary');
+
+        /*
+         * Sohbet / Chat (Faz 12) — `chat.use` izni, yetki ConversationPolicy /
+         * MessagePolicy. Route sırası KASITLIDIR: `unread-count` ve `for-record`
+         * sabit segmentlerini `{conversation}`'dan, `/messages/search` ise
+         * `{message}`'tan ÖNCE tanımlanmalı.
+         */
+        Route::get('/conversations', [ConversationController::class, 'index'])->name('conversations.index');
+        Route::get('/conversations/unread-count', [ConversationController::class, 'unreadCount'])->name('conversations.unread-count');
+        Route::post('/conversations', [ConversationController::class, 'store'])->name('conversations.store');
+        Route::post('/conversations/for-record', [ConversationController::class, 'forRecord'])->name('conversations.for-record');
+        Route::get('/conversations/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
+        Route::patch('/conversations/{conversation}', [ConversationController::class, 'update'])->name('conversations.update');
+        Route::delete('/conversations/{conversation}', [ConversationController::class, 'destroy'])->name('conversations.destroy');
+        Route::post('/conversations/{conversation}/members', [ConversationController::class, 'storeMember'])->name('conversations.members.store');
+        Route::delete('/conversations/{conversation}/members/{user}', [ConversationController::class, 'destroyMember'])->name('conversations.members.destroy');
+        Route::post('/conversations/{conversation}/leave', [ConversationController::class, 'leave'])->name('conversations.leave');
+        Route::patch('/conversations/{conversation}/mute', [ConversationController::class, 'mute'])->name('conversations.mute');
+        Route::post('/conversations/{conversation}/read', [ConversationController::class, 'read'])->name('conversations.read');
+        Route::post('/conversations/{conversation}/delivered', [ConversationController::class, 'delivered'])->name('conversations.delivered');
+
+        Route::get('/conversations/{conversation}/messages', [MessageController::class, 'index'])->name('messages.index');
+        Route::post('/conversations/{conversation}/messages', [MessageController::class, 'store'])->name('messages.store');
+
+        Route::get('/messages/search', [MessageController::class, 'search'])->name('messages.search');
+        Route::patch('/messages/{message}', [MessageController::class, 'update'])->name('messages.update');
+        Route::delete('/messages/{message}', [MessageController::class, 'destroy'])->name('messages.destroy');
+
+        /*
+         * Dosya ekleri (Faz 12) — sohbet eklerinin yüklenmesi ve servis edilmesi.
+         * Görünürlük AttachmentPolicy'de: mesaja bağlı ek yalnızca o konuşmanın
+         * üyelerine, bağlanmamış ek yalnızca yükleyene açıktır.
+         */
+        Route::post('/attachments', [AttachmentController::class, 'store'])->name('attachments.store');
+        Route::get('/attachments/{attachment}', [AttachmentController::class, 'show'])->name('attachments.show');
     });
 });

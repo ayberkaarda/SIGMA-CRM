@@ -2,7 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Models\Attachment;
+use App\Models\Conversation;
 use App\Models\Message;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -39,7 +42,7 @@ class MessageFactory extends Factory
                 'Görüşme iyi geçti, bir sonraki adımı planlıyoruz.',
             ]),
             'attachment_id' => null,
-            'type' => 'text',
+            'type' => Message::TYPE_TEXT,
             'edited_at' => null,
         ];
     }
@@ -50,7 +53,8 @@ class MessageFactory extends Factory
     public function system(): static
     {
         return $this->state(fn (array $attributes) => [
-            'type' => 'system',
+            'type' => Message::TYPE_SYSTEM,
+            'user_id' => null,
         ]);
     }
 
@@ -61,6 +65,33 @@ class MessageFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'edited_at' => fake()->dateTimeBetween('-7 days', 'now'),
+        ]);
+    }
+
+    /**
+     * A file message. `type` is derived from the presence of an attachment
+     * exactly the way MessageService::create() derives it, so factory-built
+     * rows and API-built rows are indistinguishable.
+     */
+    public function withAttachment(Attachment $attachment): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'type' => Message::TYPE_FILE,
+            'attachment_id' => $attachment->getKey(),
+        ]);
+    }
+
+    public function inConversation(Conversation $conversation): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'conversation_id' => $conversation->getKey(),
+        ]);
+    }
+
+    public function fromUser(User $user): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'user_id' => $user->getKey(),
         ]);
     }
 }
