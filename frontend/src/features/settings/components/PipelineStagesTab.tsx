@@ -48,6 +48,7 @@ import { extractStageHasOpenDeals } from '../api'
 import { usePipelineStages, useReorderPipelineStages, useUpdatePipelineStage } from '../hooks/usePipelineStages'
 import { PipelineStageFormModal } from './PipelineStageFormModal'
 import { DeactivateStageModal } from './DeactivateStageModal'
+import { stageLabel } from '../../deals/utils/stageLabel'
 import type { PipelineStage, StageHasOpenDealsPayload } from '../types'
 
 type FormModalState = { mode: 'create' } | { mode: 'edit'; stage: PipelineStage } | null
@@ -91,13 +92,13 @@ export function PipelineStagesTab() {
     try {
       if (!stage.is_active) {
         await updateStage.mutateAsync({ id: stage.id, payload: { is_active: true } })
-        toast.success(t('settings:pipeline.toast.activated', { name: stage.name }))
+        toast.success(t('settings:pipeline.toast.activated', { name: stageLabel(t, stage) }))
         return
       }
 
       try {
         await updateStage.mutateAsync({ id: stage.id, payload: { is_active: false } })
-        toast.success(t('settings:pipeline.toast.deactivated', { name: stage.name }))
+        toast.success(t('settings:pipeline.toast.deactivated', { name: stageLabel(t, stage) }))
       } catch (error) {
         const details = extractStageHasOpenDeals(error)
         if (details) {
@@ -125,7 +126,7 @@ export function PipelineStagesTab() {
       toast.success(
         t('settings:pipeline.toast.movedAndDeactivated', {
           count: details.open_deals_count,
-          target: targetStage?.name ?? t('settings:pipeline.movedTargetFallback'),
+          target: targetStage ? stageLabel(t, targetStage) : t('settings:pipeline.movedTargetFallback'),
         })
       )
       setPendingDeactivation(null)
@@ -196,7 +197,7 @@ export function PipelineStagesTab() {
       {pendingDeactivation && (
         <DeactivateStageModal
           open
-          stageName={pendingDeactivation.stage.name}
+          stageName={stageLabel(t, pendingDeactivation.stage)}
           openDealsCount={pendingDeactivation.details.open_deals_count}
           availableStages={pendingDeactivation.details.available_stages}
           isSubmitting={busyStageId === pendingDeactivation.stage.id}
@@ -219,6 +220,11 @@ type StageRowProps = {
 function StageRow({ stage, busy, t, onEdit, onToggleActive }: StageRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: stage.id })
   const isSystemStage = stage.is_won || stage.is_lost
+  // Liste GÖSTERİMİ çevrilir; düzenleme formu (`PipelineStageFormModal`) ise ham `stage.name`
+  // gösterir — admin DÜZENLERKEN ne yazdığını görmelidir, çevrilmiş etiketi değil (bkz. görev
+  // tanımı ve `PipelineStageFormModal.tsx`da `value={name}` state'inin `stage?.name`den
+  // KURULMASI, `stageLabel()` HİÇ ÇAĞRILMAMASI).
+  const label = stageLabel(t, stage)
 
   return (
     <div
@@ -234,14 +240,14 @@ function StageRow({ stage, busy, t, onEdit, onToggleActive }: StageRowProps) {
         type="button"
         {...attributes}
         {...listeners}
-        aria-label={t('settings:pipeline.reorderAria', { name: stage.name })}
+        aria-label={t('settings:pipeline.reorderAria', { name: label })}
         className="cursor-grab touch-none rounded-sm p-1 text-fg-muted hover:bg-surface-2 hover:text-fg active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         <GripVertical className="size-4" aria-hidden="true" />
       </button>
 
       <Badge variant={tokenBadgeVariant(stage.color)} size="sm">
-        {stage.name}
+        {label}
       </Badge>
 
       <span className="text-xs text-fg-muted">%{stage.probability}</span>

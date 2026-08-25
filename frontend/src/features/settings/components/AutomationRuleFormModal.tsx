@@ -16,6 +16,7 @@ import { Button, Input, Modal, Select, Textarea } from '../../../components/ui'
 import { getFieldErrors } from '../../../lib/axios'
 import { useAutomationUserOptions, useCreateAutomationRule, useUpdateAutomationRule } from '../hooks/useAutomationRules'
 import { usePipelineStages } from '../hooks/usePipelineStages'
+import { stageLabel } from '../../deals/utils/stageLabel'
 import { labelForAction, labelForTrigger } from './AutomationRulesTab'
 import type {
   AutomationActionType,
@@ -119,7 +120,7 @@ export function AutomationRuleFormModal({ open, onClose, rule, meta }: Automatio
     }
   }
 
-  const stageOptions = (stages ?? []).map((stage) => ({ value: String(stage.id), label: stage.name }))
+  const stageOptions = (stages ?? []).map((stage) => ({ value: String(stage.id), label: stageLabel(t, stage) }))
   const userSelectOptions = (userOptions ?? []).map((user) => ({ value: String(user.id), label: user.name }))
   const placeholderHint = t('settings:automationRules.form.placeholderHint', {
     list: meta.title_placeholders.map((p) => `{${p}}`).join(', '),

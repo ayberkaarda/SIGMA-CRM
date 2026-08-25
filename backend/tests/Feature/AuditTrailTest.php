@@ -97,6 +97,37 @@ class AuditTrailTest extends TestCase
         $this->assertSame('1000.00', (string) $properties['old']['amount']);
     }
 
+    /**
+     * `logOnlyDirty()` treats every attribute on a brand-new row as dirty,
+     * so a create writes the full state that came into being - the other
+     * half of the CRUD contract this file pins for `updated`/`deleted`.
+     */
+    public function test_creating_a_deal_records_a_created_event_with_no_old_state(): void
+    {
+        $this->clearAuditLog();
+
+        $deal = Deal::factory()->create(['amount' => 750.00, 'status' => 'open']);
+
+        $activity = $this->latestAudit();
+        $properties = $this->properties($activity);
+
+        $this->assertSame('crm', $activity->log_name);
+        $this->assertSame('created', $activity->event);
+        $this->assertSame('created', $activity->description);
+        $this->assertSame(Deal::class, $activity->subject_type);
+        $this->assertSame($deal->id, (int) $activity->subject_id);
+
+        // A create has no "before" - only the new state is recorded.
+        $this->assertArrayHasKey('attributes', $properties);
+        $this->assertArrayNotHasKey('old', $properties);
+        $this->assertSame('750.00', (string) $properties['attributes']['amount']);
+        $this->assertSame('open', $properties['attributes']['status']);
+
+        // Globally excluded columns never reach the diff, creation included.
+        $this->assertArrayNotHasKey('created_at', $properties['attributes']);
+        $this->assertArrayNotHasKey('updated_at', $properties['attributes']);
+    }
+
     public function test_a_save_that_changes_nothing_writes_no_history(): void
     {
         $deal = Deal::factory()->create();

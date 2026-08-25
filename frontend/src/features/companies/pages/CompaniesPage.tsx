@@ -215,8 +215,11 @@ export function CompaniesPage() {
                 aria-label={t('companies:list.industryAria')}
               />
             </div>
+            {/* w-52: FR "Tous les propriétaires"/"Toutes les étiquettes" gibi 4 dilin en uzun
+                "Tümü" etiketleri (ölçüldü, bkz. BULGU 2 raporu) native <select> içinde
+                kırpılmadan sığsın diye w-44/w-48'den büyütüldü. */}
             {canViewUsers && (
-              <div className="w-full lg:w-48">
+              <div className="w-full lg:w-52">
                 <Select
                   value={query.owner_id ? String(query.owner_id) : ''}
                   onChange={(e) => updateParams({ owner_id: e.target.value || null, page: '1' })}
@@ -241,7 +244,7 @@ export function CompaniesPage() {
                 aria-label={t('companies:list.countryAria')}
               />
             </div>
-            <div className="w-full lg:w-44">
+            <div className="w-full lg:w-52">
               <Select
                 value={query.tag_id ? String(query.tag_id) : ''}
                 onChange={(e) => updateParams({ tag_id: e.target.value || null, page: '1' })}

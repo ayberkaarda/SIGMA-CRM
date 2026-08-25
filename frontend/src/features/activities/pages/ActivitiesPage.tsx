@@ -113,7 +113,10 @@ export function ActivitiesPage() {
   ]
   const activityableFilterOptions = [
     { value: '', label: t('filters.allRecordTypes') },
-    ...RELATED_RECORD_SELECTABLE_TYPES.concat('ticket').map((type) => ({ value: type, label: relatedRecordTypeLabel(type, tTasks) })),
+    // `.concat('ticket')` ÇIKARILDI — `RELATED_RECORD_SELECTABLE_TYPES` zaten 'ticket' içeriyor
+    // (bkz. `relatedRecordMeta.tsx`), eklemek "Ticket" seçeneğini React key çakışmasıyla iki kez
+    // listeliyordu (Faz 14 denetim bulgusu).
+    ...RELATED_RECORD_SELECTABLE_TYPES.map((type) => ({ value: type, label: relatedRecordTypeLabel(type, tTasks) })),
   ]
 
   const activities = data?.data ?? []

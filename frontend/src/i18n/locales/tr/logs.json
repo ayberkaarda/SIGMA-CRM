@@ -126,8 +126,8 @@
     "subjectType": {
       "lead": "Aday",
       "contact": "Kişi",
-      "company": "Şirket",
-      "deal": "Anlaşma",
+      "company": "Firma",
+      "deal": "Fırsat",
       "task": "Görev",
       "activity": "Aktivite",
       "ticket": "Talep",

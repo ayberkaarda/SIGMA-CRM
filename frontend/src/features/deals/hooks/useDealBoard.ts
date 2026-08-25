@@ -34,6 +34,7 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { getErrorMessage } from '../../../lib/axios'
 import { toast } from '../../../components/ui'
+import { stageLabel } from '../utils/stageLabel'
 import {
   boardKeys,
   columnOf,
@@ -347,7 +348,7 @@ export function useDealBoard(filters: BoardFilters): UseDealBoardResult {
       if (changedStage && (stage.is_lost || stage.is_won)) {
         setPendingReason({
           kind: stage.is_lost ? 'lost' : 'won',
-          stageName: stage.name,
+          stageName: stageLabel(t, stage),
           dealTitle: origin.card.title,
           dealId: cardId,
           payload,
@@ -358,7 +359,10 @@ export function useDealBoard(filters: BoardFilters): UseDealBoardResult {
 
       void commitMove(cardId, payload, origin.card)
     },
-    [commitMove, readBoard, settleCard, writeBoard]
+    // `t` KASITLI bağımlılıkta: `stageLabel()` her çağrıda GÜNCEL `t` ile çalışmalı, aksi
+    // halde dil değişiminde bekleyen kazanç/kayıp modalının aşama adı donardı (bu fazda
+    // tekrarlanan hata sınıfı).
+    [commitMove, readBoard, settleCard, writeBoard, t]
   )
 
   const onDragCancel = useCallback(() => {

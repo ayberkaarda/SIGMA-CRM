@@ -42,7 +42,7 @@
       "employeeCount": "Mitarbeiterzahl",
       "annualRevenue": "Jahresumsatz",
       "contactsCount": "Kontakte",
-      "dealsCount": "Deals",
+      "dealsCount": "Verkaufschancen",
       "owner": "Inhaber",
       "tags": "Tags",
       "actions": "Aktionen"
@@ -56,8 +56,8 @@
   "form": {
     "titleCreate": "Neues Unternehmen",
     "titleEdit": "Unternehmen bearbeiten",
-    "name": "Firmenname",
-    "nameRequired": "Der Firmenname ist erforderlich.",
+    "name": "Unternehmensname",
+    "nameRequired": "Der Unternehmensname ist erforderlich.",
     "email": "E-Mail",
     "phone": "Telefon",
     "website": "Website",
@@ -75,7 +75,7 @@
     "tags": "Tags",
     "customFieldsTitle": "Benutzerdefinierte Felder",
     "notes": "Notizen",
-    "createHint": "Nach dem Anlegen des Unternehmens können Kontakte und Deals damit verknüpft werden.",
+    "createHint": "Nach dem Anlegen des Unternehmens können Kontakte und Verkaufschancen damit verknüpft werden.",
     "create": "Erstellen"
   },
   "tagSelect": {
@@ -90,8 +90,8 @@
     "retry": "Erneut versuchen",
     "contactsBadge_one": "{{count}} Kontakt",
     "contactsBadge_other": "{{count}} Kontakte",
-    "dealsBadge_one": "{{count}} Deal",
-    "dealsBadge_other": "{{count}} Deals",
+    "dealsBadge_one": "{{count}} Verkaufschance",
+    "dealsBadge_other": "{{count}} Verkaufschancen",
     "employeeCount_one": "{{value}} Mitarbeiter",
     "employeeCount_other": "{{value}} Mitarbeiter",
     "annualRevenue": "Jahresumsatz",

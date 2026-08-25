@@ -48,7 +48,7 @@
 | 12 | Chat | DM + grup/kanal, yazıyor... (whisper), okundu bilgisi (çift tik), online/offline/son görülme (presence), dosya/görsel paylaşımı, mesaj arama, @mention, okunmamış sayaçları; deal/ticket detayında kayda bağlı sohbet paneli | 4, 5, 10 (mention→bildirim) | ✅ TAMAMLANDI (2026-08-24). İki kullanıcı arası anlık mesaj + tik + yazıyor göstergesi çalışıyor; kayda bağlı panel deal/ticket detayında canlı; mesajlar MySQL'de, fan-out Redis/Reverb üzerinden; 899 test / 7558 assertion yeşil |
 | 13 | Güvenlik Denetimi, Kırmızı Takım, Kullanıcı Kabul & Attio Analizi | **İz A** kırmızı takım (auth/session, authz/IDOR, 8 kanal, mass-assignment, injection/XSS, upload, kaynak, sırlar; A1–A8) + ön bulgu kapatma (F1–F6) + sertleştirme (H1–H6, H8); **İz B** 6 rol kabul turu; **İz C** Attio ANALİZİ (kabul/red kararı — özellik İNŞASI yok, bkz. Faz 14). **Detay: `docs/PHASE-AUDIT.md`.** | 0–12 | Bulgular düzeltilip testle kilitlendi; 8 kanal + IDOR testli; güvenlik header'ları doğrulandı; 6 rol turu tamamlandı; Attio kabul/red kararı kayıtlı; `composer/npm audit` temiz |
 | 14 | Uluslararasılaştırma (i18n + Çoklu Para Birimi) & Attio Özellikleri | **İz D** çok dilli destek (tr/en/de/fr, react-i18next) + README İngilizce; **İz E** çoklu para birimi + TCMB güncel kur (donmuş belge kuru, XXE-güvenli ayrıştırma + giden-çağrı sertleştirme H7, test A5.8); **İz F** Faz 13'te KABUL edilen Attio özelliklerinin (C1–C4) İNŞASI. **Detay: `docs/PHASE-INTL.md`.** | 13 | ✅ TAMAMLANDI (2026-08-25). 4 dilde gezilebilir (tam 4-dil nokta-kontrolü Faz 15'e ertelendi, bkz. PHASE-INTL §8) + anahtar-parite yeşil; kur donma/bayatlık görünür; XXE testi (A5.8) yeşil; C1–C4 çalışır durumda; `composer/npm audit` temiz. **1305 test / 9635 assertion.** |
-| 15 | Teslim & Final Kabul | İşlevsel feature/E2E test kapsamını tamamlama (auth, yetki, deal CRUD, log kaydı, chat mesajı); README final (kurulum + API endpoint listesi + ER, iki dilde); Faz 14 sonrası kısa yeniden-kabul turu (metin + özellik smoke, tam İz B tekrarı değil); Bölüm 6 global kabul kriterleri son turu; teslim. (Güvenlik header/upload/IDOR/mass-assignment işleri Faz 13'te — burada tekrarlanmaz.) | 0–14 | `php artisan test` yeşil; README eksiksiz (iki dilde); yeniden-kabul turu tamamlandı; Bölüm 6 kabul kriterlerinin tamamı sağlanıyor |
+| 15 | Teslim & Final Kabul | İşlevsel feature/E2E test kapsamını tamamlama (auth, yetki, deal CRUD, log kaydı, chat mesajı); README final (kurulum + API endpoint listesi + ER, iki dilde); Faz 14 sonrası kısa yeniden-kabul turu (metin + özellik smoke, tam İz B tekrarı değil); Bölüm 6 global kabul kriterleri son turu; teslim. (Güvenlik header/upload/IDOR/mass-assignment işleri Faz 13'te — burada tekrarlanmaz.) | 0–14 | ✅ TAMAMLANDI (2026-08-25). `php artisan test` yeşil (**1316 test / 9695 assertion**); README EN (birincil) + README.tr.md eksiksiz (kurulum + 167 uçluk API listesi + 5 gruplu mermaid ER + ekran görüntüleri); yeniden-kabul turu tamamlandı (140/140 rol×modül×dil hücresi); Bölüm 6 kabul kriterlerinin 8'i sağlandı, 2'si KISMEN (§6'da işaretli). **Detay: `docs/PHASE-DELIVERY.md`.** |
 
 **Faz 1 durumu (2026-08-23 güncellendi):** Figma linki geldi ve dosya Figma REST API ile okundu (`Dashboard CRM (Community) (Copy)`, key `tlJ6qKhhmbBZAKIYaCIolE`). Tüm design token'ları ölçülüp `docs/DESIGN-SYSTEM.md` dosyasına yazıldı — bu doküman token'lar için tek doğruluk kaynağıdır. Kalan adımlar:
 1. ✅ Token extraction (renk, tipografi, spacing, radius, shadow, layout) — tamamlandı
@@ -348,13 +348,17 @@ Paralel yürütülebilir fazlar: **F3 ∥ F4** (ikisi de yalnız F2'ye bağlı),
 
 ## 6. Kabul Kriterleri (Global)
 
-- [ ] `php artisan migrate --seed` (temizden `migrate:fresh --seed`) tek komutla dolu, gezilebilir demo sistem kurar; Super Admin bilgileri README'de.
-- [ ] phpMyAdmin'de temiz şema: anlamlı tablo adları, FK'lar, index'ler, soft delete; ER diyagramı (mermaid) README'de.
-- [ ] Tüm liste ekranlarında server-side pagination + sıralama + filtreleme + arama.
-- [ ] Her ekranda empty state, loading skeleton, error state ve toast; klavye erişilebilirliği; dark/light mode; WCAG 2.1 AA.
-- [ ] Ham SQL yok; `dangerouslySetInnerHTML` yok; `.env` repoda yok, `.env.example` eksiksiz.
-- [ ] Her endpoint'te Policy/Gate; frontend guard yalnızca UX içindir, asıl kontrol daima backend'de.
-- [ ] Güvenlik header'ları (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy) yanıtlarda mevcut.
-- [ ] Feature testleri (auth, yetki, deal CRUD, log kaydı, chat mesajı) yeşil.
-- [ ] README: XAMPP + Redis (Memurai/WSL) kurulumu, çalıştırma komutları (`php artisan reverb:start`, `php artisan queue:work`, `npm run dev`), API endpoint listesi.
-- [ ] Tüm CRUD işlemleri audit trail'de JSON diff ile izlenebilir; Loglar sayfası canlı akış + presence paneli çalışır.
+> **Faz 15 son turu (2026-08-25):** aşağıdaki kriterler gerçek sonuca göre işaretlendi. 2 madde
+> KISMEN kaldı (madde 4, madde 7) — nedeni kutunun yanında yazılı; sahte tik atılmadı. Ayrıntılı
+> kanıt: `docs/PHASE-DELIVERY.md`.
+
+- [x] `php artisan migrate --seed` (temizden `migrate:fresh --seed`) tek komutla dolu, gezilebilir demo sistem kurar; Super Admin bilgileri README'de.
+- [x] phpMyAdmin'de temiz şema: anlamlı tablo adları, FK'lar, index'ler, soft delete; ER diyagramı (mermaid) README'de.
+- [x] Tüm liste ekranlarında server-side pagination + sıralama + filtreleme + arama.
+- [ ] Her ekranda empty state, loading skeleton, error state ve toast; klavye erişilebilirliği; dark/light mode; WCAG 2.1 AA. **KISMEN:** empty/skeleton/error/toast/dark-light kod kanıtıyla doğrulandı (41 dosyada `EmptyState`, 53'te `Skeleton`, odak tuzağı, `aria-modal`, Esc, odak geri verme); WCAG 2.1 AA ve site geneli klavye turu tam otomatik denetlenemedi (araç/ortam kısıtı, Faz 15'te elle tamamlanmadı) — teslim sonrası aday.
+- [x] Ham SQL yok; `dangerouslySetInnerHTML` yok; `.env` repoda yok, `.env.example` eksiksiz.
+- [x] Her endpoint'te Policy/Gate; frontend guard yalnızca UX içindir, asıl kontrol daima backend'de.
+- [ ] Güvenlik header'ları (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy) yanıtlarda mevcut. **KISMEN:** CSP/X-Frame-Options/X-Content-Type-Options/Referrer-Policy canlı yanıtta doğrulandı (4/5); HSTS yalnız gerçek HTTPS bağlantısında gönderiliyor (`SecurityHeaders.php`, `config/security.php`'de `max_age=31536000` hazır) — yerel `http://localhost`'ta gözlemlenemedi, HTTPS ortamında doğrulanması teslim sonrası aday.
+- [x] Feature testleri (auth, yetki, deal CRUD, log kaydı, chat mesajı) yeşil. **1316 test / 9695 assertion, 0 hata** (2026-08-25).
+- [x] README: XAMPP + Redis (Memurai/WSL) kurulumu, çalıştırma komutları (`php artisan reverb:start`, `php artisan queue:work`, `npm run dev`), API endpoint listesi. EN (birincil) + TR, 167 uç, izin sütunlu, `route:list --json` ile birebir eşleşiyor.
+- [x] Tüm CRUD işlemleri audit trail'de JSON diff ile izlenebilir; Loglar sayfası canlı akış + presence paneli çalışır.

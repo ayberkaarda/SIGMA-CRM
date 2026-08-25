@@ -97,8 +97,8 @@
     "noResults": "Keine Ergebnisse gefunden"
   },
   "relatedType": {
-    "deal": "Deal",
-    "lead": "Lead",
+    "deal": "Verkaufschance",
+    "lead": "Interessent",
     "contact": "Kontakt",
     "company": "Unternehmen",
     "ticket": "Ticket"

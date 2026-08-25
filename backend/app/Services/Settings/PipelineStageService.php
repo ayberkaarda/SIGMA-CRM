@@ -186,6 +186,15 @@ class PipelineStageService
             $attributes['is_active'] = true;
         }
 
+        // `name_key` temizliği — YALNIZCA `name` GERÇEKTEN değiştiğinde (`color`/`probability`/
+        // `position` güncellemesi bunu BOZMAZ). Aşama seed edilmiş taksonomimizden biriyse
+        // (`name_key` dolu) ve admin ismini burada değiştiriyorsa, isim bu andan itibaren
+        // MÜŞTERİ VERİSİDİR: bir daha `enums.json` çevirisiyle ezilmemesi için anahtar
+        // NULL'lanır (bkz. migration 2026_08_25_960001 ve frontend `stageLabel()`).
+        if (array_key_exists('name', $attributes) && $attributes['name'] !== $stage->name) {
+            $attributes['name_key'] = null;
+        }
+
         if ($attributes !== []) {
             $stage->fill($attributes)->save();
         }
@@ -385,7 +394,10 @@ class PipelineStageService
      * Taşıma hedefi olabilecek aşamalar: aktif, kaynaktan farklı, sonuç
      * aşaması değil.
      *
-     * @return array<int, array{id: int, name: string}>
+     * `name_key` de taşınır — bkz. PipelineStageResource: DOLUYSA arayüz
+     * `enums:pipelineStage.<name_key>`yi çevirir, NULL'sa (admin verisi) ham `name` basılır.
+     *
+     * @return array<int, array{id: int, name: string, name_key: ?string}>
      */
     protected function availableTargets(PipelineStage $stage): array
     {
@@ -395,10 +407,11 @@ class PipelineStageService
             ->where('is_won', false)
             ->where('is_lost', false)
             ->orderBy('position')
-            ->get(['id', 'name'])
+            ->get(['id', 'name', 'name_key'])
             ->map(fn (PipelineStage $candidate): array => [
                 'id' => (int) $candidate->getKey(),
                 'name' => (string) $candidate->name,
+                'name_key' => $candidate->name_key,
             ])
             ->all();
     }

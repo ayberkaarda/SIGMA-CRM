@@ -6,11 +6,12 @@ import { useTranslation } from 'react-i18next'
 import { Avatar, AvatarGroup, Badge, EmptyState } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
 import { useOnlineUsers } from '../hooks/useOnlineUsers'
+import { roleLabel } from '../../users/utils/roleMeta'
 
 const MAX_AVATARS_IN_TRIGGER = 4
 
 export function OnlineUsersPopover() {
-  const { t } = useTranslation('presence')
+  const { t } = useTranslation(['presence', 'enums'])
   const { users, meta, isLoading } = useOnlineUsers()
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -101,7 +102,7 @@ export function OnlineUsersPopover() {
                     </div>
                     {user.role && (
                       <Badge variant="neutral" size="sm" className="shrink-0">
-                        {user.role}
+                        {roleLabel(user.role, t)}
                       </Badge>
                     )}
                   </li>

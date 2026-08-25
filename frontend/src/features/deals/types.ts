@@ -19,6 +19,10 @@ export type TokenColor = string | null
 export type PipelineStage = {
   id: number
   name: string
+  /** DOLUYSA `name` bizim çekirdek taksonomimizdendir ve `enums:pipelineStage.<name_key>`
+   *  çevrilerek gösterilir (bkz. `utils/stageLabel.ts`); NULL'sa `name` MÜŞTERİ VERİSİDİR
+   *  (admin yeniden adlandırmış ya da yeni aşama oluşturmuş) ve OLDUĞU GİBİ basılır. */
+  name_key: string | null
   slug: string
   position: number
   probability: number

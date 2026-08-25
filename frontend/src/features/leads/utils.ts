@@ -30,6 +30,21 @@ export function leadSourceOptions(t: TFunction): Array<{ value: LeadSource; labe
   }))
 }
 
+/**
+ * Faz 14 takip düzeltmesi: raporlama tarafı (`SourceAnalysisReport::run`) `leads.source`
+ * kolonunu DOĞRUDAN `GROUP BY` ile okur, `StoreLeadRequest`in `Rule::in()` beyaz listesiyle
+ * yeniden doğrulamaz — dolayısıyla `SourceAnalysisRow.source` (bkz. `reports/types.ts`) geniş
+ * `string` kalır ve teorik olarak `LeadSource` dışında eski/geçersiz bir değer taşıyabilir
+ * (`activityTypeMeta.ts`teki `'visit'` bulgusuyla AYNI sınıf risk). Bu yüzden ham değer hâlâ
+ * `SOURCE_LABEL_KEY`e karşı ÇÖZÜLÜR ama bilinmeyen bir değer için (roleLabel/ticketCategoryLabel
+ * deseninde olduğu gibi) ham metne düşülür, çökmez.
+ */
+export function leadSourceLabel(value: string, t: TFunction): string {
+  const key = SOURCE_LABEL_KEY[value as LeadSource]
+  if (!key) return value
+  return t(key, { ns: 'enums', defaultValue: value })
+}
+
 /** `enums` namespace anahtarı (önek `lead.status.*`). */
 export const STATUS_LABEL_KEY: Record<LeadStatus, string> = {
   new: 'lead.status.new',

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Requests\Activities\StoreActivityRequest;
 use App\Models\Activity;
 use App\Models\Company;
 use App\Models\Contact;
@@ -9,9 +10,11 @@ use App\Models\Deal;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Services\Tickets\SlaService;
+use Database\Seeders\DemoDataSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use ReflectionClass;
 use Tests\TestCase;
 
 class ActivityApiTest extends TestCase
@@ -432,5 +435,72 @@ class ActivityApiTest extends TestCase
         ]);
 
         $response->assertStatus(422);
+    }
+
+    // -------------------------------------------------------------------
+    // Regresyon kilidi — Faz 14 denetimi: seed/factory verisi API
+    // sözleşmesini (StoreActivityRequest) ihlal EDEBİLİYORDU ('visit' /
+    // 'task'), bunlar backend validasyonundan asla geçemeyeceği için
+    // yalnız bulk-insert/factory validasyon-bypass'ıyla DB'ye giriyor ve
+    // frontend'de literal eşlemesi olmayan tipler için `ActivityTypeBadge`'i
+    // çökertiyordu. Kabul edilen küme burada `StoreActivityRequest::rules()`
+    // İÇİNDEN (bir kopyadan DEĞİL) türetilir ki kural değişirse test de
+    // otomatik güncel kalsın.
+    // -------------------------------------------------------------------
+
+    /**
+     * @return list<string>
+     */
+    private function acceptedActivityTypes(): array
+    {
+        $rules = (new StoreActivityRequest())->rules();
+        $typeRule = collect($rules['type'])->first(
+            fn ($rule) => $rule instanceof \Illuminate\Validation\Rules\In
+        );
+
+        $this->assertNotNull($typeRule, "StoreActivityRequest'in 'type' kuralında Rule::in bulunamadı.");
+
+        preg_match_all('/"([^"]*)"/', (string) $typeRule, $matches);
+
+        $this->assertNotEmpty($matches[1], "StoreActivityRequest 'type' kabul kümesi ayrıştırılamadı.");
+
+        return $matches[1];
+    }
+
+    public function test_activity_factory_only_produces_types_accepted_by_store_request(): void
+    {
+        $acceptedTypes = $this->acceptedActivityTypes();
+
+        // 300 tekrar: factory'nin randomElement havuzunda kabul edilmeyen bir değer kalmışsa
+        // (eskiden 'task'/'visit' gibi) bu sayıda denemede pratik olarak kesin yakalanır.
+        $producedTypes = Activity::factory()->count(300)->make()->pluck('type')->unique();
+
+        foreach ($producedTypes as $type) {
+            $this->assertContains(
+                $type,
+                $acceptedTypes,
+                "ActivityFactory, StoreActivityRequest'in reddedeceği bir tip üretti: '{$type}'."
+            );
+        }
+    }
+
+    public function test_demo_data_seeder_activity_types_are_accepted_by_store_request(): void
+    {
+        $acceptedTypes = $this->acceptedActivityTypes();
+
+        // DemoDataSeeder::seedActivities() tam seed olmadan çalıştırılamaz (companies/contacts/
+        // deals/tickets'e bağımlı morphPool() gerektirir); bunun yerine seeder'ın kaynağının
+        // ta kendisi olan ACTIVITY_TYPES sabiti okunur (bkz. o sabitin dokümantasyonu).
+        $seederTypes = (new ReflectionClass(DemoDataSeeder::class))->getConstant('ACTIVITY_TYPES');
+
+        $this->assertNotEmpty($seederTypes, 'DemoDataSeeder::ACTIVITY_TYPES bulunamadı veya boş.');
+
+        foreach ($seederTypes as $type) {
+            $this->assertContains(
+                $type,
+                $acceptedTypes,
+                "DemoDataSeeder::ACTIVITY_TYPES, StoreActivityRequest'in reddedeceği bir tip içeriyor: '{$type}'."
+            );
+        }
     }
 }

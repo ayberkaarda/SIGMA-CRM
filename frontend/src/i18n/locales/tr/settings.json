@@ -4,7 +4,7 @@
     "subtitle": "Sistem genelindeki yapılandırmayı yönetin."
   },
   "tabs": {
-    "company": "Şirket Profili",
+    "company": "Firma Profili",
     "pipeline": "Pipeline Aşamaları",
     "customFields": "Özel Alanlar",
     "emailTemplates": "E-posta Şablonları",
@@ -18,7 +18,7 @@
   },
   "company": {
     "fields": {
-      "name": "Şirket Adı",
+      "name": "Firma Adı",
       "email": "E-posta",
       "phone": "Telefon",
       "address": "Adres",
@@ -30,7 +30,7 @@
     },
     "jsonHint": "JSON biçiminde bir değer.",
     "loadError": "Ayarlar yüklenirken bir hata oluştu.",
-    "empty": "Tanımlı şirket ayarı bulunamadı.",
+    "empty": "Tanımlı firma ayarı bulunamadı.",
     "resetChanges": "Değişiklikleri Geri Al",
     "errors": {
       "invalidNumber": "Geçerli bir sayı girin.",
@@ -40,10 +40,10 @@
   },
   "keys": {
     "company": {
-      "name": { "description": "Şirket ticari unvanı" },
-      "email": { "description": "Şirket iletişim e-postası" },
-      "phone": { "description": "Şirket telefon numarası" },
-      "address": { "description": "Şirket adresi" },
+      "name": { "description": "Firma ticari unvanı" },
+      "email": { "description": "Firma iletişim e-postası" },
+      "phone": { "description": "Firma telefon numarası" },
+      "address": { "description": "Firma adresi" },
       "tax_number": { "description": "Vergi kimlik numarası" }
     }
   },

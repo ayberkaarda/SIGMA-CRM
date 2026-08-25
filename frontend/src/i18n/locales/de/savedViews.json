@@ -10,7 +10,7 @@
   },
   "form": {
     "nameLabel": "Name der Ansicht",
-    "namePlaceholder": "z. B. Meine offenen Deals diesen Monat",
+    "namePlaceholder": "z. B. Meine offenen Verkaufschancen diesen Monat",
     "sharedLabel": "Mit dem Team teilen",
     "sharedHint": "Eine geteilte Ansicht kann von allen gesehen und angewendet werden; nur Sie können sie bearbeiten oder löschen."
   },

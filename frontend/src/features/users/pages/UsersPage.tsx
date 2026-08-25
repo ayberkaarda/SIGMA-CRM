@@ -33,6 +33,7 @@ import { SavedViewsBar } from '../../saved-views/components/SavedViewsBar'
 import { useDeleteUser, useRoles, useToggleActive, useUsers } from '../api/usersApi'
 import { UserFormModal } from '../components/UserFormModal'
 import { ResetPasswordModal } from '../components/ResetPasswordModal'
+import { roleLabel } from '../utils/roleMeta'
 import type { User, UsersQuery } from '../types'
 
 const DEFAULT_PER_PAGE = 10
@@ -79,7 +80,7 @@ function IconButton({
 type FormModalState = { mode: 'create' } | { mode: 'edit'; user: User } | null
 
 export function UsersPage() {
-  const { t } = useTranslation(['users', 'common'])
+  const { t } = useTranslation(['users', 'common', 'enums'])
   const [searchParams, setSearchParams] = useSearchParams()
   const { user: currentUser } = useAuth()
   const { can } = usePermission()
@@ -145,7 +146,7 @@ export function UsersPage() {
 
   const roleFilterOptions = [
     { value: '', label: t('users:list.allRoles') },
-    ...(roles ?? []).map((role) => ({ value: role.name, label: role.name })),
+    ...(roles ?? []).map((role) => ({ value: role.name, label: roleLabel(role.name, t) })),
   ]
 
   const statusFilterOptions = [
@@ -274,7 +275,7 @@ export function UsersPage() {
                             </div>
                           </Td>
                           <Td>
-                            {u.role ? <Badge variant="primary">{u.role.name}</Badge> : <span className="text-fg-muted">—</span>}
+                            {u.role ? <Badge variant="primary">{roleLabel(u.role.name, t)}</Badge> : <span className="text-fg-muted">—</span>}
                           </Td>
                           <Td>{u.department ?? '—'}</Td>
                           <Td>

@@ -18,7 +18,14 @@ class ActivityFactory extends Factory
     public function definition(): array
     {
         return [
-            'type' => fake()->randomElement(['call', 'email', 'meeting', 'note', 'task', 'visit']),
+            // 'task' ve 'visit' KASITLI OLARAK ÇIKARILDI — StoreActivityRequest/UpdateActivityRequest
+            // yalnız call/meeting/email/note kabul ediyor (bkz. DemoDataSeeder::ACTIVITY_TYPES aynı
+            // gerekçe); bu factory backend'in reddedeceği bir değer üretiyordu ve DB'ye yalnız
+            // bulk-insert/factory validasyon-bypass'ıyla giriyordu (Faz 14 denetim bulgusu).
+            // 'task' zaten ayrı bir modülün (Task) adı — bir aktiviteye anlamca en yakın karşılığı
+            // yoktur; 'visit' ise yüz yüze bir TOPLANTI'dır. İkisi de burada yeniden İCAT edilmez,
+            // sadece havuzdan çıkarılır.
+            'type' => fake()->randomElement(['call', 'email', 'meeting', 'note']),
             'subject' => fake()->randomElement([
                 'Müşteri görüşmesi', 'Teklif sunumu', 'Sözleşme görüşmesi', 'Bilgilendirme',
                 'Şikayet takibi', 'Ürün tanıtımı', 'Fiyat görüşmesi', 'Genel değerlendirme',

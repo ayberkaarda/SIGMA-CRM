@@ -22,6 +22,11 @@ class PipelineStageResource extends JsonResource
         return [
             'id' => $stage->id,
             'name' => $stage->name,
+            // DOLUYSA arayüz `enums:pipelineStage.<name_key>`yi `name`i defaultValue yaparak
+            // çevirir; NULL'sa (admin yeniden adlandırmış ya da yeni aşama) `name` MÜŞTERİ
+            // VERİSİDİR ve OLDUĞU GİBİ basılır (bkz. PipelineStage modeli, migration
+            // 2026_08_25_960001).
+            'name_key' => $stage->name_key,
             'slug' => $stage->slug,
             'position' => $stage->position,
             'probability' => $stage->probability,

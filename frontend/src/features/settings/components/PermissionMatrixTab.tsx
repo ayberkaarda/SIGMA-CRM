@@ -18,6 +18,7 @@ import { Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ShieldCheck, Users } from 'lucide-react'
 import { Badge, Button, Checkbox, Skeleton, Table, TBody, Td, THead, Th, Tr } from '../../../components/ui'
+import { roleLabel } from '../../users/utils/roleMeta'
 import { usePermissionMatrix, useUpdateRolePermissions } from '../hooks/usePermissionMatrix'
 import type { PermissionMatrixRole } from '../types'
 
@@ -26,7 +27,7 @@ function titleizeModule(moduleKey: string): string {
 }
 
 export function PermissionMatrixTab() {
-  const { t } = useTranslation(['settings', 'common'])
+  const { t } = useTranslation(['settings', 'common', 'enums'])
   const { data, isLoading, isError, refetch } = usePermissionMatrix()
   const updatePermissions = useUpdateRolePermissions()
 
@@ -85,7 +86,7 @@ export function PermissionMatrixTab() {
               <Th key={role.id} align="center">
                 <span className="inline-flex flex-col items-center gap-0.5">
                   <span className="inline-flex items-center gap-1.5">
-                    {role.name}
+                    {roleLabel(role.name, t)}
                     {!role.is_editable && <ShieldCheck className="size-3.5 text-primary" aria-hidden="true" />}
                   </span>
                   <span className="inline-flex items-center gap-1 text-[11px] font-normal normal-case text-fg-muted">
@@ -139,14 +140,14 @@ export function PermissionMatrixTab() {
                           <Checkbox
                             checked
                             disabled
-                            aria-label={t('settings:permissions.ariaAlwaysGranted', { role: role.name, permission: permissionName })}
+                            aria-label={t('settings:permissions.ariaAlwaysGranted', { role: roleLabel(role.name, t), permission: permissionName })}
                           />
                         ) : (
                           <Checkbox
                             checked={hasPermission(role, permissionName)}
                             onChange={() => togglePermission(role, permissionName)}
                             disabled={updatePermissions.isPending && updatePermissions.variables?.roleId === role.id}
-                            aria-label={t('settings:permissions.ariaToggle', { role: role.name, permission: permissionName })}
+                            aria-label={t('settings:permissions.ariaToggle', { role: roleLabel(role.name, t), permission: permissionName })}
                           />
                         )}
                       </div>

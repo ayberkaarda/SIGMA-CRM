@@ -21,6 +21,13 @@ class PipelineStage extends Model
     protected $fillable = [
         'name',
         'slug',
+        // Çeviri anahtarı — DOLUYSA `name` bizim taksonomimizdendir ve arayüz `enums.json`daki
+        // `pipelineStage.<name_key>` anahtarını basar; NULL'sa `name` MÜŞTERİ VERİSİDİR (admin
+        // yeniden adlandırmış ya da yeni aşama oluşturmuş) ve OLDUĞU GİBİ basılır. Yalnızca
+        // PipelineStageSeeder (seed) ve PipelineStageService::update() (temizleme) yazar —
+        // istemciden doğrudan YAZILAMAZ (bkz. UpdatePipelineStageRequest / StorePipelineStageRequest,
+        // ikisi de bu alanı kabul etmez).
+        'name_key',
         'position',
         'probability',
         'color',

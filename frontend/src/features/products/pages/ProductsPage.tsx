@@ -178,7 +178,10 @@ export function ProductsPage() {
                   aria-label={t('list.searchAria')}
                 />
               </div>
-              <div className="w-full lg:w-48">
+              {/* w-52: FR "Toutes les catégories"/"Toutes les étiquettes" gibi 4 dilin en uzun
+                  "Tümü" etiketleri (ölçüldü, bkz. BULGU 2 raporu) native <select> içinde
+                  kırpılmadan sığsın diye w-44/w-48'den büyütüldü. */}
+              <div className="w-full lg:w-52">
                 <Select
                   value={query.category ?? ''}
                   onChange={(e) => updateParams({ category: e.target.value || null, page: '1' })}
@@ -194,7 +197,7 @@ export function ProductsPage() {
                   aria-label={t('list.statusFilterAria')}
                 />
               </div>
-              <div className="w-full lg:w-44">
+              <div className="w-full lg:w-52">
                 <Select
                   value={query.tag_id ? String(query.tag_id) : ''}
                   onChange={(e) => updateParams({ tag_id: e.target.value || null, page: '1' })}

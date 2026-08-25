@@ -58,6 +58,8 @@ export type DashboardKpisResponse = {
 export type FunnelStage = {
   stage_id: number
   stage_name: string
+  /** Bkz. `features/deals/types.ts` `PipelineStage.name_key` — aynı DOLU/NULL sözleşmesi. */
+  stage_name_key: string | null
   color: string | null
   count: number
   value: string

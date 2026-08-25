@@ -109,6 +109,20 @@ class DemoDataSeeder extends Seeder
         'Güvenlik Denetimi', 'Performans Optimizasyonu', 'Çağrı Merkezi Modülü',
     ];
 
+    /**
+     * Aktivite tipleri — bkz. `StoreActivityRequest::rules()` (`'type' => Rule::in([...])`,
+     * aynı küme `UpdateActivityRequest`/`IndexActivityRequest`'te de tekrarlanır; repo genelinde
+     * `ActivityType` için ortak bir enum/sabit YOK, üç request sınıfında ayrı ayrı literaldir).
+     * Seed verisinin backend validasyonunun kabul ETMEDİĞİ bir değer üretmesi başlı başına bir
+     * hatadır — Faz 14 denetiminde `'visit'` bu şekilde DB'ye sızmış ve `ActivityTypeBadge`'i
+     * çökertmişti (backend `'visit'`i zaten reddediyor, yalnız seed bulk-insert'i doğrulamayı
+     * bypass ettiği için mümkün oldu). Bu sabit `ActivityApiTest`teki regresyon testi tarafından
+     * doğrudan okunur — kilidi burada tut, `$types` içine literal EKLEME.
+     *
+     * @var list<string>
+     */
+    private const ACTIVITY_TYPES = ['call', 'email', 'meeting', 'note'];
+
     private Generator $faker;
 
     private CarbonImmutable $now;
@@ -1014,13 +1028,18 @@ class DemoDataSeeder extends Seeder
      */
     private function seedActivities(): void
     {
-        $types = ['call', 'email', 'meeting', 'note', 'visit'];
+        $types = self::ACTIVITY_TYPES;
         $subjects = [
             'call' => ['Tanışma görüşmesi', 'Teklif sonrası takip araması', 'Fiyat müzakeresi'],
             'email' => ['Teklif dosyası gönderildi', 'Ürün broşürü paylaşıldı', 'Toplantı özeti iletildi'],
-            'meeting' => ['Kick-off toplantısı', 'İhtiyaç analizi toplantısı', 'Teknik değerlendirme'],
+            // Eskiden ayrı bir 'visit' tipi vardı (backend'in kabul etmediği bir değer — bkz.
+            // ACTIVITY_TYPES dokümantasyonu); yerinde/fabrika/ofis ziyaretleri anlamca zaten
+            // yüz yüze birer TOPLANTI olduğu için konuları buraya taşındı, ayrı tip icat edilmedi.
+            'meeting' => [
+                'Kick-off toplantısı', 'İhtiyaç analizi toplantısı', 'Teknik değerlendirme',
+                'Yerinde ziyaret', 'Fabrika ziyareti', 'Ofis ziyareti',
+            ],
             'note' => ['Müşteri notu', 'İç değerlendirme notu', 'Rakip analizi notu'],
-            'visit' => ['Yerinde ziyaret', 'Fabrika ziyareti', 'Ofis ziyareti'],
         ];
         $outcomes = ['successful', 'no_answer', 'rescheduled', 'follow_up', 'not_interested'];
         $pool = $this->morphPool();
@@ -1038,7 +1057,7 @@ class DemoDataSeeder extends Seeder
                 'subject' => $subjects[$type][$i % count($subjects[$type])],
                 'body' => 'Görüşmede kapsam, bütçe ve zaman planı ele alındı; sonraki adım kararlaştırıldı.',
                 'occurred_at' => $occurredAt,
-                'duration_minutes' => in_array($type, ['call', 'meeting', 'visit'], true)
+                'duration_minutes' => in_array($type, ['call', 'meeting'], true)
                     ? $this->faker->numberBetween(5, 120)
                     : null,
                 'outcome' => $i % 3 === 0 ? $outcomes[$i % count($outcomes)] : null,

@@ -37,6 +37,12 @@ class PipelineStageSeeder extends Seeder
                 ['slug' => $stage['slug']],
                 [
                     'name' => $stage['name'],
+                    // Çeviri anahtarı — bu SATIR bizim taksonomimizdir, `locales/*/enums.json`daki
+                    // `pipelineStage.<slug>` anahtarına karşılık gelir (bkz. migration
+                    // 2026_08_25_960001). Admin bu aşamanın adını sonradan değiştirirse
+                    // PipelineStageService::update() bu kolonu NULL'lar; isim o andan itibaren
+                    // müşteri verisi sayılır ve bir daha çeviriyle ezilmez.
+                    'name_key' => $stage['slug'],
                     'position' => $stage['position'],
                     'probability' => $stage['probability'],
                     'color' => $stage['color'],

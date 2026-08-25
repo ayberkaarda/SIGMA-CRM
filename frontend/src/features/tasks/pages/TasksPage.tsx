@@ -163,7 +163,10 @@ export function TasksPage() {
   ]
   const taskableFilterOptions = [
     { value: '', label: t('tasks:filters.allTaskableTypes') },
-    ...RELATED_RECORD_SELECTABLE_TYPES.concat('ticket').map((type) => ({ value: type, label: relatedRecordTypeLabel(type, t) })),
+    // `.concat('ticket')` ÇIKARILDI — `RELATED_RECORD_SELECTABLE_TYPES` zaten 'ticket' içeriyor
+    // (bkz. `relatedRecordMeta.tsx`), eklemek "Ticket" seçeneğini React key çakışmasıyla iki kez
+    // listeliyordu (Faz 14 denetim bulgusu).
+    ...RELATED_RECORD_SELECTABLE_TYPES.map((type) => ({ value: type, label: relatedRecordTypeLabel(type, t) })),
   ]
 
   const tasks = data?.data ?? []

@@ -1,6 +1,6 @@
 {
   "board": {
-    "title": "Deals",
+    "title": "Verkaufschancen",
     "openTotalLabel": "Offener Gesamtwert:",
     "viewSwitcher": {
       "aria": "Ansicht",
@@ -8,18 +8,18 @@
       "list": "Liste"
     },
     "refresh": "Aktualisieren",
-    "newDeal": "Deal",
+    "newDeal": "Verkaufschance",
     "offlineWarning": "Keine Live-Verbindung — Verschiebungen anderer sind gerade nicht sichtbar. Das Board wird automatisch aktualisiert, sobald die Verbindung wiederhergestellt ist.",
     "readOnlyHint": "Sie haben keine Berechtigung, Karten zu verschieben; das Board wird schreibgeschützt angezeigt.",
     "loadError": {
       "title": "Board konnte nicht geladen werden",
-      "description": "Beim Laden des Deal-Boards ist ein Fehler aufgetreten.",
+      "description": "Beim Laden des Verkaufschancen-Boards ist ein Fehler aufgetreten.",
       "retry": "Erneut versuchen"
     },
     "empty": {
-      "title": "Keine Deals vorhanden",
-      "description": "Kein Deal entspricht den ausgewählten Filtern.",
-      "create": "Deal erstellen"
+      "title": "Keine Verkaufschancen vorhanden",
+      "description": "Keine Verkaufschance entspricht den ausgewählten Filtern.",
+      "create": "Verkaufschance erstellen"
     },
     "column": {
       "aria_one": "Phase {{stage}}, {{count}} Karte",
@@ -27,14 +27,14 @@
       "empty": "Keine Karten in dieser Phase",
       "moreHidden_one": "{{count}} weitere Karte — mit Filtern eingrenzen",
       "moreHidden_other": "{{count}} weitere Karten — mit Filtern eingrenzen",
-      "addDeal": "Deal"
+      "addDeal": "Verkaufschance"
     },
     "card": {
       "lockedTooltip": "Sie sind nicht Inhaber dieser Karte und können sie daher nicht verschieben.",
       "unassigned": "Nicht zugewiesen",
       "movedBy": "{{name}} hat diese Karte verschoben",
       "overdueSrOnly": "(überfällig)",
-      "draggableRole": "Verschiebbare Deal-Karte",
+      "draggableRole": "Verschiebbare Verkaufschancen-Karte",
       "ariaLabel": "{{title}}, {{amount}}"
     },
     "announcements": {
@@ -45,11 +45,11 @@
       "droppedBack": "Karte {{title}} wurde an ihre vorherige Position zurückgesetzt.",
       "cancelled": "Das Verschieben der Karte {{title}} wurde abgebrochen.",
       "defaultCardName": "Karte",
-      "keyboardInstructions": "Um eine Deal-Karte per Tastatur zu verschieben, drücken Sie Leertaste oder Eingabe, um sie aufzunehmen. Verschieben Sie die Karte mit den Pfeiltasten zwischen und innerhalb von Phasen. Drücken Sie erneut Leertaste oder Eingabe, um sie abzulegen, oder Escape, um abzubrechen."
+      "keyboardInstructions": "Um eine Verkaufschancen-Karte per Tastatur zu verschieben, drücken Sie Leertaste oder Eingabe, um sie aufzunehmen. Verschieben Sie die Karte mit den Pfeiltasten zwischen und innerhalb von Phasen. Drücken Sie erneut Leertaste oder Eingabe, um sie abzulegen, oder Escape, um abzubrechen."
     },
     "filters": {
       "searchLabel": "Suchen",
-      "searchPlaceholder": "Deal-Titel oder Beschreibung",
+      "searchPlaceholder": "Verkaufschancen-Titel oder Beschreibung",
       "ownerLabel": "Inhaber",
       "allOwners": "Alle Inhaber",
       "companyLabel": "Unternehmen",
@@ -79,8 +79,8 @@
     "hintWon": "Sie können dies leer lassen."
   },
   "form": {
-    "titleCreate": "Neuer Deal",
-    "titleEdit": "Deal bearbeiten",
+    "titleCreate": "Neue Verkaufschance",
+    "titleEdit": "Verkaufschance bearbeiten",
     "cancel": "Abbrechen",
     "submitCreate": "Erstellen",
     "submitEdit": "Speichern",
@@ -99,7 +99,7 @@
     "expectedCloseDateLabel": "Voraussichtliches Abschlussdatum",
     "stageLabel": "Phase",
     "stageReadonlyHint": "Phasenänderungen erfolgen per Drag & Drop auf dem Board.",
-    "stageHint": "Wenn nicht angegeben, ordnet der Server den Deal der ersten aktiven Phase zu.",
+    "stageHint": "Wenn nicht angegeben, ordnet der Server die Verkaufschance der ersten aktiven Phase zu.",
     "statusLabel": "Status",
     "companyLabel": "Unternehmen",
     "contactLabel": "Kontakt",
@@ -146,18 +146,18 @@
   },
   "list": {
     "breadcrumbHome": "Startseite",
-    "breadcrumbCurrent": "Deals",
-    "title": "Deals",
-    "subtitle_one": "{{count}} Deal",
-    "subtitle_other": "{{count}} Deals",
+    "breadcrumbCurrent": "Verkaufschancen",
+    "title": "Verkaufschancen",
+    "subtitle_one": "{{count}} Verkaufschance",
+    "subtitle_other": "{{count}} Verkaufschancen",
     "viewSwitcher": {
       "aria": "Ansicht",
       "board": "Board",
       "list": "Liste"
     },
-    "newDeal": "Neuer Deal",
-    "searchPlaceholder": "Deal-Titel suchen...",
-    "searchAria": "Deals durchsuchen",
+    "newDeal": "Neue Verkaufschance",
+    "searchPlaceholder": "Verkaufschancen-Titel suchen...",
+    "searchAria": "Verkaufschancen durchsuchen",
     "stageFilterAria": "Phasenfilter",
     "statusFilterAria": "Statusfilter",
     "ownerFilterAria": "Inhaberfilter",
@@ -181,11 +181,11 @@
       "open": "Offener Wert: {{amount}}",
       "wonLost": "Gewonnen {{won}} · Verloren {{lost}}"
     },
-    "loadError": "Beim Laden der Deals ist ein Fehler aufgetreten.",
+    "loadError": "Beim Laden der Verkaufschancen ist ein Fehler aufgetreten.",
     "retry": "Erneut versuchen",
     "empty": {
-      "title": "Keine Deals gefunden",
-      "description": "Kein Deal entspricht Ihren Such- oder Filterkriterien."
+      "title": "Keine Verkaufschancen gefunden",
+      "description": "Keine Verkaufschance entspricht Ihren Such- oder Filterkriterien."
     },
     "columns": {
       "title": "Titel",
@@ -208,19 +208,19 @@
       "delete": "Löschen"
     },
     "deleteModal": {
-      "title": "Deal löschen",
-      "description": "Diese Aktion kann nicht rückgängig gemacht werden. Der Deal wird dauerhaft gelöscht.",
+      "title": "Verkaufschance löschen",
+      "description": "Diese Aktion kann nicht rückgängig gemacht werden. Die Verkaufschance wird dauerhaft gelöscht.",
       "cancel": "Abbrechen",
       "confirm": "Löschen",
-      "confirmText": "Sind Sie sicher, dass Sie den Deal „{{title}}“ löschen möchten?"
+      "confirmText": "Sind Sie sicher, dass Sie die Verkaufschance „{{title}}“ löschen möchten?"
     }
   },
   "detail": {
-    "backToList": "Deals",
-    "loadError": "Beim Laden des Deals ist ein Fehler aufgetreten.",
+    "backToList": "Verkaufschancen",
+    "loadError": "Beim Laden der Verkaufschance ist ein Fehler aufgetreten.",
     "retry": "Erneut versuchen",
-    "wonBanner": "Dieser Deal wurde am {{date}} gewonnen.",
-    "lostBanner": "Dieser Deal wurde am {{date}} verloren.",
+    "wonBanner": "Diese Verkaufschance wurde am {{date}} gewonnen.",
+    "lostBanner": "Diese Verkaufschance wurde am {{date}} verloren.",
     "noReason": "Kein Grund angegeben.",
     "showOnBoard": "Im Board anzeigen",
     "assignOwner": "Inhaber zuweisen",
@@ -242,23 +242,23 @@
     "customFieldsTitle": "Benutzerdefinierte Felder",
     "timeline": {
       "title": "Kommunikationsverlauf",
-      "notice": "Für Deals gibt es noch keinen eigenen Verlaufs-Endpunkt. Stattdessen können Sie den Verlauf des verknüpften Kontakts oder Unternehmens dieses Deals ansehen.",
-      "viewContact": "Kommunikationsverlauf des Kontakts dieses Deals ansehen",
-      "viewCompany": "Kommunikationsverlauf des Unternehmens dieses Deals ansehen",
-      "none": "Dieser Deal hat keinen verknüpften Kontakt oder Unternehmen."
+      "notice": "Für Verkaufschancen gibt es noch keinen eigenen Verlaufs-Endpunkt. Stattdessen können Sie den Verlauf des verknüpften Kontakts oder Unternehmens dieser Verkaufschance ansehen.",
+      "viewContact": "Kommunikationsverlauf des Kontakts dieser Verkaufschance ansehen",
+      "viewCompany": "Kommunikationsverlauf des Unternehmens dieser Verkaufschance ansehen",
+      "none": "Diese Verkaufschance hat keinen verknüpften Kontakt oder Unternehmen."
     },
     "deleteModal": {
-      "title": "Deal löschen",
-      "description": "Diese Aktion kann nicht rückgängig gemacht werden. Der Deal wird dauerhaft gelöscht.",
+      "title": "Verkaufschance löschen",
+      "description": "Diese Aktion kann nicht rückgängig gemacht werden. Die Verkaufschance wird dauerhaft gelöscht.",
       "cancel": "Abbrechen",
       "confirm": "Löschen",
-      "confirmText": "Sind Sie sicher, dass Sie den Deal „{{title}}“ löschen möchten?"
+      "confirmText": "Sind Sie sicher, dass Sie die Verkaufschance „{{title}}“ löschen möchten?"
     }
   },
   "toast": {
-    "created": "Deal erstellt.",
-    "updated": "Deal aktualisiert.",
-    "deleted": "Deal gelöscht.",
+    "created": "Verkaufschance erstellt.",
+    "updated": "Verkaufschance aktualisiert.",
+    "deleted": "Verkaufschance gelöscht.",
     "ownerAssigned": "Inhaberzuweisung aktualisiert."
   }
 }

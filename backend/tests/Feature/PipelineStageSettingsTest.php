@@ -6,6 +6,7 @@ use App\Events\DealMoved;
 use App\Models\Deal;
 use App\Models\PipelineStage;
 use App\Models\User;
+use Database\Seeders\PipelineStageSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
@@ -196,6 +197,99 @@ class PipelineStageSettingsTest extends TestCase
             ->postJson('/api/settings/pipeline-stages', ['name' => 'İkisi', 'is_won' => true, 'is_lost' => true])
             ->assertStatus(422)
             ->assertJsonPath('code', 'STAGE_FLAG_CONFLICT');
+    }
+
+    // -------------------------------------------------------------------
+    // name_key — çeviri anahtarı ayrımı (Sales Funnel'ın Türkçe kalma hatası)
+    // -------------------------------------------------------------------
+
+    /**
+     * Seeder, seed ettiği 7 çekirdek aşamanın `name_key`'ini slug'la doldurur — arayüz bu
+     * anahtarla `enums.json`daki `pipelineStage.<slug>` çevirisini basar.
+     */
+    public function test_the_seeder_fills_name_key_for_the_seven_core_stages(): void
+    {
+        PipelineStage::query()->delete();
+
+        $this->seed(PipelineStageSeeder::class);
+
+        foreach (PipelineStageSeeder::STAGES as $seedStage) {
+            $this->assertDatabaseHas('pipeline_stages', [
+                'slug' => $seedStage['slug'],
+                'name_key' => $seedStage['slug'],
+            ]);
+        }
+    }
+
+    /**
+     * `name` GERÇEKTEN değiştiğinde `name_key` NULL'lanır: isim artık MÜŞTERİ VERİSİDİR ve
+     * bir daha çeviriyle ezilmemelidir.
+     */
+    public function test_renaming_a_stage_nulls_its_name_key(): void
+    {
+        $this->openA->update(['name_key' => 'yeni-firsat']);
+
+        $this->actingAs($this->manager())
+            ->patchJson("/api/settings/pipeline-stages/{$this->openA->id}", ['name' => 'İlk Temas'])
+            ->assertStatus(200)
+            ->assertJsonPath('data.name_key', null);
+
+        $this->assertDatabaseHas('pipeline_stages', ['id' => $this->openA->id, 'name_key' => null]);
+    }
+
+    /**
+     * Yalnızca `color`/`probability` güncellemesi (`name` gönderilmeden) `name_key`'i BOZMAZ.
+     */
+    public function test_updating_color_or_probability_alone_preserves_name_key(): void
+    {
+        $this->openA->update(['name_key' => 'yeni-firsat']);
+
+        $this->actingAs($this->manager())
+            ->patchJson("/api/settings/pipeline-stages/{$this->openA->id}", ['color' => 'info', 'probability' => 20])
+            ->assertStatus(200)
+            ->assertJsonPath('data.name_key', 'yeni-firsat');
+
+        $this->assertDatabaseHas('pipeline_stages', ['id' => $this->openA->id, 'name_key' => 'yeni-firsat', 'color' => 'info']);
+    }
+
+    /**
+     * `name` gönderilse bile DEĞER aynıysa (gerçek bir değişiklik yoksa) `name_key` korunur.
+     */
+    public function test_sending_the_same_name_value_does_not_null_the_name_key(): void
+    {
+        $this->openA->update(['name' => 'Yeni Fırsat', 'name_key' => 'yeni-firsat']);
+
+        $this->actingAs($this->manager())
+            ->patchJson("/api/settings/pipeline-stages/{$this->openA->id}", ['name' => 'Yeni Fırsat'])
+            ->assertStatus(200)
+            ->assertJsonPath('data.name_key', 'yeni-firsat');
+    }
+
+    /**
+     * Admin'in oluşturduğu YENİ bir aşamanın `name_key`'i her zaman NULL'dır — bu bizim
+     * taksonomimiz değil, doğrudan müşteri verisidir.
+     */
+    public function test_a_newly_created_stage_has_a_null_name_key(): void
+    {
+        $response = $this->actingAs($this->manager())->postJson('/api/settings/pipeline-stages', [
+            'name' => 'Özel Aşama',
+        ]);
+
+        $response->assertStatus(201)->assertJsonPath('data.name_key', null);
+        $this->assertDatabaseHas('pipeline_stages', ['slug' => 'ozel-asama', 'name_key' => null]);
+    }
+
+    /**
+     * `PipelineStageResource` yanıtı `name_key`'i taşır — arayüzün çeviri kararını verebilmesi
+     * için gereken tek ekstra alan budur.
+     */
+    public function test_the_stage_resource_exposes_name_key(): void
+    {
+        $this->openA->update(['name_key' => 'yeni-firsat']);
+
+        $this->actingAs($this->manager())->getJson('/api/settings/pipeline-stages')
+            ->assertStatus(200)
+            ->assertJsonFragment(['id' => $this->openA->id, 'name_key' => 'yeni-firsat']);
     }
 
     // -------------------------------------------------------------------

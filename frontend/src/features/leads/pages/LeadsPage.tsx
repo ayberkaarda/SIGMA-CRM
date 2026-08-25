@@ -190,7 +190,10 @@ export function LeadsPage() {
                   aria-label={t('leads:list.statusFilterAria')}
                 />
               </div>
-              <div className="w-full lg:w-48">
+              {/* w-52: FR "Toutes les sources"/"Tous les propriétaires"/"Toutes les étiquettes" gibi
+                  4 dilin en uzun "Tümü" etiketleri (ölçüldü, bkz. BULGU 2 raporu) native <select>
+                  içinde kırpılmadan sığsın diye w-44/w-48'den büyütüldü. */}
+              <div className="w-full lg:w-52">
                 <Select
                   value={query.source ?? ''}
                   onChange={(e) => updateParams({ source: e.target.value || null, page: '1' })}
@@ -199,7 +202,7 @@ export function LeadsPage() {
                 />
               </div>
               {!ownersForbidden && (
-                <div className="w-full lg:w-48">
+                <div className="w-full lg:w-52">
                   <Select
                     value={query.owner_id ? String(query.owner_id) : ''}
                     onChange={(e) => updateParams({ owner_id: e.target.value || null, page: '1' })}
@@ -208,7 +211,7 @@ export function LeadsPage() {
                   />
                 </div>
               )}
-              <div className="w-full lg:w-44">
+              <div className="w-full lg:w-52">
                 <Select
                   value={query.tag_id ? String(query.tag_id) : ''}
                   onChange={(e) => updateParams({ tag_id: e.target.value || null, page: '1' })}

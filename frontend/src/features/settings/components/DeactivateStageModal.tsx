@@ -9,12 +9,18 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle } from 'lucide-react'
 import { Button, Modal, Select } from '../../../components/ui'
+import { stageLabel } from '../../deals/utils/stageLabel'
 
 export type DeactivateStageModalProps = {
   open: boolean
+  /** Zaten çözülmüş (translate edilmiş GEREKİYORSA) etiket — çağıran (`PipelineStagesTab`)
+   *  `stageLabel()` ile hazırlar, bu bileşen ham `name`/`name_key` bilmez. */
   stageName: string
   openDealsCount: number
-  availableStages: { id: number; name: string }[]
+  /** `name_key` OPSİYONELDİR: backend `PipelineStageService::availableTargets()` seed edilmiş
+   *  taksonomi satırları için doldurur, admin verisi olan hedeflerde NULL/eksik kalır (bkz.
+   *  `stageLabel()`). */
+  availableStages: { id: number; name: string; name_key?: string | null }[]
   isSubmitting: boolean
   onClose: () => void
   onConfirm: (moveToStageId: number) => void
@@ -32,7 +38,7 @@ export function DeactivateStageModal({
   const { t } = useTranslation(['settings', 'common'])
   const [selectedId, setSelectedId] = useState<string>('')
 
-  const options = availableStages.map((stage) => ({ value: String(stage.id), label: stage.name }))
+  const options = availableStages.map((stage) => ({ value: String(stage.id), label: stageLabel(t, stage) }))
 
   return (
     <Modal

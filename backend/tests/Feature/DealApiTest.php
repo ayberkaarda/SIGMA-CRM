@@ -76,6 +76,43 @@ class DealApiTest extends TestCase
         $this->actingAs($actor)->getJson("/api/deals/{$deal->id}")->assertStatus(403);
     }
 
+    /**
+     * The permission-denied path above only proves the gate is wired up.
+     * This is the read half of CRUD itself: a permitted actor's GET must
+     * come back with the full detail contract (DealResource), every
+     * eager-loaded relation resolved to the right record, not just a 200.
+     */
+    public function test_show_returns_the_full_deal_with_its_relations(): void
+    {
+        $actor = $this->actorWithPermissions(['deals.view']);
+        $stage = $this->openStage();
+        $owner = User::factory()->create();
+        $company = Company::factory()->create();
+        $contact = Contact::factory()->create();
+        $tag = Tag::factory()->create();
+        $deal = Deal::factory()->create([
+            'pipeline_stage_id' => $stage->id,
+            'owner_id' => $owner->id,
+            'company_id' => $company->id,
+            'contact_id' => $contact->id,
+            'title' => 'Detay Fırsatı',
+            'amount' => 5000.55,
+        ]);
+        $deal->tags()->attach($tag->id);
+
+        $response = $this->actingAs($actor)->getJson("/api/deals/{$deal->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.id', $deal->id)
+            ->assertJsonPath('data.title', 'Detay Fırsatı')
+            ->assertJsonPath('data.amount', 5000.55)
+            ->assertJsonPath('data.pipeline_stage.id', $stage->id)
+            ->assertJsonPath('data.owner.id', $owner->id)
+            ->assertJsonPath('data.company.id', $company->id)
+            ->assertJsonPath('data.contact.id', $contact->id)
+            ->assertJsonPath('data.tags.0.id', $tag->id);
+    }
+
     public function test_user_without_deals_create_permission_cannot_store_deal(): void
     {
         $actor = User::factory()->create();

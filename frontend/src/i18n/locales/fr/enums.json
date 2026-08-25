@@ -4,7 +4,8 @@
       "call": "Appel",
       "meeting": "Réunion",
       "email": "E-mail",
-      "note": "Note"
+      "note": "Note",
+      "unknown": "Autre"
     }
   },
   "deal": {
@@ -59,5 +60,30 @@
       "event": "Événement",
       "other": "Autre"
     }
+  },
+  "role": {
+    "super_admin": "Super administrateur",
+    "admin": "Administrateur",
+    "sales_manager": "Directeur commercial",
+    "sales_rep": "Représentant commercial",
+    "support_agent": "Agent support",
+    "viewer": "Observateur"
+  },
+  "ticketCategory": {
+    "technical_support": "Support technique",
+    "billing": "Facturation",
+    "product_info": "Information produit",
+    "complaint": "Réclamation",
+    "installation": "Installation",
+    "training_request": "Demande de formation"
+  },
+  "pipelineStage": {
+    "yeni-firsat": "Nouvelle opportunité",
+    "iletisim-kuruldu": "Contact établi",
+    "teklif-hazirlaniyor": "Préparation de l'offre",
+    "teklif-gonderildi": "Offre envoyée",
+    "muzakere": "Négociation",
+    "kazanildi": "Gagné",
+    "kaybedildi": "Perdu"
   }
 }

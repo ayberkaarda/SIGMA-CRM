@@ -7,20 +7,20 @@
   "groups": {
     "company": "Entreprise",
     "contact": "Contact",
-    "deal": "Affaire",
+    "deal": "Opportunité",
     "convertedContact": "Contact converti",
     "convertedCompany": "Entreprise convertie",
-    "convertedDeal": "Affaire convertie"
+    "convertedDeal": "Opportunité convertie"
   },
   "empty": {
-    "deals": "Aucune affaire liée.",
+    "deals": "Aucune opportunité liée.",
     "quotes": "Aucun devis lié.",
     "tickets": "Aucun ticket lié.",
     "company": "Aucune entreprise liée.",
     "contact": "Aucun contact lié.",
-    "deal": "Aucune affaire liée.",
+    "deal": "Aucune opportunité liée.",
     "convertedContact": "Ce prospect n'a pas encore été converti en contact.",
     "convertedCompany": "Ce prospect n'a pas encore été converti en entreprise.",
-    "convertedDeal": "Aucune affaire n'a été créée lors de cette conversion."
+    "convertedDeal": "Aucune opportunité n'a été créée lors de cette conversion."
   }
 }

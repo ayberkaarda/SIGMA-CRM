@@ -11,9 +11,10 @@ import { useTranslation } from 'react-i18next'
 import { Users } from 'lucide-react'
 import { Avatar, Badge, Card, CardHeader, EmptyState, Skeleton } from '../../../components/ui'
 import { useOnlineUsers } from '../../presence/hooks/useOnlineUsers'
+import { roleLabel } from '../../users/utils/roleMeta'
 
 export function OnlineUsersPanel() {
-  const { t } = useTranslation('logs')
+  const { t } = useTranslation(['logs', 'enums'])
   const { users, meta, isLoading, isError } = useOnlineUsers()
 
   if (isError) {
@@ -68,7 +69,7 @@ export function OnlineUsersPanel() {
                 </div>
                 {user.role && (
                   <Badge variant="neutral" size="sm" className="shrink-0">
-                    {user.role}
+                    {roleLabel(user.role, t)}
                   </Badge>
                 )}
               </li>

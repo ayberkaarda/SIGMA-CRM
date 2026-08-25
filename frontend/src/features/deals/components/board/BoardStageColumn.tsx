@@ -15,6 +15,7 @@ import { cn } from '../../../../lib/cn'
 import { columnDroppableId } from '../../hooks/useDealBoard'
 import { formatAmount, stageAccentClass } from './boardUtils'
 import { DealBoardCard } from './DealBoardCard'
+import { stageLabel } from '../../utils/stageLabel'
 import type { BoardColumn } from '../../types'
 
 export type BoardStageColumnProps = {
@@ -39,10 +40,11 @@ export function BoardStageColumn({
   const { setNodeRef, isOver } = useDroppable({ id: columnDroppableId(stage.id) })
 
   const notLoaded = Math.max(0, meta.count - deals.length)
+  const label = stageLabel(t, stage)
 
   return (
     <section
-      aria-label={t('board.column.aria', { stage: stage.name, count: meta.count })}
+      aria-label={t('board.column.aria', { stage: label, count: meta.count })}
       className="flex h-full w-80 shrink-0 flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface-2"
     >
       <div className={cn('h-1 w-full', stageAccentClass(stage.color))} aria-hidden="true" />
@@ -65,7 +67,7 @@ export function BoardStageColumn({
           >
             {stage.is_won && <Trophy className="size-4 shrink-0" aria-hidden="true" />}
             {stage.is_lost && <CircleSlash2 className="size-4 shrink-0" aria-hidden="true" />}
-            <span className="truncate">{stage.name}</span>
+            <span className="truncate">{label}</span>
           </h2>
           <Badge size="sm" variant="neutral">
             {meta.count}

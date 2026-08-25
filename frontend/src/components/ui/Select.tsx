@@ -25,6 +25,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
       disabled,
       children,
       defaultValue,
+      value,
       ...props
     },
     ref
@@ -34,6 +35,16 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     const errorId = `${selectId}-error`
     const hintId = `${selectId}-hint`
     const describedBy = error ? errorId : hint ? hintId : undefined
+    // React'e "controlled" (value verilmiş) mi yoksa "uncontrolled" (yalnızca defaultValue/hiçbiri
+    // verilmiş) mi olduğumuzu SADECE BİRİNİ geçerek söylüyoruz — ikisini birden vermek native
+    // <select>'i controlled/uncontrolled uyarısına düşürüyordu. `placeholder`in "seçilmemiş
+    // durumda boş seçenek göster" davranışı iki modda da farklı yollarla korunur:
+    //  - controlled (value verildi): caller zaten '' (veya eşdeğeri) değerini `value` olarak
+    //    geçiriyor; aşağıdaki disabled `<option value="">` bu boş değerle eşleşip seçili görünür.
+    //    defaultValue'ya HİÇ dokunmuyoruz.
+    //  - uncontrolled (value verilmedi): eskisi gibi defaultValue`'yu placeholder varsa '' olacak
+    //    şekilde hesaplıyoruz ki ilk render'da placeholder seçili gelsin.
+    const isControlled = value !== undefined
 
     return (
       <div className="flex flex-col gap-1.5">
@@ -49,7 +60,8 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             disabled={disabled}
             aria-invalid={!!error || undefined}
             aria-describedby={describedBy}
-            defaultValue={defaultValue ?? (placeholder ? '' : undefined)}
+            value={value}
+            defaultValue={isControlled ? undefined : (defaultValue ?? (placeholder ? '' : undefined))}
             className={cn(
               'w-full appearance-none rounded-md border border-border-strong bg-surface-2 px-3 pr-9 text-sm text-fg',
               'h-10',

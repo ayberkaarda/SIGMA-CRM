@@ -1,20 +1,20 @@
 {
   "kpi": {
     "revenue": "Revenu",
-    "openDealsCount": "Nombre d'affaires ouvertes",
-    "openDealsValue": "Valeur des affaires ouvertes",
+    "openDealsCount": "Nombre d'opportunités ouvertes",
+    "openDealsValue": "Valeur des opportunités ouvertes",
     "conversionRate": "Taux de conversion",
     "activitiesCount": "Nombre d'activités",
     "wonCount": "Gagnées",
     "lostCount": "Perdues",
-    "avgDealSize": "Taille moyenne des affaires"
+    "avgDealSize": "Taille moyenne des opportunités"
   },
   "recentActivities": {
     "emptyTitle": "Aucune activité pour le moment",
     "emptyDescription": "Aucune activité enregistrée n'a été trouvée.",
     "systemActor": "Système",
     "related": {
-      "deal": "Affaire",
+      "deal": "Opportunité",
       "lead": "Prospect",
       "contact": "Contact",
       "company": "Entreprise",
@@ -26,13 +26,13 @@
   "revenueTrend": {
     "group": { "day": "Jour", "week": "Semaine", "month": "Mois" },
     "emptyTitle": "Aucune donnée de revenu pour cette période",
-    "emptyDescription": "Aucune affaire gagnée n'a été trouvée sur la période sélectionnée.",
-    "tooltipWonDeals": "{{value}} affaires gagnées"
+    "emptyDescription": "Aucune opportunité gagnée n'a été trouvée sur la période sélectionnée.",
+    "tooltipWonDeals": "{{value}} opportunités gagnées"
   },
   "salesFunnel": {
     "emptyTitle": "Aucune donnée d'entonnoir pour cette période",
-    "emptyDescription": "Aucune affaire n'est entrée dans le pipeline sur la période sélectionnée.",
-    "tooltipDealsCount": "{{value}} affaires"
+    "emptyDescription": "Aucune opportunité n'est entrée dans le pipeline sur la période sélectionnée.",
+    "tooltipDealsCount": "{{value}} opportunités"
   },
   "taskSummary": {
     "overdue": "En retard",

@@ -5,7 +5,7 @@
   },
   "fields": {
     "title": "Titre",
-    "deal": "Affaire",
+    "deal": "Opportunité",
     "company": "Entreprise",
     "contact": "Contact",
     "validUntil": "Valide Jusqu'au",
@@ -39,13 +39,13 @@
     "searchAria": "Rechercher des devis",
     "statusAria": "Filtre de statut",
     "companyAria": "Filtre d'entreprise",
-    "dealAria": "Filtre d'affaire",
+    "dealAria": "Filtre d'opportunité",
     "expiredOnly": "Expirés uniquement",
     "fromDateAria": "Date de début",
     "toDateAria": "Date de fin",
     "allStatuses": "Tous les statuts",
     "allCompanies": "Toutes les entreprises",
-    "allDeals": "Toutes les affaires",
+    "allDeals": "Toutes les opportunités",
     "loadError": "Une erreur s'est produite lors du chargement des devis.",
     "emptyTitle": "Aucun devis trouvé",
     "emptyDescription": "Aucun devis ne correspond à vos critères de recherche ou de filtre.",
@@ -53,7 +53,7 @@
       "quoteNumber": "N° Devis",
       "title": "Titre",
       "companyContact": "Entreprise / Contact",
-      "deal": "Affaire",
+      "deal": "Opportunité",
       "status": "Statut",
       "total": "Total",
       "validUntil": "Validité",
@@ -93,7 +93,7 @@
       "titleRequired": "Le titre du devis est obligatoire."
     },
     "lockedBanner": {
-      "statusText": "Ce devis est au statut « {{status}} ». <bold>Ne peut pas être modifié :</bold> lignes, remise, entreprise, contact. <bold>Peut être modifié :</bold> titre, affaire, date de validité, notes, conditions — il s'agit uniquement d'informations de présentation/administratives, elles n'affectent pas le montant du devis et sont enregistrées avec le bouton « Enregistrer » habituel.",
+      "statusText": "Ce devis est au statut « {{status}} ». <bold>Ne peut pas être modifié :</bold> lignes, remise, entreprise, contact. <bold>Peut être modifié :</bold> titre, opportunité, date de validité, notes, conditions — il s'agit uniquement d'informations de présentation/administratives, elles n'affectent pas le montant du devis et sont enregistrées avec le bouton « Enregistrer » habituel.",
       "revisableHint": "Si vous devez modifier les lignes ou la remise, créez une nouvelle révision.",
       "notRevisableHint": "Une révision ne peut pas être créée car ce devis a été accepté (un engagement accepté ne peut pas être annulé) — ouvrez un nouveau devis indépendant si une modification affectant le montant est nécessaire."
     },
@@ -189,10 +189,10 @@
     "empty": "Aucun résultat trouvé"
   },
   "dealCombobox": {
-    "label": "Affaire",
-    "placeholder": "Rechercher une affaire...",
-    "clearAria": "Effacer la sélection d'affaire",
-    "clearOption": "Aucune affaire / effacer",
+    "label": "Opportunité",
+    "placeholder": "Rechercher une opportunité...",
+    "clearAria": "Effacer la sélection d'opportunité",
+    "clearOption": "Aucune opportunité / effacer",
     "loading": "Chargement…",
     "empty": "Aucun résultat trouvé"
   },

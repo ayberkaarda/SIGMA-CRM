@@ -1,25 +1,25 @@
 {
   "board": {
-    "title": "Affaires",
-    "openTotalLabel": "Total des affaires ouvertes :",
+    "title": "Opportunités",
+    "openTotalLabel": "Total des opportunités ouvertes :",
     "viewSwitcher": {
       "aria": "Affichage",
       "board": "Tableau",
       "list": "Liste"
     },
     "refresh": "Actualiser",
-    "newDeal": "Affaire",
+    "newDeal": "Opportunité",
     "offlineWarning": "Pas de connexion en direct — les déplacements effectués par d'autres ne sont pas visibles pour le moment. Le tableau s'actualisera automatiquement dès le retour de la connexion.",
     "readOnlyHint": "Vous n'avez pas la permission de déplacer les cartes ; le tableau est affiché en lecture seule.",
     "loadError": {
       "title": "Impossible de charger le tableau",
-      "description": "Une erreur est survenue lors du chargement du tableau des affaires.",
+      "description": "Une erreur est survenue lors du chargement du tableau des opportunités.",
       "retry": "Réessayer"
     },
     "empty": {
-      "title": "Aucune affaire à afficher",
-      "description": "Aucune affaire ne correspond aux filtres sélectionnés.",
-      "create": "Créer une affaire"
+      "title": "Aucune opportunité à afficher",
+      "description": "Aucune opportunité ne correspond aux filtres sélectionnés.",
+      "create": "Créer une opportunité"
     },
     "column": {
       "aria_one": "Étape {{stage}}, {{count}} carte",
@@ -27,14 +27,14 @@
       "empty": "Aucune carte dans cette étape",
       "moreHidden_one": "{{count}} carte supplémentaire — affinez avec les filtres",
       "moreHidden_other": "{{count}} cartes supplémentaires — affinez avec les filtres",
-      "addDeal": "Affaire"
+      "addDeal": "Opportunité"
     },
     "card": {
       "lockedTooltip": "Vous n'êtes pas le titulaire de cette carte, vous ne pouvez donc pas la déplacer.",
       "unassigned": "Non attribuée",
       "movedBy": "{{name}} a déplacé cette carte",
       "overdueSrOnly": "(en retard)",
-      "draggableRole": "Carte d'affaire déplaçable",
+      "draggableRole": "Carte d'opportunité déplaçable",
       "ariaLabel": "{{title}}, {{amount}}"
     },
     "announcements": {
@@ -45,11 +45,11 @@
       "droppedBack": "La carte {{title}} a été remise à sa position précédente.",
       "cancelled": "Le déplacement de la carte {{title}} a été annulé.",
       "defaultCardName": "Carte",
-      "keyboardInstructions": "Pour déplacer une carte d'affaire au clavier, appuyez sur espace ou entrée pour la saisir. Utilisez les flèches pour la déplacer entre les étapes et au sein d'une étape. Appuyez à nouveau sur espace ou entrée pour la déposer, ou sur échap pour annuler."
+      "keyboardInstructions": "Pour déplacer une carte d'opportunité au clavier, appuyez sur espace ou entrée pour la saisir. Utilisez les flèches pour la déplacer entre les étapes et au sein d'une étape. Appuyez à nouveau sur espace ou entrée pour la déposer, ou sur échap pour annuler."
     },
     "filters": {
       "searchLabel": "Rechercher",
-      "searchPlaceholder": "Titre ou description de l'affaire",
+      "searchPlaceholder": "Titre ou description de l'opportunité",
       "ownerLabel": "Titulaire",
       "allOwners": "Tous les titulaires",
       "companyLabel": "Entreprise",
@@ -79,8 +79,8 @@
     "hintWon": "Vous pouvez laisser ce champ vide."
   },
   "form": {
-    "titleCreate": "Nouvelle affaire",
-    "titleEdit": "Modifier l'affaire",
+    "titleCreate": "Nouvelle opportunité",
+    "titleEdit": "Modifier l'opportunité",
     "cancel": "Annuler",
     "submitCreate": "Créer",
     "submitEdit": "Enregistrer",
@@ -99,7 +99,7 @@
     "expectedCloseDateLabel": "Date de clôture prévue",
     "stageLabel": "Étape",
     "stageReadonlyHint": "Les changements d'étape se font par glisser-déposer sur le tableau.",
-    "stageHint": "Si non précisé, le serveur place l'affaire dans la première étape active.",
+    "stageHint": "Si non précisé, le serveur place l'opportunité dans la première étape active.",
     "statusLabel": "Statut",
     "companyLabel": "Entreprise",
     "contactLabel": "Contact",
@@ -146,18 +146,18 @@
   },
   "list": {
     "breadcrumbHome": "Accueil",
-    "breadcrumbCurrent": "Affaires",
-    "title": "Affaires",
-    "subtitle_one": "{{count}} affaire",
-    "subtitle_other": "{{count}} affaires",
+    "breadcrumbCurrent": "Opportunités",
+    "title": "Opportunités",
+    "subtitle_one": "{{count}} opportunité",
+    "subtitle_other": "{{count}} opportunités",
     "viewSwitcher": {
       "aria": "Affichage",
       "board": "Tableau",
       "list": "Liste"
     },
-    "newDeal": "Nouvelle affaire",
-    "searchPlaceholder": "Rechercher un titre d'affaire...",
-    "searchAria": "Rechercher des affaires",
+    "newDeal": "Nouvelle opportunité",
+    "searchPlaceholder": "Rechercher un titre d'opportunité...",
+    "searchAria": "Rechercher des opportunités",
     "stageFilterAria": "Filtre d'étape",
     "statusFilterAria": "Filtre de statut",
     "ownerFilterAria": "Filtre de titulaire",
@@ -181,11 +181,11 @@
       "open": "Valeur ouverte : {{amount}}",
       "wonLost": "Gagnées {{won}} · Perdues {{lost}}"
     },
-    "loadError": "Une erreur est survenue lors du chargement des affaires.",
+    "loadError": "Une erreur est survenue lors du chargement des opportunités.",
     "retry": "Réessayer",
     "empty": {
-      "title": "Aucune affaire trouvée",
-      "description": "Aucune affaire ne correspond à vos critères de recherche ou de filtre."
+      "title": "Aucune opportunité trouvée",
+      "description": "Aucune opportunité ne correspond à vos critères de recherche ou de filtre."
     },
     "columns": {
       "title": "Titre",
@@ -208,19 +208,19 @@
       "delete": "Supprimer"
     },
     "deleteModal": {
-      "title": "Supprimer l'affaire",
-      "description": "Cette action est irréversible. L'affaire sera définitivement supprimée.",
+      "title": "Supprimer l'opportunité",
+      "description": "Cette action est irréversible. L'opportunité sera définitivement supprimée.",
       "cancel": "Annuler",
       "confirm": "Supprimer",
-      "confirmText": "Voulez-vous vraiment supprimer l'affaire « {{title}} » ?"
+      "confirmText": "Voulez-vous vraiment supprimer l'opportunité « {{title}} » ?"
     }
   },
   "detail": {
-    "backToList": "Affaires",
-    "loadError": "Une erreur est survenue lors du chargement de l'affaire.",
+    "backToList": "Opportunités",
+    "loadError": "Une erreur est survenue lors du chargement de l'opportunité.",
     "retry": "Réessayer",
-    "wonBanner": "Cette affaire a été gagnée le {{date}}.",
-    "lostBanner": "Cette affaire a été perdue le {{date}}.",
+    "wonBanner": "Cette opportunité a été gagnée le {{date}}.",
+    "lostBanner": "Cette opportunité a été perdue le {{date}}.",
     "noReason": "Aucun motif indiqué.",
     "showOnBoard": "Afficher sur le tableau",
     "assignOwner": "Attribuer un titulaire",
@@ -242,23 +242,23 @@
     "customFieldsTitle": "Champs personnalisés",
     "timeline": {
       "title": "Historique des échanges",
-      "notice": "Il n'existe pas encore de point d'accès dédié à l'historique des affaires. Vous pouvez à la place consulter l'historique du contact ou de l'entreprise liés à cette affaire.",
-      "viewContact": "Voir l'historique des échanges du contact de cette affaire",
-      "viewCompany": "Voir l'historique des échanges de l'entreprise de cette affaire",
-      "none": "Cette affaire n'a aucun contact ni entreprise liés."
+      "notice": "Il n'existe pas encore de point d'accès dédié à l'historique des opportunités. Vous pouvez à la place consulter l'historique du contact ou de l'entreprise liés à cette opportunité.",
+      "viewContact": "Voir l'historique des échanges du contact de cette opportunité",
+      "viewCompany": "Voir l'historique des échanges de l'entreprise de cette opportunité",
+      "none": "Cette opportunité n'a aucun contact ni entreprise liés."
     },
     "deleteModal": {
-      "title": "Supprimer l'affaire",
-      "description": "Cette action est irréversible. L'affaire sera définitivement supprimée.",
+      "title": "Supprimer l'opportunité",
+      "description": "Cette action est irréversible. L'opportunité sera définitivement supprimée.",
       "cancel": "Annuler",
       "confirm": "Supprimer",
-      "confirmText": "Voulez-vous vraiment supprimer l'affaire « {{title}} » ?"
+      "confirmText": "Voulez-vous vraiment supprimer l'opportunité « {{title}} » ?"
     }
   },
   "toast": {
-    "created": "Affaire créée.",
-    "updated": "Affaire mise à jour.",
-    "deleted": "Affaire supprimée.",
+    "created": "Opportunité créée.",
+    "updated": "Opportunité mise à jour.",
+    "deleted": "Opportunité supprimée.",
     "ownerAssigned": "Attribution du titulaire mise à jour."
   }
 }

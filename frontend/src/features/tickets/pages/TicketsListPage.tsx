@@ -42,7 +42,7 @@ import { TicketPriorityBadge } from '../components/TicketPriorityBadge'
 import { TicketStatusBadge } from '../components/TicketStatusBadge'
 import { statusLabel, statusOptions } from '../components/ticketStatusMeta'
 import { priorityOptions } from '../components/ticketPriorityMeta'
-import { TICKET_CATEGORY_OPTIONS } from '../components/ticketCategoryOptions'
+import { ticketCategoryOptions } from '../components/ticketCategoryOptions'
 import { SlaCountdownInline } from '../components/SlaCountdown'
 import { TicketFormModal } from '../components/TicketFormModal'
 import { AssignTicketModal } from '../components/AssignTicketModal'
@@ -154,7 +154,7 @@ export function TicketsListPage() {
     { value: '', label: t('tickets:filters.allCompanies') },
     ...(companyOptions ?? []).map((c) => ({ value: String(c.id), label: c.name })),
   ]
-  const categoryFilterOptions = [{ value: '', label: t('tickets:filters.allCategories') }, ...TICKET_CATEGORY_OPTIONS]
+  const categoryFilterOptions = [{ value: '', label: t('tickets:filters.allCategories') }, ...ticketCategoryOptions(t)]
   const tagFilterOptions = [
     { value: '', label: t('tickets:filters.allTags') },
     ...(tags ?? []).map((tag) => ({ value: String(tag.id), label: tag.name })),
@@ -242,7 +242,11 @@ export function TicketsListPage() {
                   aria-label={t('tickets:filters.statusAria')}
                 />
               </div>
-              <div className="w-full lg:w-40">
+              {/* w-52: FR "Toutes les priorités"/"Tous les responsables"/"Toutes les entreprises"/
+                  "Toutes les catégories"/"Toutes les étiquettes" gibi 4 dilin en uzun "Tümü"
+                  etiketleri (ölçüldü, bkz. BULGU 2 raporu) native <select> içinde kırpılmadan
+                  sığsın diye w-40/w-44'ten büyütüldü. */}
+              <div className="w-full lg:w-52">
                 <Select
                   value={query.priority ?? ''}
                   onChange={(e) => updateParams({ priority: e.target.value || null, page: '1' })}
@@ -251,7 +255,7 @@ export function TicketsListPage() {
                 />
               </div>
               {!usersForbidden && (
-                <div className="w-full lg:w-44">
+                <div className="w-full lg:w-52">
                   <Select
                     value={query.assigned_to ? String(query.assigned_to) : ''}
                     onChange={(e) => updateParams({ assigned_to: e.target.value || null, page: '1' })}
@@ -260,7 +264,7 @@ export function TicketsListPage() {
                   />
                 </div>
               )}
-              <div className="w-full lg:w-44">
+              <div className="w-full lg:w-52">
                 <Select
                   value={query.company_id ? String(query.company_id) : ''}
                   onChange={(e) => updateParams({ company_id: e.target.value || null, page: '1' })}
@@ -268,7 +272,7 @@ export function TicketsListPage() {
                   aria-label={t('tickets:filters.companyAria')}
                 />
               </div>
-              <div className="w-full lg:w-44">
+              <div className="w-full lg:w-52">
                 <Select
                   value={query.category ?? ''}
                   onChange={(e) => updateParams({ category: e.target.value || null, page: '1' })}
@@ -276,7 +280,7 @@ export function TicketsListPage() {
                   aria-label={t('tickets:filters.categoryAria')}
                 />
               </div>
-              <div className="w-full lg:w-44">
+              <div className="w-full lg:w-52">
                 <Select
                   value={query.tag_id ? String(query.tag_id) : ''}
                   onChange={(e) => updateParams({ tag_id: e.target.value || null, page: '1' })}

@@ -10,7 +10,7 @@
   },
   "form": {
     "nameLabel": "Nom de la vue",
-    "namePlaceholder": "ex. Mes affaires ouvertes ce mois-ci",
+    "namePlaceholder": "ex. Mes opportunités ouvertes ce mois-ci",
     "sharedLabel": "Partager avec l'équipe",
     "sharedHint": "Une vue partagée peut être vue et appliquée par tout le monde ; vous seul pouvez la modifier ou la supprimer."
   },

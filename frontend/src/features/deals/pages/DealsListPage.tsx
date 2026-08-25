@@ -35,6 +35,7 @@ import { usePermission } from '../../auth/hooks/usePermission'
 import { ConvertedAmount } from '../../exchange/components/ConvertedAmount'
 import { SavedViewsBar } from '../../saved-views/components/SavedViewsBar'
 import { DealStageBadge } from '../components/DealStageBadge'
+import { stageLabel } from '../utils/stageLabel'
 import { DealStatusBadge } from '../components/DealStatusBadge'
 import { DealFormModal } from '../components/DealFormModal'
 import { AssignDealOwnerModal } from '../components/AssignDealOwnerModal'
@@ -139,7 +140,7 @@ export function DealsListPage() {
 
   const stageFilterOptions = [
     { value: '', label: t('list.allStages') },
-    ...(pipelineStages ?? []).map((stage) => ({ value: String(stage.id), label: stage.name })),
+    ...(pipelineStages ?? []).map((stage) => ({ value: String(stage.id), label: stageLabel(t, stage) })),
   ]
   const statusFilterOptions = [
     { value: '', label: t('list.allStatuses') },
@@ -226,7 +227,11 @@ export function DealsListPage() {
                   aria-label={t('list.searchAria')}
                 />
               </div>
-              <div className="w-full lg:w-44">
+              {/* w-52: FR "Tous les propriétaires"/"Toutes les entreprises"/"Toutes les étiquettes"
+                  gibi 4 dilin en uzun "Tümü" etiketleri (ölçüldü, bkz. BULGU 2 raporu) native
+                  <select> içinde kırpılmadan sığsın diye w-44'ten büyütüldü. Gerçek pipeline
+                  aşama adları da (ör. "Préparation de l'offre") bu genişlikte sığıyor. */}
+              <div className="w-full lg:w-52">
                 <Select
                   value={query.stage_id ? String(query.stage_id) : ''}
                   onChange={(e) => updateParams({ stage_id: e.target.value || null, page: '1' })}
@@ -243,7 +248,7 @@ export function DealsListPage() {
                 />
               </div>
               {!ownersForbidden && (
-                <div className="w-full lg:w-44">
+                <div className="w-full lg:w-52">
                   <Select
                     value={query.owner_id ? String(query.owner_id) : ''}
                     onChange={(e) => updateParams({ owner_id: e.target.value || null, page: '1' })}
@@ -252,7 +257,7 @@ export function DealsListPage() {
                   />
                 </div>
               )}
-              <div className="w-full lg:w-44">
+              <div className="w-full lg:w-52">
                 <Select
                   value={query.company_id ? String(query.company_id) : ''}
                   onChange={(e) => updateParams({ company_id: e.target.value || null, page: '1' })}
@@ -260,7 +265,7 @@ export function DealsListPage() {
                   aria-label={t('list.companyFilterAria')}
                 />
               </div>
-              <div className="w-full lg:w-44">
+              <div className="w-full lg:w-52">
                 <Select
                   value={query.tag_id ? String(query.tag_id) : ''}
                   onChange={(e) => updateParams({ tag_id: e.target.value || null, page: '1' })}

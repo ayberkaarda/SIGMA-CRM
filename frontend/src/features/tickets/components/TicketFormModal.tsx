@@ -18,7 +18,7 @@ import { getFieldErrors } from '../../../lib/axios'
 import { TicketCompanyCombobox } from './TicketCompanyCombobox'
 import { TicketCustomFieldsSection } from './TicketCustomFieldsSection'
 import { TicketTagMultiSelect } from './TicketTagMultiSelect'
-import { TICKET_CATEGORY_OPTIONS } from './ticketCategoryOptions'
+import { ticketCategoryOptions } from './ticketCategoryOptions'
 import { priorityOptions } from './ticketPriorityMeta'
 import { statusLabel } from './ticketStatusMeta'
 import { useTicketContactOptions, useTicketCustomFields, useTicketTags, useTicketUserOptions } from './ticketsShared'
@@ -215,8 +215,10 @@ export function TicketFormModal({ open, onClose, ticket }: TicketFormModalProps)
               error={fieldError('category')}
             />
             <datalist id="ticket-category-options">
-              {TICKET_CATEGORY_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value} />
+              {ticketCategoryOptions(t).map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
               ))}
             </datalist>
           </div>

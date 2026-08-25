@@ -6,11 +6,13 @@
 // GEREKMEZ (choosing-a-form.md: tek eksende doğrudan etiketlenen kategorik barlar).
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { Bar, BarChart, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { TooltipContentProps } from 'recharts'
 import { EmptyState, Skeleton } from '../../../components/ui'
 import { formatMoney, formatMoneyCompact, formatNumber } from '../../../lib/money'
 import { useChartTheme } from '../utils/chartTheme'
+import { stageLabel } from '../../deals/utils/stageLabel'
 import type { FunnelStage } from '../types'
 
 const CHART_HEIGHT = 280
@@ -18,11 +20,20 @@ const CHART_HEIGHT = 280
 /** Recharts eksen/bar uzunluğu hesaplaması sayısal bir alan gerektirir; `value` API
  * sözleşmesinde string (bkz. görev tanımı). Bu yalnızca ÇİZİM için bir dönüşümdür — görüntülenen
  * metin her yerde orijinal string'ten `formatMoney`/`formatMoneyCompact` ile üretilir, backend'in
- * topladığı tutar üzerinde YENİDEN toplama yapılmaz. */
-type FunnelChartDatum = FunnelStage & { _numericValue: number }
+ * topladığı tutar üzerinde YENİDEN toplama yapılmaz.
+ *
+ * `_label`: Recharts'ın `dataKey` API'si bir ALAN ADI bekler, fonksiyon KABUL ETMEZ — bu yüzden
+ * çevrilmiş etiket (`stageLabel`) burada, veri hazırlanırken önceden hesaplanıp veriye eklenir
+ * (bkz. `stage_name` yerine `_label` kullanan Y ekseni aşağıda). Modül seviyesinde `t()`
+ * SAKLANMAZ: bu fonksiyon her render'da güncel `t` ile YENİDEN çağrılır (bkz. `useMemo` deps). */
+type FunnelChartDatum = FunnelStage & { _numericValue: number; _label: string }
 
-function toChartData(stages: FunnelStage[]): FunnelChartDatum[] {
-  return stages.map((stage) => ({ ...stage, _numericValue: Number(stage.value) || 0 }))
+function toChartData(stages: FunnelStage[], t: TFunction): FunnelChartDatum[] {
+  return stages.map((stage) => ({
+    ...stage,
+    _numericValue: Number(stage.value) || 0,
+    _label: stageLabel(t, { name: stage.stage_name, name_key: stage.stage_name_key }),
+  }))
 }
 
 export type SalesFunnelProps = {
@@ -50,7 +61,7 @@ function FunnelTooltip({ active, payload, currency }: FunnelTooltipProps) {
   const { t } = useTranslation('dashboard')
   const theme = useChartTheme()
   if (!active || !payload?.length) return null
-  const stage = payload[0]?.payload as FunnelStage | undefined
+  const stage = payload[0]?.payload as FunnelChartDatum | undefined
   if (!stage) return null
 
   return (
@@ -58,7 +69,7 @@ function FunnelTooltip({ active, payload, currency }: FunnelTooltipProps) {
       className="rounded-md border px-3 py-2 text-xs shadow-popover"
       style={{ background: theme.surface, borderColor: theme.border, color: theme.fg }}
     >
-      <p className="mb-1 font-medium">{stage.stage_name}</p>
+      <p className="mb-1 font-medium">{stage._label}</p>
       <p>
         <span className="font-semibold">{formatMoney(stage.value, currency)}</span>
         <span style={{ color: theme.fgMuted }}>
@@ -71,9 +82,11 @@ function FunnelTooltip({ active, payload, currency }: FunnelTooltipProps) {
 }
 
 export function SalesFunnel({ stages, isLoading, currency = 'TRY' }: SalesFunnelProps) {
-  const { t } = useTranslation('dashboard')
+  const { t, i18n } = useTranslation('dashboard')
   const theme = useChartTheme()
-  const chartData = useMemo(() => toChartData(stages ?? []), [stages])
+  // `i18n.language` deps'te KASITLI: `t` referansı dil değişiminde her zaman değişmeyebilir,
+  // `_label`in donmaması (bu fazda tekrarlanan hata sınıfı) yalnızca bu sayede garanti olur.
+  const chartData = useMemo(() => toChartData(stages ?? [], t), [stages, t, i18n.language])
 
   if (isLoading) {
     return <Skeleton variant="rect" height={CHART_HEIGHT} className="w-full" />
@@ -103,7 +116,7 @@ export function SalesFunnel({ stages, isLoading, currency = 'TRY' }: SalesFunnel
             <XAxis type="number" hide />
             <YAxis
               type="category"
-              dataKey="stage_name"
+              dataKey="_label"
               width={140}
               tickLine={false}
               axisLine={false}

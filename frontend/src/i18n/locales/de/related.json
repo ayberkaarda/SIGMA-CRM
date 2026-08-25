@@ -5,22 +5,22 @@
     "moreNotShown_other": "+{{count}} weitere Datensätze"
   },
   "groups": {
-    "company": "Firma",
+    "company": "Unternehmen",
     "contact": "Kontakt",
-    "deal": "Deal",
+    "deal": "Verkaufschance",
     "convertedContact": "Umgewandelter Kontakt",
-    "convertedCompany": "Umgewandelte Firma",
-    "convertedDeal": "Umgewandelter Deal"
+    "convertedCompany": "Umgewandeltes Unternehmen",
+    "convertedDeal": "Umgewandelte Verkaufschance"
   },
   "empty": {
-    "deals": "Keine verknüpften Deals.",
+    "deals": "Keine verknüpften Verkaufschancen.",
     "quotes": "Keine verknüpften Angebote.",
     "tickets": "Keine verknüpften Tickets.",
-    "company": "Keine verknüpfte Firma.",
+    "company": "Kein verknüpftes Unternehmen.",
     "contact": "Kein verknüpfter Kontakt.",
-    "deal": "Kein verknüpfter Deal.",
-    "convertedContact": "Dieser Lead wurde noch nicht in einen Kontakt umgewandelt.",
-    "convertedCompany": "Dieser Lead wurde noch nicht in eine Firma umgewandelt.",
-    "convertedDeal": "Bei dieser Umwandlung wurde kein Deal erstellt."
+    "deal": "Keine verknüpfte Verkaufschance.",
+    "convertedContact": "Dieser Interessent wurde noch nicht in einen Kontakt umgewandelt.",
+    "convertedCompany": "Dieser Interessent wurde noch nicht in ein Unternehmen umgewandelt.",
+    "convertedDeal": "Bei dieser Umwandlung wurde keine Verkaufschance erstellt."
   }
 }

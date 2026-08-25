@@ -5,13 +5,13 @@
     "statusAria": "Statusfilter",
     "priorityAria": "Prioritätsfilter",
     "assignedAria": "Filter nach Zuständigem",
-    "companyAria": "Firmenfilter",
+    "companyAria": "Unternehmensfilter",
     "categoryAria": "Kategoriefilter",
     "tagAria": "Tag-Filter",
     "allStatuses": "Alle Status",
     "allPriorities": "Alle Prioritäten",
     "allAssignees": "Alle Zuständigen",
-    "allCompanies": "Alle Firmen",
+    "allCompanies": "Alle Unternehmen",
     "allCategories": "Alle Kategorien",
     "allTags": "Alle Tags",
     "slaBreachedOnly": "Nur SLA-Verletzungen",
@@ -48,7 +48,7 @@
       "priority": "Priorität",
       "status": "Status",
       "sla": "SLA",
-      "companyContact": "Firma / Kontakt",
+      "companyContact": "Unternehmen / Kontakt",
       "assignee": "Zuständig",
       "created": "Erstellt",
       "actions": "Aktionen"
@@ -77,7 +77,7 @@
     "loadError": "Beim Laden des Tickets ist ein Fehler aufgetreten.",
     "retry": "Erneut versuchen",
     "fields": {
-      "company": "Firma",
+      "company": "Unternehmen",
       "contact": "Kontakt",
       "assignee": "Zuständig",
       "creator": "Ersteller"
@@ -120,7 +120,7 @@
     "categoryLabel": "Kategorie",
     "categoryPlaceholder": "Kategorie auswählen oder eingeben",
     "contactLabel": "Kontakt",
-    "contactHint": "Wenn eine Firma ausgewählt ist, wird die Kontaktliste nach dieser Firma gefiltert.",
+    "contactHint": "Wenn ein Unternehmen ausgewählt ist, wird die Kontaktliste nach diesem Unternehmen gefiltert.",
     "contactLoading": "Wird geladen…",
     "contactNone": "Kein Kontakt",
     "assigneeLabel": "Zuständig",
@@ -131,10 +131,10 @@
     }
   },
   "companyCombobox": {
-    "label": "Firma",
-    "placeholder": "Firma suchen...",
-    "clearAria": "Firmenauswahl löschen",
-    "clearOption": "Keine Firma / löschen",
+    "label": "Unternehmen",
+    "placeholder": "Unternehmen suchen...",
+    "clearAria": "Unternehmensauswahl löschen",
+    "clearOption": "Kein Unternehmen / löschen",
     "loading": "Wird geladen…",
     "empty": "Keine Ergebnisse gefunden"
   },

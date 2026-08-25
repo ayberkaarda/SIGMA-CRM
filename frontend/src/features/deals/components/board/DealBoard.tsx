@@ -14,6 +14,7 @@ import type { TFunction } from 'i18next'
 import { parseColumnId } from '../../hooks/useDealBoard'
 import { BoardStageColumn } from './BoardStageColumn'
 import { DealCardPreview } from './DealBoardCard'
+import { stageLabel } from '../../utils/stageLabel'
 import type { UseDealBoardResult } from '../../hooks/useDealBoard'
 import type { BoardResponse } from '../../types'
 
@@ -25,15 +26,16 @@ function cardTitle(board: BoardResponse, id: string | number, t: TFunction): str
   return t('board.announcements.defaultCardName')
 }
 
-function stageName(board: BoardResponse, overId: string | number | undefined): string | null {
+function stageName(board: BoardResponse, overId: string | number | undefined, t: TFunction): string | null {
   if (overId === undefined) return null
   const stageId = parseColumnId(overId)
   if (stageId !== null) {
-    return board.data.find((column) => column.stage.id === stageId)?.stage.name ?? null
+    const column = board.data.find((entry) => entry.stage.id === stageId)
+    return column ? stageLabel(t, column.stage) : null
   }
   const raw = String(overId)
   const column = board.data.find((entry) => entry.deals.some((deal) => String(deal.id) === raw))
-  return column?.stage.name ?? null
+  return column ? stageLabel(t, column.stage) : null
 }
 
 export type DealBoardProps = {
@@ -63,13 +65,13 @@ export function DealBoard({
     onDragStart: ({ active }) =>
       t('board.announcements.pickedUp', { title: cardTitle(board, active.id, t) }),
     onDragOver: ({ active, over }) => {
-      const stage = stageName(board, over?.id)
+      const stage = stageName(board, over?.id, t)
       return stage
         ? t('board.announcements.overStage', { title: cardTitle(board, active.id, t), stage })
         : t('board.announcements.overNone', { title: cardTitle(board, active.id, t) })
     },
     onDragEnd: ({ active, over }) => {
-      const stage = stageName(board, over?.id)
+      const stage = stageName(board, over?.id, t)
       return stage
         ? t('board.announcements.droppedOnStage', { title: cardTitle(board, active.id, t), stage })
         : t('board.announcements.droppedBack', { title: cardTitle(board, active.id, t) })

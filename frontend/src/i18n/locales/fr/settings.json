@@ -223,7 +223,7 @@
     }
   },
   "automationRules": {
-    "description": "Configurez de petites règles d'automatisation en choisissant un déclencheur et une action dans un catalogue fixe (ex. \"créer une tâche quand une affaire atteint une étape\"). Aucun code personnalisé ni IA.",
+    "description": "Configurez de petites règles d'automatisation en choisissant un déclencheur et une action dans un catalogue fixe (ex. \"créer une tâche quand une opportunité atteint une étape\"). Aucun code personnalisé ni IA.",
     "newRule": "Nouvelle règle",
     "ruleSummary": "{{trigger}} → {{action}}",
     "loadError": "Une erreur s'est produite lors du chargement des règles d'automatisation.",
@@ -237,14 +237,14 @@
       "confirmSuffix": "?"
     },
     "triggers": {
-      "deal_stage_changed": "Quand une affaire atteint une étape spécifique",
-      "deal_status_changed": "Quand une affaire est gagnée/perdue",
+      "deal_stage_changed": "Quand une opportunité atteint une étape spécifique",
+      "deal_status_changed": "Quand une opportunité est gagnée/perdue",
       "ticket_created": "Quand un nouveau ticket de support est ouvert"
     },
     "actions": {
       "task_create": "Créer une tâche",
       "notification_send": "Envoyer une notification",
-      "deal_assign_owner": "Changer le propriétaire de l'affaire"
+      "deal_assign_owner": "Changer le propriétaire de l'opportunité"
     },
     "form": {
       "titleCreate": "Nouvelle règle d'automatisation",

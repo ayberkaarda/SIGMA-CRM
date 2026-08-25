@@ -18,7 +18,7 @@
   },
   "company": {
     "fields": {
-      "name": "Firmenname",
+      "name": "Unternehmensname",
       "email": "E-Mail",
       "phone": "Telefon",
       "address": "Adresse",
@@ -40,7 +40,7 @@
   },
   "keys": {
     "company": {
-      "name": { "description": "Firmenname (Handelsname)" },
+      "name": { "description": "Unternehmensname (Handelsname)" },
       "email": { "description": "Kontakt-E-Mail des Unternehmens" },
       "phone": { "description": "Telefonnummer des Unternehmens" },
       "address": { "description": "Adresse des Unternehmens" },
@@ -49,9 +49,9 @@
   },
   "customFields": {
     "entityTypes": {
-      "leads": "Leads",
+      "leads": "Interessenten",
       "contacts": "Kontakte",
-      "companies": "Firmen",
+      "companies": "Unternehmen",
       "deals": "Verkaufschancen",
       "tickets": "Tickets",
       "products": "Produkte"
@@ -223,7 +223,7 @@
     }
   },
   "automationRules": {
-    "description": "Richten Sie kleine Automatisierungsregeln ein, indem Sie einen Auslöser und eine Aktion aus einem festen Katalog wählen (z. B. \"Aufgabe erstellen, wenn ein Deal eine Phase erreicht\"). Kein eigener Code oder KI.",
+    "description": "Richten Sie kleine Automatisierungsregeln ein, indem Sie einen Auslöser und eine Aktion aus einem festen Katalog wählen (z. B. \"Aufgabe erstellen, wenn eine Verkaufschance eine Phase erreicht\"). Kein eigener Code oder KI.",
     "newRule": "Neue Regel",
     "ruleSummary": "{{trigger}} → {{action}}",
     "loadError": "Beim Laden der Automatisierungsregeln ist ein Fehler aufgetreten.",
@@ -237,14 +237,14 @@
       "confirmSuffix": "löschen möchten?"
     },
     "triggers": {
-      "deal_stage_changed": "Wenn ein Deal eine bestimmte Phase erreicht",
-      "deal_status_changed": "Wenn ein Deal gewonnen/verloren wird",
+      "deal_stage_changed": "Wenn eine Verkaufschance eine bestimmte Phase erreicht",
+      "deal_status_changed": "Wenn eine Verkaufschance gewonnen/verloren wird",
       "ticket_created": "Wenn ein neues Support-Ticket eröffnet wird"
     },
     "actions": {
       "task_create": "Aufgabe erstellen",
       "notification_send": "Benachrichtigung senden",
-      "deal_assign_owner": "Deal-Inhaber ändern"
+      "deal_assign_owner": "Inhaber der Verkaufschance ändern"
     },
     "form": {
       "titleCreate": "Neue Automatisierungsregel",

@@ -40,7 +40,7 @@
       "revenue": "Gelir",
       "won": "Kazanılan",
       "lost": "Kaybedilen",
-      "deals": "Toplam Anlaşma"
+      "deals": "Toplam Fırsat"
     },
     "totalsRow": "Toplam"
   },
@@ -57,7 +57,7 @@
       "openDeals": "Açık Fırsat",
       "openDealsValue": "Açık Fırsat Tutarı",
       "conversion": "Dönüşüm",
-      "avgDeal": "Ort. Anlaşma",
+      "avgDeal": "Ort. Fırsat",
       "activities": "Aktivite"
     }
   },

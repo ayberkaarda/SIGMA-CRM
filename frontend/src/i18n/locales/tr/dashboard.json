@@ -7,7 +7,7 @@
     "activitiesCount": "Aktivite Sayısı",
     "wonCount": "Kazanılan",
     "lostCount": "Kaybedilen",
-    "avgDealSize": "Ortalama Anlaşma Büyüklüğü"
+    "avgDealSize": "Ortalama Fırsat Büyüklüğü"
   },
   "recentActivities": {
     "emptyTitle": "Henüz aktivite yok",
@@ -17,7 +17,7 @@
       "deal": "Fırsat",
       "lead": "Aday",
       "contact": "Kişi",
-      "company": "Şirket",
+      "company": "Firma",
       "ticket": "Talep",
       "task": "Görev",
       "quote": "Teklif"

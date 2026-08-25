@@ -19,11 +19,12 @@ import { TicketActivityPanel } from '../components/TicketActivityPanel'
 import { TicketTasksPanel } from '../components/TicketTasksPanel'
 import { useDeleteTicket, useTicket } from '../api/ticketsApi'
 import { useTicketRealtime } from '../hooks/useTicketRealtime'
+import { ticketCategoryLabel } from '../components/ticketCategoryOptions'
 import { companyGroupConfig, contactGroupConfig } from '../../related/adapters'
 import { RelatedRecordsPanel } from '../../related/RelatedRecordsPanel'
 
 export function TicketDetailPage() {
-  const { t } = useTranslation('tickets')
+  const { t } = useTranslation(['tickets', 'enums'])
   const params = useParams<{ id: string }>()
   const ticketId = Number(params.id)
   const navigate = useNavigate()
@@ -121,7 +122,7 @@ export function TicketDetailPage() {
           <div className="flex flex-wrap items-center gap-1.5 pt-1">
             <TicketPriorityBadge priority={ticket.priority} />
             <TicketStatusBadge status={ticket.status} />
-            {ticket.category && <Badge variant="neutral">{ticket.category}</Badge>}
+            {ticket.category && <Badge variant="neutral">{ticketCategoryLabel(ticket.category, t)}</Badge>}
           </div>
         </CardHeader>
         <CardBody className="flex flex-col gap-6">

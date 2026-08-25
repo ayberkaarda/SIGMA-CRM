@@ -9,8 +9,7 @@ import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { Activity } from 'lucide-react'
 import { EmptyState, Skeleton } from '../../../components/ui'
-import { TYPE_ICON, TYPE_LABEL_KEY } from '../../activities/components/activityTypeMeta'
-import type { ActivityType } from '../../activities/types'
+import { resolveActivityTypeIcon, resolveActivityTypeLabelKey } from '../../activities/components/activityTypeMeta'
 import { formatRelativeTime } from '../utils/chartTheme'
 import type { RecentActivity } from '../types'
 
@@ -26,26 +25,22 @@ function relatedTypeLabels(t: TFunction): Record<string, string> {
   }
 }
 
-function isKnownActivityType(type: string): type is ActivityType {
-  return type in TYPE_ICON
-}
-
 // Backend gerçekte yalnızca bu dördünü döndürür — `StoreActivityRequest`/`UpdateActivityRequest`
 // `Rule::in(['call','meeting','email','note'])` ile doğruluyor (bkz. Faz 8). Ama
 // `RecentActivityResource::toArray` `type`'ı `$activity->type` olarak HAM basıyor, tipi
 // yeniden doğrulamıyor — kapalı devre sistemde ileride eklenecek bir tür veya eski/seed verisi
-// beyaz liste dışı bir değer taşıyabilir. Bu yüzden `type` burada geniş `string` kalır ve altta
-// güvenli bir erişimciyle okunur; tip koruması doğrudan üçlü ifadenin koşulunda ÇAĞRILIR (bir ara
-// `known` değişkenine atanıp sonra kullanılırsa TS bunu `activity.type`e geri yansıtmıyor —
-// TS7053 buradan geliyordu), böylece `TYPE_ICON[type]` erişimi güvenle daraltılmış olur.
+// beyaz liste dışı bir değer taşıyabilir. Bu yüzden `type` burada geniş `string` kalır.
+//
+// Faz 14 takip düzeltmesi: bilinmeyen bir `type` için artık kardeş bileşen `ActivityTypeBadge`
+// ile AYNI sözleşme kullanılır — `activityTypeMeta.ts`teki `resolveActivityTypeIcon` /
+// `resolveActivityTypeLabelKey` ortak çözücüleri (nötr ikon + "Diğer"/"Other" etiketi), ham
+// `type` metni ARTIK basılmaz.
 function activityTypeIcon(type: string) {
-  return isKnownActivityType(type) ? TYPE_ICON[type] : Activity
+  return resolveActivityTypeIcon(type)
 }
 
-/** Bilinmeyen bir `type` gelirse (silinmiş/gelecekte eklenen bir tür) ham metne sessizce düşülür —
- *  `enums` namespace'inde anahtarı olmayan bir değer için çeviri aranmaz. */
 function activityTypeLabel(t: TFunction, type: string): string {
-  return isKnownActivityType(type) ? t(TYPE_LABEL_KEY[type], { ns: 'enums' }) : type
+  return t(resolveActivityTypeLabelKey(type), { ns: 'enums' })
 }
 
 export type RecentActivitiesProps = {

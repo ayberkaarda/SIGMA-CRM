@@ -2,6 +2,7 @@
 import { useTranslation } from 'react-i18next'
 import { Table, TBody, Td, THead, Th, Tr } from '../../../components/ui'
 import { formatMoney, formatNumber } from '../../../lib/money'
+import { leadSourceLabel } from '../../leads/utils'
 import { useSourceAnalysis } from '../hooks/useReports'
 import { RankingBarChart } from './RankingBarChart'
 import { RateInfoNote } from './RateInfoNote'
@@ -12,12 +13,13 @@ export type SourceAnalysisTabProps = {
 }
 
 export function SourceAnalysisTab({ dateRange }: SourceAnalysisTabProps) {
-  const { t } = useTranslation('reports')
+  const { t } = useTranslation(['reports', 'enums'])
   const result = useSourceAnalysis(dateRange)
   // Tek `JsonResource` sarmalaması (bkz. `types.ts` başındaki SARMALAMA NOTU): satırlar
   // `result.data.data.data`de.
   const rows = result.data?.data.data ?? []
   const unknownSource = t('reports:sourceAnalysis.unknownSource')
+  const sourceLabel = (source: string) => (source ? leadSourceLabel(source, t) : unknownSource)
   // Backend zaten bu para biriminde döner (§2.4) — bkz. `SalesPerformanceTab.tsx` aynı yorum.
   const currency = result.data?.rate_info.display_currency ?? 'TRY'
 
@@ -27,7 +29,7 @@ export function SourceAnalysisTab({ dateRange }: SourceAnalysisTabProps) {
         data={rows}
         isLoading={result.isLoading}
         getKey={(row) => row.source}
-        getLabel={(row) => row.source || unknownSource}
+        getLabel={(row) => sourceLabel(row.source)}
         getValue={(row) => Number(row.revenue) || 0}
         formatValue={(value) => formatMoney(value, currency)}
         tooltipExtra={(row) => (
@@ -55,7 +57,7 @@ export function SourceAnalysisTab({ dateRange }: SourceAnalysisTabProps) {
         <TBody>
           {rows.map((row) => (
             <Tr key={row.source}>
-              <Td>{row.source || unknownSource}</Td>
+              <Td>{sourceLabel(row.source)}</Td>
               <Td align="right">{formatNumber(row.leads_count)}</Td>
               <Td align="right">{formatNumber(row.converted_count)}</Td>
               <Td align="right">{formatNumber(row.conversion_rate, 1)}%</Td>

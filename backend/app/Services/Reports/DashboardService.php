@@ -184,7 +184,7 @@ class DashboardService
      * kurla toplanır. Kova sayısı aşama × 3 durum × ≤4 para birimi ile
      * SINIRLIDIR (sabit), sorgu hâlâ TEKTİR ve satır başına dönüşüm yoktur.
      *
-     * @return array<int, array{stage_id: int, stage_name: string, color: ?string, count: int, value: string}>
+     * @return array<int, array{stage_id: int, stage_name: string, stage_name_key: ?string, color: ?string, count: int, value: string}>
      */
     public function funnel(DateRange $range, ?ReportCurrencyContext $currency = null): array
     {
@@ -193,7 +193,7 @@ class DashboardService
         $stages = PipelineStage::query()
             ->active()
             ->orderBy('position')
-            ->get(['id', 'name', 'color']);
+            ->get(['id', 'name', 'name_key', 'color']);
 
         $rows = Deal::query()
             ->whereBetween('created_at', [$range->from, $range->to])
@@ -222,6 +222,8 @@ class DashboardService
             return [
                 'stage_id' => (int) $stage->id,
                 'stage_name' => $stage->name,
+                // Bkz. PipelineStageResource — aynı DOLU/NULL sözleşmesi.
+                'stage_name_key' => $stage->name_key,
                 'color' => $stage->color,
                 'count' => $aggregate['count'],
                 'value' => $aggregate['value'],

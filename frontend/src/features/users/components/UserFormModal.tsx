@@ -9,6 +9,7 @@ import { getFieldErrors } from '../../../lib/axios'
 import { useCreateUser, useRoles, useUpdateUser } from '../api/usersApi'
 import { PASSWORD_MIN_LENGTH, PASSWORD_STRENGTH_KEYS, evaluatePassword, generateStrongPassword } from '../utils/password'
 import type { PasswordRuleId } from '../utils/password'
+import { roleLabel } from '../utils/roleMeta'
 import type { User } from '../types'
 
 const RULE_LABEL_KEYS: Record<PasswordRuleId, string> = {
@@ -35,7 +36,7 @@ const STRENGTH_BAR_COLOR: Record<number, string> = {
 }
 
 export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
-  const { t } = useTranslation(['users', 'common'])
+  const { t } = useTranslation(['users', 'common', 'enums'])
   const isEdit = !!user
   const { data: roles } = useRoles()
   const createUser = useCreateUser()
@@ -130,7 +131,7 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
 
   const roleOptions = [
     { value: '', label: t('users:form.rolePlaceholder'), disabled: true },
-    ...(roles ?? []).map((role) => ({ value: role.name, label: role.name })),
+    ...(roles ?? []).map((role) => ({ value: role.name, label: roleLabel(role.name, t) })),
   ]
 
   return (

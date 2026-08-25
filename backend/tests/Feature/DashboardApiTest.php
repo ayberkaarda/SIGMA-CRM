@@ -181,6 +181,34 @@ class DashboardApiTest extends TestCase
         $this->assertSame(0, $data[1]['count']);
     }
 
+    /**
+     * `stage_name_key` — Sales Funnel'ın Türkçe kalma hatasının kök nedeni burasıydı
+     * (`dataKey="stage_name"`). Seed edilmiş bir aşama dolu `name_key` taşımalı, admin'in
+     * yeniden adlandırdığı/oluşturduğu bir aşama ise NULL taşımalı — frontend ikisini
+     * ayırabilsin diye.
+     */
+    public function test_funnel_rows_carry_the_stage_name_key(): void
+    {
+        $actor = $this->actorWithDashboardView();
+
+        $seeded = PipelineStage::factory()->create([
+            'position' => 1, 'is_active' => true, 'slug' => 'yeni-firsat', 'name_key' => 'yeni-firsat',
+        ]);
+        $custom = PipelineStage::factory()->create([
+            'position' => 2, 'is_active' => true, 'name_key' => null,
+        ]);
+
+        $data = $this->actingAs($actor)
+            ->getJson('/api/dashboard/funnel?from=2026-06-01&to=2026-06-30')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('yeni-firsat', $data[0]['stage_name_key']);
+        $this->assertSame($seeded->id, $data[0]['stage_id']);
+        $this->assertNull($data[1]['stage_name_key']);
+        $this->assertSame($custom->id, $data[1]['stage_id']);
+    }
+
     // -------------------------------------------------------------------
     // revenue-trend
     // -------------------------------------------------------------------

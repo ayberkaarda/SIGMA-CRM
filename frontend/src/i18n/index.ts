@@ -126,8 +126,15 @@ function resolveInitialLocale(): Locale {
 
 const isDevOrTest = import.meta.env.DEV || import.meta.env.MODE === 'test'
 
-void i18n.use(initReactI18next).init({
-  lng: resolveInitialLocale(),
+/**
+ * Açılış dili TEK KEZ çözülür ve hem `init({ lng })` hem de aşağıdaki açılış yüklemesi
+ * AYNI değeri kullanır. İkisi ayrı ayrı `resolveInitialLocale()` çağırsaydı, arada
+ * localStorage değişirse (çok sekmeli oturum) "dil X, sözlük Y" ayrışması doğardı.
+ */
+const initialLocale = resolveInitialLocale()
+
+const initPromise = i18n.use(initReactI18next).init({
+  lng: initialLocale,
   fallbackLng: DEFAULT_LOCALE,
   supportedLngs: [...SUPPORTED_LOCALES],
   resources: { [DEFAULT_LOCALE]: defaultBundles() },
@@ -160,6 +167,69 @@ void i18n.use(initReactI18next).init({
     )
   },
 })
+
+/**
+ * AÇILIŞ HAZIRLIK SÖZÜ — "İngilizce seçtim, yeniledim, Türkçe gördüm" hatasının kilidi.
+ *
+ * HATA NEYDİ: `init({ lng })` seçili dili (`en`) kurardı ama `resources` YALNIZCA eager
+ * `tr` paketini taşırdı; `en/de/fr` sözlükleri sadece `setLocale()` içindeki
+ * `ensureBundlesLoaded()` ile inerdi. Tam sayfa yenilemede `setLocale()` HİÇ çağrılmaz →
+ * `i18n.language === 'en'` ama `en` sözlüğü bellekte YOK → i18next sessizce
+ * `fallbackLng: 'tr'`e düşer: dil seçici "English" gösterirken arayüz Türkçe basardı.
+ *
+ * ÇÖZÜM: seçili dil varsayılan DEĞİLSE, o dilin paketleri İLK RENDER'DAN ÖNCE indirilir.
+ * `main.tsx` `createRoot().render()` çağrısını bu söz çözülene kadar geciktirir — yani
+ * "önce Türkçe boya, sonra İngilizceye dön" diye bir ara kare hiç oluşmaz (flash YOK),
+ * çünkü o ana kadar HİÇBİR ŞEY boyanmamıştır.
+ *
+ * `tr` SEÇİLİYSE HİÇ BEKLEME YOK: `tr` eager olduğu için sözlük zaten ana bundle'da;
+ * fonksiyon ağ işine hiç girmeden anında döner (bu yüzden `initPromise` bile beklenmez —
+ * `initImmediate` bir makro-görev geciktirmesi ekler ve Türkçe kullanıcı bunu hak etmiyor).
+ *
+ * SÖZLÜK İNMEZSE ÇÖKME YOK: ağ hatası / eksik chunk durumunda konsola uyarı basılır ve
+ * dil açıkça `tr`ye çevrilir. `changeLanguage` şart: yoksa `i18n.language` `en` kalır,
+ * metin Türkçe basılır ve dil seçici yine yalan söylerdi — yani tam da düzelttiğimiz
+ * hatanın sessiz hâline geri dönerdik. localStorage'daki seçim KORUNUR (silinmez):
+ * kullanıcının niyeti geçerli, sonraki yenilemede indirme yeniden denenir.
+ *
+ * `react: { useSuspense: false }` KARARINA DOKUNULMADI: bekleme React ağacının DIŞINDA,
+ * render'dan önce yapılıyor; askıya alınacak bir bileşen ağacı yok.
+ */
+async function bootstrapInitialLocale(): Promise<void> {
+  if (initialLocale === DEFAULT_LOCALE) return
+
+  try {
+    // Sıra önemli: `addResourceBundle` i18next store'unu gerektirir, o da `init()`in
+    // tamamlanmasıyla hazırdır.
+    await initPromise
+    await ensureBundlesLoaded(initialLocale)
+
+    // AYNI DİLE `changeLanguage` — gereksiz görünür, DEĞİL: `init()` çalıştığı anda
+    // `en/de/fr` sözlüğü henüz bellekte yoktu ve i18next `resolvedLanguage`i "çevirisi
+    // olan İLK dil" kuralıyla `tr`ye sabitledi. Paket sonradan eklendiğinde bunu
+    // KENDİLİĞİNDEN tazelemez. Tazelenmezse `t()` doğru çalışırken `getActiveLocale()`
+    // `tr` döner → dil seçici "TR" gösterir ve `getIntlLocale()` para/tarihi `tr-TR`
+    // biçimlendirir; yani metin İngilizce, biçimler Türkçe kalırdı.
+    await i18n.changeLanguage(initialLocale)
+  } catch (error) {
+    console.warn(
+      `[i18n] "${initialLocale}" sözlüğü yüklenemedi; arayüz varsayılan dile (${DEFAULT_LOCALE}) düşüyor.`,
+      error
+    )
+    try {
+      await i18n.changeLanguage(DEFAULT_LOCALE)
+    } catch {
+      // i18next'in kendisi de kurulamadıysa yapacak bir şey yok; uygulama yine de
+      // `tr` eager paketiyle (ya da en kötü ham anahtarlarla) render edilir, ÇÖKMEZ.
+    }
+  }
+}
+
+/**
+ * `main.tsx` bunu bekler. Dışa açık diğer imzalara (setLocale/applyUserLocale/...)
+ * dokunulmadı; bu SADECE eklenen bir açılış kapısı.
+ */
+export const i18nReady: Promise<void> = bootstrapInitialLocale()
 
 export function getActiveLocale(): Locale {
   const current = i18n.resolvedLanguage ?? i18n.language

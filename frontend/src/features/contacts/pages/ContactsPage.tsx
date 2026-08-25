@@ -196,7 +196,10 @@ export function ContactsPage() {
                 aria-label={t('filters.searchAria')}
               />
             </div>
-            <div className="w-full lg:w-48">
+            {/* w-52: FR "Toutes les entreprises"/"Tous les propriétaires"/"Toutes les étiquettes"
+                gibi 4 dilin en uzun "Tümü" etiketleri (ölçüldü, bkz. BULGU 2 raporu) native
+                <select> içinde kırpılmadan sığsın diye w-44/w-48'den büyütüldü. */}
+            <div className="w-full lg:w-52">
               <Select
                 value={query.company_id ? String(query.company_id) : ''}
                 onChange={(e) => updateParams({ company_id: e.target.value || null, page: '1' })}
@@ -205,7 +208,7 @@ export function ContactsPage() {
               />
             </div>
             {canViewUsers && (
-              <div className="w-full lg:w-48">
+              <div className="w-full lg:w-52">
                 <Select
                   value={query.owner_id ? String(query.owner_id) : ''}
                   onChange={(e) => updateParams({ owner_id: e.target.value || null, page: '1' })}
@@ -222,7 +225,7 @@ export function ContactsPage() {
                 aria-label={t('filters.cityAria')}
               />
             </div>
-            <div className="w-full lg:w-44">
+            <div className="w-full lg:w-52">
               <Select
                 value={query.tag_id ? String(query.tag_id) : ''}
                 onChange={(e) => updateParams({ tag_id: e.target.value || null, page: '1' })}
