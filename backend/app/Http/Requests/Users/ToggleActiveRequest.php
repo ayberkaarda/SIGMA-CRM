@@ -23,15 +23,4 @@ class ToggleActiveRequest extends FormRequest
             'is_active' => ['required', 'boolean'],
         ];
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'is_active.required' => 'Aktiflik durumu zorunludur.',
-            'is_active.boolean' => 'Aktiflik durumu true/false olmalıdır.',
-        ];
-    }
 }

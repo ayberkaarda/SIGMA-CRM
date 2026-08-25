@@ -33,18 +33,6 @@ class IndexPriceListRequest extends FormRequest
     }
 
     /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'per_page.max' => 'Sayfa başına kayıt sayısı en fazla :max olabilir.',
-            'filter.is_active.boolean' => 'Aktiflik filtresi yalnızca 0 veya 1 olabilir.',
-            'filter.is_default.boolean' => 'Varsayılan filtresi yalnızca 0 veya 1 olabilir.',
-        ];
-    }
-
-    /**
      * @return array<string, mixed>
      */
     public function filters(): array

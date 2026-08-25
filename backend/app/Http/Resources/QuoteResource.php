@@ -71,6 +71,12 @@ class QuoteResource extends JsonResource
             'tax_amount' => (float) $quote->tax_amount,
             'total' => (float) $quote->total,
             'currency' => $quote->currency,
+            // --- `sent` anında DONMUŞ kur (Faz 14/İz E, PHASE-INTL §2.3) ---
+            // Taslakta null (henüz gönderilmedi → donacak bir an yok) ve kur
+            // hiç bulunamayan bir gönderimde de null. PDF/arayüz null gördüğünde
+            // kur satırını basmaz — uydurma bir kur göstermez.
+            'exchange_rate' => $quote->exchange_rate === null ? null : (float) $quote->exchange_rate,
+            'exchange_rate_date' => $quote->exchange_rate_date?->toDateString(),
 
             // --- Revizyon zinciri (sözleşme §6) ---
             'revision' => (int) ($quote->revision ?? 1),
@@ -95,6 +101,22 @@ class QuoteResource extends JsonResource
             'creator' => $quote->relationLoaded('creator') && $quote->creator
                 ? ['id' => $quote->creator->id, 'name' => $quote->creator->name]
                 : null,
+
+            // Faz 14 / İz F — C3 ilişkili-kayıtlar paneli (docs/PHASE-INTL.md §3).
+            // `company`/`deal`/`contact` alanları YUKARIDA zaten var — bunlar
+            // `QuoteDetailPage`'in özet alanları için (izinsiz de görünür, bu
+            // fazdan önceki bir karar). `related.*` onların TEKRARIDIR ama
+            // yalnızca ilgili modülün `viewAny` Policy'si `true` dönerse
+            // yüklenir (bkz. QuoteController::loadRelatedRecords()) — izinsiz
+            // kullanıcı bu anahtarı HİÇ görmez (boş dizi bile değil). Ortak
+            // `RelatedRecordsPanel`/`companyGroupConfig` vb. bu sözleşmeyi
+            // (`{total, items}`) bekliyor, ham `company`/`deal`/`contact`
+            // alanları değil.
+            'related' => array_filter([
+                'company' => $quote->relationLoaded('relatedCompany') ? $quote->relatedCompany : null,
+                'deal' => $quote->relationLoaded('relatedDeal') ? $quote->relatedDeal : null,
+                'contact' => $quote->relationLoaded('relatedContact') ? $quote->relatedContact : null,
+            ], fn ($group) => $group !== null),
 
             'items' => $quote->relationLoaded('items')
                 ? QuoteItemResource::collection($quote->items)

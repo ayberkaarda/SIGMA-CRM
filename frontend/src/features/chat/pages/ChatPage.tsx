@@ -7,6 +7,7 @@
 // o bileşenler kendi `useTyping` örneğini AÇMAZ.
 import { useCallback, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { MessageSquarePlus } from 'lucide-react'
 import { EmptyState, Skeleton } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
@@ -21,6 +22,7 @@ import { useConversation } from '../hooks/useConversations'
 import { useTyping } from '../hooks/useTyping'
 
 export function ChatPage() {
+  const { t } = useTranslation('chat')
   const params = useParams<{ conversationId: string }>()
   const navigate = useNavigate()
 
@@ -82,7 +84,7 @@ export function ChatPage() {
         {selectedId === null ? (
           <EmptyState
             icon={<MessageSquarePlus className="size-6" aria-hidden="true" />}
-            title="Bir konuşma seçin veya yeni sohbet başlatın"
+            title={t('page.emptyTitle')}
             className="m-auto"
             action={
               <button
@@ -90,7 +92,7 @@ export function ChatPage() {
                 onClick={handleOpenNewConversation}
                 className="text-sm font-medium text-primary hover:underline"
               >
-                Yeni sohbet başlat
+                {t('common.startNewConversation')}
               </button>
             }
           />

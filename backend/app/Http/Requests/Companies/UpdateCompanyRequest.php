@@ -49,31 +49,4 @@ class UpdateCompanyRequest extends FormRequest
             'custom_fields' => ['sometimes', 'array'],
         ];
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'name.required' => 'Firma adı zorunludur.',
-            'name.max' => 'Firma adı en fazla :max karakter olabilir.',
-            'email.email' => 'Geçerli bir e-posta adresi girin.',
-            'email.max' => 'E-posta en fazla :max karakter olabilir.',
-            'phone.max' => 'Telefon en fazla :max karakter olabilir.',
-            'website.url' => 'Geçerli bir web sitesi adresi girin.',
-            'website.max' => 'Web sitesi en fazla :max karakter olabilir.',
-            'industry.max' => 'Sektör en fazla :max karakter olabilir.',
-            'city.max' => 'Şehir en fazla :max karakter olabilir.',
-            'country.max' => 'Ülke en fazla :max karakter olabilir.',
-            'employee_count.integer' => 'Çalışan sayısı tam sayı olmalıdır.',
-            'employee_count.min' => 'Çalışan sayısı negatif olamaz.',
-            'annual_revenue.numeric' => 'Yıllık gelir sayısal olmalıdır.',
-            'annual_revenue.min' => 'Yıllık gelir negatif olamaz.',
-            'owner_id.exists' => 'Seçilen sahip geçerli değil.',
-            'tag_ids.array' => 'Etiketler bir liste olmalıdır.',
-            'tag_ids.*.exists' => 'Seçilen etiketlerden biri geçerli değil.',
-            'custom_fields.array' => 'Özel alanlar bir liste olmalıdır.',
-        ];
-    }
 }

@@ -5,6 +5,7 @@
 // string'de: pano bağlantısı paylaşılabilir ve tarayıcı geri tuşu beklendiği gibi çalışır.
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { KanbanSquare, List, Plus, RefreshCw, TriangleAlert, WifiOff } from 'lucide-react'
 import { Button, EmptyState, Skeleton } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
@@ -27,6 +28,7 @@ const OFFLINE_GRACE_MS = 2000
 const FILTER_KEYS: Array<keyof BoardFilterValues> = ['q', 'owner_id', 'company_id', 'from', 'to']
 
 export function DealsBoardPage() {
+  const { t } = useTranslation('deals')
   const [searchParams, setSearchParams] = useSearchParams()
   const { can } = usePermission()
   const canMove = can('deals.move')
@@ -103,10 +105,10 @@ export function DealsBoardPage() {
     <div className="flex h-full min-h-0 flex-col gap-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-0.5">
-          <h1 className="text-xl font-semibold text-fg">Fırsatlar</h1>
+          <h1 className="text-xl font-semibold text-fg">{t('board.title')}</h1>
           {board ? (
             <p className="text-sm text-fg-muted">
-              Açık fırsat toplamı:{' '}
+              {t('board.openTotalLabel')}{' '}
               <span className="font-medium text-fg-secondary">
                 {formatAmount(board.meta.total_open_amount, board.meta.currency)}
               </span>
@@ -121,7 +123,7 @@ export function DealsBoardPage() {
           <div
             className="flex items-center gap-1 rounded-lg border border-border bg-surface-1 p-1"
             role="group"
-            aria-label="Görünüm"
+            aria-label={t('board.viewSwitcher.aria')}
           >
             <span
               aria-current="page"
@@ -131,14 +133,14 @@ export function DealsBoardPage() {
               )}
             >
               <KanbanSquare className="size-4" aria-hidden="true" />
-              Pano
+              {t('board.viewSwitcher.board')}
             </span>
             <Link
               to="/deals/list"
               className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium text-fg-muted hover:bg-surface-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               <List className="size-4" aria-hidden="true" />
-              Liste
+              {t('board.viewSwitcher.list')}
             </Link>
           </div>
 
@@ -148,7 +150,7 @@ export function DealsBoardPage() {
             onClick={dnd.refetch}
             loading={dnd.isFetching && !dnd.isLoading}
           >
-            Yenile
+            {t('board.refresh')}
           </Button>
 
           {canCreate && (
@@ -156,7 +158,7 @@ export function DealsBoardPage() {
               leftIcon={<Plus className="size-4" aria-hidden="true" />}
               onClick={() => openCreate()}
             >
-              Fırsat
+              {t('board.newDeal')}
             </Button>
           )}
         </div>
@@ -170,15 +172,12 @@ export function DealsBoardPage() {
           className="flex items-center gap-2 rounded-lg border border-warning bg-warning-tint px-3 py-2 text-sm text-warning"
         >
           <WifiOff className="size-4 shrink-0" aria-hidden="true" />
-          Canlı bağlantı yok — başkalarının yaptığı taşımalar şu anda görünmüyor. Bağlantı
-          döndüğünde pano otomatik tazelenecek.
+          {t('board.offlineWarning')}
         </p>
       )}
 
       {!canMove && (
-        <p className="text-xs text-fg-muted">
-          Kartları taşıma yetkiniz yok; pano salt okunur görüntüleniyor.
-        </p>
+        <p className="text-xs text-fg-muted">{t('board.readOnlyHint')}</p>
       )}
 
       <div className="min-h-96 flex-1">
@@ -187,15 +186,15 @@ export function DealsBoardPage() {
         {dnd.isError && (
           <EmptyState
             icon={<TriangleAlert className="size-6" aria-hidden="true" />}
-            title="Pano yüklenemedi"
-            description="Fırsat panosu getirilirken bir sorun oluştu."
+            title={t('board.loadError.title')}
+            description={t('board.loadError.description')}
             action={
               <Button
                 variant="secondary"
                 leftIcon={<RefreshCw className="size-4" aria-hidden="true" />}
                 onClick={dnd.refetch}
               >
-                Tekrar dene
+                {t('board.loadError.retry')}
               </Button>
             }
           />
@@ -204,15 +203,15 @@ export function DealsBoardPage() {
         {board && !dnd.isError && isEmpty && (
           <EmptyState
             icon={<KanbanSquare className="size-6" aria-hidden="true" />}
-            title="Gösterilecek fırsat yok"
-            description="Seçili filtrelerle eşleşen bir fırsat bulunamadı."
+            title={t('board.empty.title')}
+            description={t('board.empty.description')}
             action={
               canCreate ? (
                 <Button
                   leftIcon={<Plus className="size-4" aria-hidden="true" />}
                   onClick={() => openCreate()}
                 >
-                  Fırsat oluştur
+                  {t('board.empty.create')}
                 </Button>
               ) : undefined
             }

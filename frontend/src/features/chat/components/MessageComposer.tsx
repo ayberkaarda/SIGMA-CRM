@@ -13,6 +13,7 @@
 // ek varsa `attachment` alanıyla da birlikte gönderilir (iyimser balonda önizleme için).
 import { useRef, useState } from 'react'
 import type { ChangeEvent, DragEvent, KeyboardEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Paperclip, Send, X } from 'lucide-react'
 import { Button, Textarea } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
@@ -32,6 +33,7 @@ export type MessageComposerProps = {
 const MENTION_PATTERN = /@([^\s@]*)$/
 
 export function MessageComposer({ conversationId, members, notifyTyping }: MessageComposerProps) {
+  const { t } = useTranslation('chat')
   const sendMessage = useSendMessage(conversationId)
   const uploadAttachment = useUploadAttachment()
 
@@ -196,7 +198,7 @@ export function MessageComposer({ conversationId, members, notifyTyping }: Messa
     >
       {isDragging && (
         <div className="pointer-events-none absolute inset-2 flex items-center justify-center rounded-md border-2 border-dashed border-primary text-sm font-medium text-primary">
-          Dosyayı bırakın
+          {t('composer.dropFile')}
         </div>
       )}
 
@@ -215,7 +217,7 @@ export function MessageComposer({ conversationId, members, notifyTyping }: Messa
           <button
             type="button"
             onClick={removeAttachment}
-            aria-label="Eki kaldır"
+            aria-label={t('composer.removeAttachmentAria')}
             className="shrink-0 rounded p-0.5 text-fg-muted hover:bg-surface-3 hover:text-fg"
           >
             <X className="size-3.5" aria-hidden="true" />
@@ -228,7 +230,7 @@ export function MessageComposer({ conversationId, members, notifyTyping }: Messa
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          aria-label="Dosya ekle"
+          aria-label={t('composer.attachFileAria')}
           className={cn(
             'inline-flex size-9 shrink-0 items-center justify-center rounded-md text-fg-muted hover:bg-surface-2 hover:text-fg',
             'transition-colors duration-150 motion-reduce:transition-none',
@@ -243,7 +245,7 @@ export function MessageComposer({ conversationId, members, notifyTyping }: Messa
             <ul
               className="absolute bottom-full left-0 z-10 mb-1 w-56 overflow-hidden rounded-md border border-border-subtle bg-surface-1 py-1 shadow-popover"
               role="listbox"
-              aria-label="Kullanıcı önerileri"
+              aria-label={t('composer.mentionSuggestionsAria')}
             >
               {mentionResults.map((member, index) => (
                 <li key={member.id}>
@@ -270,8 +272,8 @@ export function MessageComposer({ conversationId, members, notifyTyping }: Messa
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             rows={1}
-            placeholder="Bir mesaj yazın…"
-            aria-label="Mesaj yazın"
+            placeholder={t('composer.placeholder')}
+            aria-label={t('composer.inputAria')}
             className="max-h-40 min-h-10 resize-none py-2"
           />
         </div>
@@ -282,7 +284,7 @@ export function MessageComposer({ conversationId, members, notifyTyping }: Messa
           onClick={handleSubmit}
           disabled={!canSend}
           loading={sendMessage.isPending}
-          aria-label="Gönder"
+          aria-label={t('composer.sendAria')}
         >
           <Send className="size-4" aria-hidden="true" />
         </Button>

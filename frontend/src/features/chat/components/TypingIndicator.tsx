@@ -1,5 +1,6 @@
 // "Elif yazıyor…" / "Elif ve Mert yazıyor…" / 3+ için "Birkaç kişi yazıyor…".
 // `typingUsers` `ChatUser[]` — boşsa hiçbir şey render edilmez.
+import { useTranslation } from 'react-i18next'
 import type { ChatUser } from '../types'
 
 export type TypingIndicatorProps = {
@@ -7,15 +8,16 @@ export type TypingIndicatorProps = {
 }
 
 export function TypingIndicator({ users }: TypingIndicatorProps) {
+  const { t } = useTranslation('chat')
   if (users.length === 0) return null
 
   let text: string
   if (users.length === 1) {
-    text = `${users[0].name} yazıyor…`
+    text = t('typing.single', { name: users[0].name })
   } else if (users.length === 2) {
-    text = `${users[0].name} ve ${users[1].name} yazıyor…`
+    text = t('typing.double', { name1: users[0].name, name2: users[1].name })
   } else {
-    text = 'Birkaç kişi yazıyor…'
+    text = t('typing.multiple')
   }
 
   return (

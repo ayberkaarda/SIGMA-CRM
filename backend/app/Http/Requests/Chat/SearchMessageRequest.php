@@ -36,18 +36,6 @@ class SearchMessageRequest extends FormRequest
         ];
     }
 
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'q.required' => 'Arama terimi zorunludur.',
-            'q.min' => 'Arama terimi en az :min karakter olmalıdır.',
-            'per_page.max' => 'Sayfa başına kayıt sayısı en fazla :max olabilir.',
-        ];
-    }
-
     public function term(): string
     {
         return (string) $this->validated()['q'];

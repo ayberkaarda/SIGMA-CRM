@@ -1,6 +1,7 @@
 // Etiket çoklu seçimi — açılır panelde onay kutusu listesi. Seçili etiketler input üstünde
 // Badge olarak gösterilir (tag.color backend alanı token sözleşmesi gereği KULLANILMAZ).
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ChevronDown, X } from 'lucide-react'
 import { Badge } from '../../../components/ui'
 import { tokenBadgeVariant } from '../../../components/shared/tokenBadgeVariant'
@@ -15,7 +16,9 @@ export type TagMultiSelectProps = {
   isLoading?: boolean
 }
 
-export function TagMultiSelect({ value, onChange, options, label = 'Etiketler', isLoading }: TagMultiSelectProps) {
+export function TagMultiSelect({ value, onChange, options, label, isLoading }: TagMultiSelectProps) {
+  const { t } = useTranslation('contacts')
+  const resolvedLabel = label ?? t('tags.label')
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
 
@@ -42,7 +45,7 @@ export function TagMultiSelect({ value, onChange, options, label = 'Etiketler', 
 
   return (
     <div ref={containerRef} className="relative flex flex-col gap-1.5">
-      {label && <label className="text-xs font-medium text-fg-muted">{label}</label>}
+      {resolvedLabel && <label className="text-xs font-medium text-fg-muted">{resolvedLabel}</label>}
 
       {value.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
@@ -52,7 +55,7 @@ export function TagMultiSelect({ value, onChange, options, label = 'Etiketler', 
               <button
                 type="button"
                 onClick={() => removeTag(tag.id)}
-                aria-label={`${tag.name} etiketini kaldır`}
+                aria-label={t('tags.removeAria', { name: tag.name })}
                 className="text-fg-muted hover:text-fg"
               >
                 <X className="size-3" aria-hidden="true" />
@@ -72,16 +75,16 @@ export function TagMultiSelect({ value, onChange, options, label = 'Etiketler', 
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-1'
         )}
       >
-        <span>Etiket seç...</span>
+        <span>{t('tags.select')}</span>
         <ChevronDown className="size-4" aria-hidden="true" />
       </button>
 
       {open && (
         <div className="absolute z-10 top-full mt-1 max-h-64 w-full overflow-y-auto rounded-md border border-border-strong bg-surface-2 shadow-popover">
           {isLoading ? (
-            <p className="px-3 py-2 text-sm text-fg-muted">Yükleniyor…</p>
+            <p className="px-3 py-2 text-sm text-fg-muted">{t('tags.loading')}</p>
           ) : options.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-fg-muted">Etiket bulunamadı</p>
+            <p className="px-3 py-2 text-sm text-fg-muted">{t('tags.notFound')}</p>
           ) : (
             options.map((tag) => {
               const checked = value.some((t) => t.id === tag.id)

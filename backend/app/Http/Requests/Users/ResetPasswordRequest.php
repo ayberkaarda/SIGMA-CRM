@@ -24,15 +24,4 @@ class ResetPasswordRequest extends FormRequest
             'password' => ['required', 'string', Password::min(12)->mixedCase()->numbers()->symbols()->uncompromised()],
         ];
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'password.required' => 'Şifre alanı zorunludur.',
-            'password.uncompromised' => 'Girilen şifre veri ihlallerinde ifşa olmuş. Lütfen başka bir şifre seçin.',
-        ];
-    }
 }

@@ -7,6 +7,7 @@
 import { tokenBadgeVariant } from '../../../../components/shared/tokenBadgeVariant'
 import type { BadgeVariant } from '../../../../components/shared/tokenBadgeVariant'
 import { formatMoneyCompact } from '../../../../lib/money'
+import { formatDate as formatDateShared } from '../../../../lib/datetime'
 
 const STAGE_ACCENT_CLASSES: Record<BadgeVariant, string> = {
   primary: 'bg-primary',
@@ -30,13 +31,12 @@ export { tokenBadgeVariant }
  */
 export const formatAmount = formatMoneyCompact
 
+/**
+ * `T00:00:00` eklenir: `expected_close_date` saatsiz bir takvim tarihidir (`YYYY-MM-DD`);
+ * saat eklenmeden `Date` çözümü yerel saat dilimine göre bir gün öncesine kayabilir.
+ * Biçimlendirmenin kendisi merkezi `lib/datetime.ts`e devredilir (§1.8 — sabit `tr-TR` yok).
+ */
 export function formatDate(value: string | null): string {
   if (!value) return '—'
-  try {
-    return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium' }).format(
-      new Date(`${value}T00:00:00`)
-    )
-  } catch {
-    return value
-  }
+  return formatDateShared(`${value}T00:00:00`)
 }

@@ -9,6 +9,7 @@
 // (`PATCH is_active`, geri alınabilir) ve "Sil" (`DELETE`, GERİ ALINAMAZ — bir onay modalıyla
 // korunuyor, `price-lists` sil modalıyla aynı desen).
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Mail, Pencil, Power, PowerOff, Plus, Trash2 } from 'lucide-react'
 import { Badge, Button, EmptyState, Modal, Skeleton } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
@@ -19,6 +20,7 @@ import type { EmailTemplate } from '../types'
 type FormModalState = { mode: 'create' } | { mode: 'edit'; template: EmailTemplate } | null
 
 export function EmailTemplatesTab() {
+  const { t } = useTranslation(['settings', 'common'])
   const { data, isLoading, isError, refetch } = useEmailTemplates()
   const updateTemplate = useUpdateEmailTemplate()
   const deleteTemplate = useDeleteEmailTemplate()
@@ -39,9 +41,9 @@ export function EmailTemplatesTab() {
   if (isError) {
     return (
       <div className="flex flex-col items-center gap-3 py-12 text-center">
-        <p className="text-sm text-fg-muted">E-posta şablonları yüklenirken bir hata oluştu.</p>
+        <p className="text-sm text-fg-muted">{t('settings:emailTemplates.loadError')}</p>
         <Button variant="secondary" onClick={() => refetch()}>
-          Tekrar dene
+          {t('common:actions.retry')}
         </Button>
       </div>
     )
@@ -53,15 +55,15 @@ export function EmailTemplatesTab() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-end">
         <Button leftIcon={<Plus className="size-4" aria-hidden="true" />} onClick={() => setFormModal({ mode: 'create' })}>
-          Yeni Şablon
+          {t('settings:emailTemplates.newTemplate')}
         </Button>
       </div>
 
       {templates.length === 0 ? (
         <EmptyState
           icon={<Mail className="size-6" aria-hidden="true" />}
-          title="E-posta şablonu yok"
-          description="Henüz tanımlı bir e-posta şablonu bulunmuyor."
+          title={t('settings:emailTemplates.empty.title')}
+          description={t('settings:emailTemplates.empty.description')}
         />
       ) : (
         <div className="flex flex-col gap-2">
@@ -82,11 +84,11 @@ export function EmailTemplatesTab() {
 
               {(template.variables?.length ?? 0) > 0 && (
                 <Badge variant="neutral" size="sm">
-                  {template.variables?.length} değişken
+                  {t('settings:emailTemplates.variablesCount', { count: template.variables?.length ?? 0 })}
                 </Badge>
               )}
               <Badge variant={template.is_active ? 'success' : 'neutral'} size="sm">
-                {template.is_active ? 'Aktif' : 'Pasif'}
+                {template.is_active ? t('settings:status.active') : t('settings:status.inactive')}
               </Badge>
 
               <div className="flex items-center gap-1">
@@ -96,7 +98,7 @@ export function EmailTemplatesTab() {
                   leftIcon={<Pencil className="size-3.5" aria-hidden="true" />}
                   onClick={() => setFormModal({ mode: 'edit', template })}
                 >
-                  Düzenle
+                  {t('common:actions.edit')}
                 </Button>
                 <Button
                   variant="ghost"
@@ -111,7 +113,7 @@ export function EmailTemplatesTab() {
                   loading={updateTemplate.isPending && updateTemplate.variables?.id === template.id}
                   onClick={() => updateTemplate.mutate({ id: template.id, payload: { is_active: !template.is_active } })}
                 >
-                  {template.is_active ? 'Pasifleştir' : 'Aktifleştir'}
+                  {template.is_active ? t('settings:customFields.deactivate') : t('settings:customFields.activate')}
                 </Button>
                 <Button
                   variant="ghost"
@@ -120,7 +122,7 @@ export function EmailTemplatesTab() {
                   leftIcon={<Trash2 className="size-3.5" aria-hidden="true" />}
                   onClick={() => setDeleteTarget(template)}
                 >
-                  Sil
+                  {t('common:actions.delete')}
                 </Button>
               </div>
             </div>
@@ -137,12 +139,12 @@ export function EmailTemplatesTab() {
       <Modal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        title="E-posta Şablonunu Sil"
-        description="Bu işlem GERİ ALINAMAZ. Şablon kalıcı olarak silinecek."
+        title={t('settings:emailTemplates.delete.title')}
+        description={t('settings:emailTemplates.delete.description')}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
-              Vazgeç
+              {t('common:actions.cancel')}
             </Button>
             <Button
               variant="danger"
@@ -153,14 +155,14 @@ export function EmailTemplatesTab() {
                 setDeleteTarget(null)
               }}
             >
-              Sil
+              {t('common:actions.delete')}
             </Button>
           </div>
         }
       >
         {deleteTarget && (
           <p className="text-sm text-fg-secondary">
-            <strong className="text-fg">{deleteTarget.name}</strong> şablonunu silmek istediğinize emin misiniz?
+            <strong className="text-fg">{deleteTarget.name}</strong> {t('settings:emailTemplates.delete.confirmSuffix')}
           </p>
         )}
       </Modal>

@@ -28,26 +28,4 @@ class StoreUserRequest extends FormRequest
             'department' => ['nullable', 'string', 'max:255'],
         ];
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'name.required' => 'Ad Soyad alanı zorunludur.',
-            'name.string' => 'Ad Soyad metin olmalıdır.',
-            'name.max' => 'Ad Soyad en fazla :max karakter olabilir.',
-            'email.required' => 'E-posta alanı zorunludur.',
-            'email.email' => 'Geçerli bir e-posta adresi girin.',
-            'email.max' => 'E-posta en fazla :max karakter olabilir.',
-            'email.unique' => 'Bu e-posta adresi zaten kullanılıyor.',
-            'password.required' => 'Şifre alanı zorunludur.',
-            'password.uncompromised' => 'Girilen şifre veri ihlallerinde ifşa olmuş. Lütfen başka bir şifre seçin.',
-            'role.required' => 'Rol seçimi zorunludur.',
-            'role.exists' => 'Seçilen rol geçerli değil.',
-            'department.string' => 'Departman metin olmalıdır.',
-            'department.max' => 'Departman en fazla :max karakter olabilir.',
-        ];
-    }
 }

@@ -31,25 +31,6 @@ class IndexUserRequest extends FormRequest
     }
 
     /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'page.integer' => 'Sayfa numarası tam sayı olmalıdır.',
-            'page.min' => 'Sayfa numarası en az :min olmalıdır.',
-            'per_page.integer' => 'Sayfa başına kayıt sayısı tam sayı olmalıdır.',
-            'per_page.min' => 'Sayfa başına kayıt sayısı en az :min olmalıdır.',
-            'per_page.max' => 'Sayfa başına kayıt sayısı en fazla :max olabilir.',
-            'sort.string' => 'Sıralama parametresi metin olmalıdır.',
-            'q.string' => 'Arama terimi metin olmalıdır.',
-            'q.max' => 'Arama terimi en fazla :max karakter olabilir.',
-            'filter.role.exists' => 'Seçilen rol filtresi geçerli değil.',
-            'filter.is_active.boolean' => 'Aktiflik filtresi true/false olmalıdır.',
-        ];
-    }
-
-    /**
      * Repository/Service katmanının beklediği düz filtre dizisini üretir.
      *
      * @return array{q: ?string, role: ?string, is_active: mixed, sort: ?string, per_page: int}

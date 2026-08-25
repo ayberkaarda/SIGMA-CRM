@@ -5,6 +5,8 @@
 // iki modül birbirine YAZMIYOR (görev tanımı §dosya sahipliği) — küçük bir tekrar, gereksiz bir
 // çapraz-özellik bağımlılığından iyidir.
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { TooltipContentProps } from 'recharts'
 import { EmptyState, Skeleton } from '../../../components/ui'
@@ -14,10 +16,12 @@ import type { SalesPerformanceGroupBy, SalesPerformanceRow } from '../types'
 
 const CHART_HEIGHT = 280
 
-const GROUP_LABEL: Record<SalesPerformanceGroupBy, string> = {
-  day: 'Gün',
-  week: 'Hafta',
-  month: 'Ay',
+function groupLabel(t: TFunction): Record<SalesPerformanceGroupBy, string> {
+  return {
+    day: t('reports:groupBy.day'),
+    week: t('reports:groupBy.week'),
+    month: t('reports:groupBy.month'),
+  }
 }
 
 type ChartDatum = SalesPerformanceRow & { _numericRevenue: number }
@@ -26,6 +30,8 @@ export type SalesPerformanceChartProps = {
   rows: SalesPerformanceRow[] | undefined
   isLoading: boolean
   groupBy: SalesPerformanceGroupBy
+  /** Görüntü para birimi (`rate_info.display_currency`) — Faz 14 / İz E. */
+  currency: string
 }
 
 // Recharts 3.x'te `content={<PerformanceTooltip .../>}` (element) artık `TooltipContentProps`e
@@ -37,9 +43,13 @@ export type SalesPerformanceChartProps = {
 // yalnızca kendi eklediğimiz `groupBy` ZORUNLU kalır.
 type PerformanceTooltipProps = Partial<TooltipContentProps> & {
   groupBy: SalesPerformanceGroupBy
+  /** Görüntü para birimi (`rate_info.display_currency`) — backend zaten bu birimde döner
+   *  (§2.4), burada yeniden dönüştürülmez, yalnızca DOĞRU sembolle basılır. */
+  currency: string
 }
 
-function PerformanceTooltip({ active, payload, label, groupBy }: PerformanceTooltipProps) {
+function PerformanceTooltip({ active, payload, label, groupBy, currency }: PerformanceTooltipProps) {
+  const { t } = useTranslation('reports')
   const theme = useChartTheme()
   if (!active || !payload?.length) return null
   const point = payload[0]?.payload as SalesPerformanceRow | undefined
@@ -51,17 +61,21 @@ function PerformanceTooltip({ active, payload, label, groupBy }: PerformanceTool
       style={{ background: theme.surface, borderColor: theme.border, color: theme.fg }}
     >
       <p className="mb-1" style={{ color: theme.fgMuted }}>
-        {GROUP_LABEL[groupBy]}: {String(label)}
+        {groupLabel(t)[groupBy]}: {String(label)}
       </p>
-      <p className="font-semibold">{formatMoney(point.revenue)}</p>
+      <p className="font-semibold">{formatMoney(point.revenue, currency)}</p>
       <p style={{ color: theme.fgMuted }}>
-        {formatNumber(point.won_count)} kazanılan · {formatNumber(point.lost_count)} kaybedilen
+        {t('reports:salesPerformance.tooltipWonLost', {
+          won: formatNumber(point.won_count),
+          lost: formatNumber(point.lost_count),
+        })}
       </p>
     </div>
   )
 }
 
-export function SalesPerformanceChart({ rows, isLoading, groupBy }: SalesPerformanceChartProps) {
+export function SalesPerformanceChart({ rows, isLoading, groupBy, currency }: SalesPerformanceChartProps) {
+  const { t } = useTranslation('reports')
   const theme = useChartTheme()
   const chartData = useMemo<ChartDatum[]>(
     () => (rows ?? []).map((row) => ({ ...row, _numericRevenue: Number(row.revenue) || 0 })),
@@ -77,8 +91,8 @@ export function SalesPerformanceChart({ rows, isLoading, groupBy }: SalesPerform
     return (
       <div style={{ height: CHART_HEIGHT }} className="flex items-center justify-center">
         <EmptyState
-          title="Bu aralıkta satış verisi yok"
-          description="Seçili filtrelerle eşleşen bir kayıt bulunamadı."
+          title={t('reports:salesPerformance.emptyTitle')}
+          description={t('reports:salesPerformance.emptyDescription')}
         />
       </div>
     )
@@ -101,12 +115,12 @@ export function SalesPerformanceChart({ rows, isLoading, groupBy }: SalesPerform
               tickLine={false}
               axisLine={false}
               tick={{ fill: theme.axisText, fontSize: 12 }}
-              tickFormatter={(value: number) => formatMoneyCompact(value)}
+              tickFormatter={(value: number) => formatMoneyCompact(value, currency)}
               width={72}
             />
             <Tooltip
               cursor={{ stroke: theme.border, strokeWidth: 1 }}
-              content={(props) => <PerformanceTooltip {...props} groupBy={groupBy} />}
+              content={(props) => <PerformanceTooltip {...props} groupBy={groupBy} currency={currency} />}
             />
             <Area
               type="monotone"

@@ -13,25 +13,57 @@
     mecradır.
 
     Font: 'DejaVu Sans' (dompdf'e gömülü). Türkçe karakterler (ı İ ş Ş ğ Ğ
-    ü Ü ö Ö ç Ç) ve ₺ simgesi bu fontla doğrulanmıştır — bkz.
-    QuotePdfTest::test_turkish_characters_and_lira_symbol_survive_pdf_roundtrip.
+    ü Ü ö Ö ç Ç), Almanca/Fransızca aksanlar (ä ö ü ß é è ê ë à â û ç œ …) ve
+    ₺ € $ £ simgeleri bu fontla doğrulanmıştır — bkz.
+    QuotePdfTest::test_turkish_characters_and_lira_symbol_survive_pdf_roundtrip
+    ve DE/FR round-trip testleri. FONT DEĞİŞTİRİLMEZ (docs/PHASE-INTL.md §2.7).
+
+    -----------------------------------------------------------------------
+    PDF HANGİ DİLDE BASILIR (Faz 14 / İz D + İz E kararı, docs/PHASE-INTL.md
+    §2.7): talebi yapan/indiren kullanıcının O ANDAKİ `App::getLocale()`'i —
+    yani `SetLocale` middleware'inin `GET /api/quotes/{quote}/pdf` isteğinde
+    `$request->user()->locale`'den zaten kurduğu dil. Statik etiketler
+    `lang/{tr,en,de,fr}/pdf.php`'den `__('pdf.*')` ile gelir.
+    GEREKÇE: teklif müşteriye giden bir BELGE olsa da, PDF'i ÜRETEN/GÖNDEREN
+    kullanıcı içeriğin geri kalanını (başlık, notlar, şartlar) zaten KENDİ
+    dilinde serbestçe yazmıştır — bu metinler `settings.quote.terms` gibi
+    kullanıcı verisi, hiçbir zaman çevrilmez (§1.5). Statik iskeleti
+    (Müşteri Bilgileri, KDV, Ara Toplam...) o kullanıcının arayüz diliyle
+    tutarlı tutmak, "arayüz Almanca ama indirdiği belge hep Türkçe" tutarsız
+    deneyiminden kaçınır — kullanıcı zaten hangi dilde çalıştığını seçmiştir
+    (`users.locale`) ve teklifi genelde KENDİ şirketi için (arşiv, iç onay)
+    veya müşterisiyle aynı dilde çalıştığı bir bağlamda indirir. Reddedilen
+    alternatif: teklifin `deal`/`contact` diline göre basmak — ne `deals`
+    ne `contacts` şemasında bir dil alanı var, böyle bir alan eklemek bu
+    fazın kapsamını patlatırdı ve gerçek ihtiyacı karşılayan bir sinyal
+    değil (bir contact'ın hangi dilde yazışıldığı onun "dili" değildir).
 --}}
 @php
     /** @var \App\Models\Quote $quote */
     $billTo = $quote->company ?? $quote->deal?->company;
     $contact = $quote->contact;
 
-    $statusLabels = [
-        'draft' => 'Taslak',
-        'sent' => 'Gönderildi',
-        'accepted' => 'Kabul Edildi',
-        'rejected' => 'Reddedildi',
-        'expired' => 'Süresi Doldu',
-    ];
+    $statusLabels = __('pdf.status');
     $statusLabel = $statusLabels[$quote->status] ?? ucfirst($quote->status);
 
-    $money = fn ($value) => number_format((float) $value, 2, ',', '.');
-    $qty = fn ($value) => number_format((float) $value, 2, ',', '.');
+    // Faz 14 / İz D+E (docs/PHASE-INTL.md §1.8/§2.7): ayraç/gruplama VE para
+    // simgesinin KONUMU indiren kullanıcının arayüz diline göre değişir — bkz.
+    // App\Support\LocaleNumberFormatter docblock'u (frontend `money.ts` ile
+    // ölçülüp eşleştirilmiş tablo). Tarih biçimi (`d.m.Y`) BİLEREK dilden
+    // BAĞIMSIZ bırakıldı: docs/PHASE-INTL.md §2.4/§2.6 kur/rapor tarihlerini
+    // her yerde sabit "dd.mm.yyyy" olarak tanımlıyor (rapor dipnotu örneği,
+    // bayatlık etiketi) — bu PDF'te de aynı disiplin korunur.
+    $appLocale = app()->getLocale();
+    $money = fn ($value) => \App\Support\LocaleNumberFormatter::number($value, 2, $appLocale);
+    $qty = fn ($value) => \App\Support\LocaleNumberFormatter::number($value, 2, $appLocale);
+    $rateFormat = fn ($value) => \App\Support\LocaleNumberFormatter::number($value, 4, $appLocale);
+    $moneyWithSymbol = fn ($value) => \App\Support\LocaleNumberFormatter::money($value, $currencySymbol, $appLocale);
+
+    // §2.3/§2.6: yalnız `sent` (ve sonrası) tekliflerde `exchange_rate` dolu
+    // olur; taslakta null → satır basılmaz. Para birimi temel (TRY) ise kur
+    // 1'dir ve satır anlamsızdır → yine basılmaz.
+    $showExchangeRate = $quote->exchange_rate !== null
+        && strtoupper($quote->currency) !== strtoupper($baseCurrency);
 @endphp
 <html>
 <head>
@@ -320,16 +352,24 @@
     <tr>
         <td>
             <div class="box">
-                <div class="quote-title">Teklif {{ $quote->quote_number }}</div>
-                <div class="row"><span class="label">Başlık:</span> {{ $quote->title }}</div>
-                <div class="row"><span class="label">Tarih:</span> {{ optional($quote->created_at)->format('d.m.Y') }}</div>
-                <div class="row"><span class="label">Geçerlilik:</span> {{ optional($quote->valid_until)->format('d.m.Y') ?? '-' }}</div>
-                <div class="row"><span class="label">Durum:</span> <span class="status-badge">{{ $statusLabel }}</span></div>
+                <div class="quote-title">{{ __('pdf.quote_label') }} {{ $quote->quote_number }}</div>
+                <div class="row"><span class="label">{{ __('pdf.title_label') }}:</span> {{ $quote->title }}</div>
+                <div class="row"><span class="label">{{ __('pdf.date_label') }}:</span> {{ optional($quote->created_at)->format('d.m.Y') }}</div>
+                <div class="row"><span class="label">{{ __('pdf.validity_label') }}:</span> {{ optional($quote->valid_until)->format('d.m.Y') ?? '-' }}</div>
+                <div class="row"><span class="label">{{ __('pdf.status_label') }}:</span> <span class="status-badge">{{ $statusLabel }}</span></div>
+                @if($showExchangeRate)
+                    <div class="row">{{ __('pdf.exchange_rate_line', [
+                        'currency' => strtoupper($quote->currency),
+                        'rate' => $rateFormat($quote->exchange_rate),
+                        'base' => strtoupper($baseCurrency),
+                        'date' => $quote->exchange_rate_date->format('d.m.Y'),
+                    ]) }}</div>
+                @endif
             </div>
         </td>
         <td>
             <div class="box last">
-                <div class="quote-title" style="font-size: 11px;">Müşteri Bilgileri</div>
+                <div class="quote-title" style="font-size: 11px;">{{ __('pdf.customer_info') }}</div>
                 <div class="row"><strong>{{ $billTo->name ?? '-' }}</strong></div>
                 @if($contact)
                     <div class="row">{{ $contact->full_name }}@if($contact->position), {{ $contact->position }}@endif</div>
@@ -338,28 +378,28 @@
                     <div class="row">{{ $billTo->address }}@if($billTo->city), {{ $billTo->city }}@endif</div>
                 @endif
                 @if($contact?->phone ?? $billTo?->phone)
-                    <div class="row"><span class="label">Tel:</span> {{ $contact->phone ?? $billTo->phone }}</div>
+                    <div class="row"><span class="label">{{ __('pdf.phone_label') }}:</span> {{ $contact->phone ?? $billTo->phone }}</div>
                 @endif
                 @if($contact?->email ?? $billTo?->email)
-                    <div class="row"><span class="label">E-posta:</span> {{ $contact->email ?? $billTo->email }}</div>
+                    <div class="row"><span class="label">{{ __('pdf.email_label') }}:</span> {{ $contact->email ?? $billTo->email }}</div>
                 @endif
             </div>
         </td>
     </tr>
 </table>
 
-<div class="section-title">Teklif Kalemleri</div>
+<div class="section-title">{{ __('pdf.items_section') }}</div>
 
 <table id="items-table">
     <thead>
         <tr>
-            <th class="col-no">#</th>
-            <th class="col-desc">Açıklama</th>
-            <th class="col-qty">Miktar</th>
-            <th class="col-price">Birim Fiyat</th>
-            <th class="col-discount">İndirim %</th>
-            <th class="col-tax">KDV %</th>
-            <th class="col-total">Tutar</th>
+            <th class="col-no">{{ __('pdf.col_no') }}</th>
+            <th class="col-desc">{{ __('pdf.col_description') }}</th>
+            <th class="col-qty">{{ __('pdf.col_quantity') }}</th>
+            <th class="col-price">{{ __('pdf.col_unit_price') }}</th>
+            <th class="col-discount">{{ __('pdf.col_discount') }}</th>
+            <th class="col-tax">{{ __('pdf.col_tax') }}</th>
+            <th class="col-total">{{ __('pdf.col_amount') }}</th>
         </tr>
     </thead>
     <tbody>
@@ -372,11 +412,11 @@
                         <div class="item-desc">{{ $item->description }}</div>
                     @endif
                 </td>
-                <td class="col-qty">{{ $qty($item->quantity) }} adet</td>
-                <td class="col-price">{{ $money($item->unit_price) }} {{ $currencySymbol }}</td>
+                <td class="col-qty">{{ $qty($item->quantity) }} {{ __('pdf.unit_piece') }}</td>
+                <td class="col-price">{{ $moneyWithSymbol($item->unit_price) }}</td>
                 <td class="col-discount">{{ $money($item->discount_percent) }}%</td>
                 <td class="col-tax">{{ $money($item->tax_rate) }}%</td>
-                <td class="col-total">{{ $money($item->line_total) }} {{ $currencySymbol }}</td>
+                <td class="col-total">{{ $moneyWithSymbol($item->line_total) }}</td>
             </tr>
         @endforeach
     </tbody>
@@ -385,20 +425,20 @@
 <div id="totals-wrapper">
     <table id="totals-table">
         <tr>
-            <td class="totals-label">Ara Toplam</td>
-            <td class="totals-value">{{ $money($quote->subtotal) }} {{ $currencySymbol }}</td>
+            <td class="totals-label">{{ __('pdf.subtotal') }}</td>
+            <td class="totals-value">{{ $moneyWithSymbol($quote->subtotal) }}</td>
         </tr>
         <tr>
-            <td class="totals-label">İndirim</td>
-            <td class="totals-value">-{{ $money($quote->discount_amount) }} {{ $currencySymbol }}</td>
+            <td class="totals-label">{{ __('pdf.discount') }}</td>
+            <td class="totals-value">-{{ $moneyWithSymbol($quote->discount_amount) }}</td>
         </tr>
         <tr>
-            <td class="totals-label">KDV</td>
-            <td class="totals-value">{{ $money($quote->tax_amount) }} {{ $currencySymbol }}</td>
+            <td class="totals-label">{{ __('pdf.tax') }}</td>
+            <td class="totals-value">{{ $moneyWithSymbol($quote->tax_amount) }}</td>
         </tr>
         <tr class="grand-total-row">
-            <td class="totals-label">GENEL TOPLAM</td>
-            <td class="totals-value">{{ $money($quote->total) }} {{ $currencySymbol }}</td>
+            <td class="totals-label">{{ __('pdf.grand_total') }}</td>
+            <td class="totals-value">{{ $moneyWithSymbol($quote->total) }}</td>
         </tr>
     </table>
 </div>
@@ -406,13 +446,13 @@
 <div id="notes-block">
     @if($quote->notes)
         <div class="block">
-            <div class="section-title">Notlar</div>
+            <div class="section-title">{{ __('pdf.notes_section') }}</div>
             <div class="text">{{ $quote->notes }}</div>
         </div>
     @endif
     @if($quote->terms)
         <div class="block">
-            <div class="section-title">Şartlar ve Koşullar</div>
+            <div class="section-title">{{ __('pdf.terms_section') }}</div>
             <div class="text">{{ $quote->terms }}</div>
         </div>
     @endif

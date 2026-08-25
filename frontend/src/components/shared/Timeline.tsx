@@ -17,8 +17,10 @@ import {
   StickyNote,
   Users as UsersIcon,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button, EmptyState, Skeleton } from '../ui'
 import { cn } from '../../lib/cn'
+import { getIntlLocale } from '../../i18n'
 
 export type TimelineItemType = 'activity' | 'task' | 'deal' | 'ticket' | 'attachment'
 
@@ -99,9 +101,9 @@ function resolveIcon(item: TimelineItem) {
   return TYPE_FALLBACK_ICON[item.type] ?? Activity
 }
 
-function formatFullDate(iso: string): string {
+function formatFullDate(iso: string, intlLocale: string): string {
   try {
-    return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
+    return new Intl.DateTimeFormat(intlLocale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
   } catch {
     return iso
   }
@@ -116,15 +118,15 @@ const RELATIVE_UNITS: Array<{ unit: Intl.RelativeTimeFormatUnit; ms: number }> =
   { unit: 'minute', ms: 60 * 1000 },
 ]
 
-function formatRelativeTime(iso: string): string {
+function formatRelativeTime(iso: string, intlLocale: string, justNow: string): string {
   const then = new Date(iso).getTime()
   if (Number.isNaN(then)) return iso
   const diffMs = then - Date.now()
   const absMs = Math.abs(diffMs)
 
-  if (absMs < 60_000) return 'az önce'
+  if (absMs < 60_000) return justNow
 
-  const rtf = new Intl.RelativeTimeFormat('tr', { numeric: 'auto' })
+  const rtf = new Intl.RelativeTimeFormat(intlLocale, { numeric: 'auto' })
   for (const { unit, ms } of RELATIVE_UNITS) {
     if (absMs >= ms || unit === 'minute') {
       const value = Math.round(diffMs / ms)
@@ -155,17 +157,20 @@ export function Timeline({
   hasMore,
   onLoadMore,
   isLoadingMore = false,
-  emptyDescription = 'Bu kayıt için henüz görüntülenecek bir etkileşim yok.',
+  emptyDescription,
 }: TimelineProps) {
+  const { t } = useTranslation('common')
+  const intlLocale = getIntlLocale()
+  const resolvedEmptyDescription = emptyDescription ?? t('timeline.emptyDescription')
   const isInitialLoading = isLoading && items.length === 0
   const isEmpty = !isLoading && !isError && items.length === 0
 
   if (isError && items.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
-        <p className="text-sm text-fg-muted">Zaman çizelgesi yüklenirken bir hata oluştu.</p>
+        <p className="text-sm text-fg-muted">{t('timeline.loadError')}</p>
         <Button variant="secondary" onClick={onRetry}>
-          Tekrar dene
+          {t('actions.retry')}
         </Button>
       </div>
     )
@@ -185,8 +190,8 @@ export function Timeline({
     return (
       <EmptyState
         icon={<History className="size-6" aria-hidden="true" />}
-        title="Henüz kayıtlı etkileşim yok"
-        description={emptyDescription}
+        title={t('timeline.emptyTitle')}
+        description={resolvedEmptyDescription}
       />
     )
   }
@@ -220,8 +225,8 @@ export function Timeline({
                 <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-fg-muted">
                   {item.user && <span>{item.user.name}</span>}
                   {item.user && <span aria-hidden="true">·</span>}
-                  <time dateTime={item.occurred_at} title={formatFullDate(item.occurred_at)}>
-                    {formatRelativeTime(item.occurred_at)}
+                  <time dateTime={item.occurred_at} title={formatFullDate(item.occurred_at, intlLocale)}>
+                    {formatRelativeTime(item.occurred_at, intlLocale, t('timeline.justNow'))}
                   </time>
                 </div>
               </div>
@@ -232,9 +237,9 @@ export function Timeline({
 
       {isError && items.length > 0 && (
         <div className="flex flex-col items-center gap-2 py-2 text-center">
-          <p className="text-xs text-fg-muted">Daha fazla kayıt yüklenirken bir hata oluştu.</p>
+          <p className="text-xs text-fg-muted">{t('timeline.loadMoreError')}</p>
           <Button variant="secondary" size="sm" onClick={onRetry}>
-            Tekrar dene
+            {t('actions.retry')}
           </Button>
         </div>
       )}
@@ -242,7 +247,7 @@ export function Timeline({
       {hasMore && !isError && (
         <div className="flex justify-center pt-1">
           <Button variant="secondary" size="sm" loading={isLoadingMore} onClick={onLoadMore}>
-            Daha fazla yükle
+            {t('timeline.loadMore')}
           </Button>
         </div>
       )}

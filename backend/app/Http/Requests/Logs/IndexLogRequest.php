@@ -65,21 +65,6 @@ class IndexLogRequest extends FormRequest
     }
 
     /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'per_page.max' => 'Sayfa başına kayıt sayısı en fazla :max olabilir.',
-            'filter.user_id.exists' => 'Seçilen kullanıcı filtresi geçerli değil.',
-            'filter.from.date' => 'Başlangıç tarihi geçerli bir tarih olmalıdır.',
-            'filter.to.date' => 'Bitiş tarihi geçerli bir tarih olmalıdır.',
-            'filter.event.in' => 'Seçilen olay filtresi geçerli değil.',
-            'filter.subject_type.in' => 'Seçilen kayıt türü filtresi geçerli değil.',
-        ];
-    }
-
-    /**
      * Repository/Service katmanının beklediği düz filtre dizisini üretir.
      *
      * @return array<string, mixed>

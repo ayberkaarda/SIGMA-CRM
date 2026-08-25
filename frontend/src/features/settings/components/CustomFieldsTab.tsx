@@ -9,6 +9,8 @@
 // (bkz. `hooks/useCustomFields.ts` → `useDeactivateCustomField`). Pasif bir alan burada
 // yeniden aktifleştirilebilir (`PATCH { is_active: true }`).
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { Pencil, Plus, Power, PowerOff, SlidersHorizontal } from 'lucide-react'
 import { Badge, Button, EmptyState, Skeleton } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
@@ -16,32 +18,24 @@ import { useCustomFields, useDeactivateCustomField, useUpdateCustomField } from 
 import { CustomFieldFormModal } from './CustomFieldFormModal'
 import type { CustomField } from '../types'
 
-const ENTITY_TYPE_LABELS: Record<string, string> = {
-  leads: 'Potansiyeller (Leads)',
-  contacts: 'Kişiler',
-  companies: 'Firmalar',
-  deals: 'Fırsatlar',
-  tickets: 'Destek Talepleri',
-  products: 'Ürünler',
+// `entity_type`/`type` sunucu otorite değerleridir (bkz. dosya başı notu) — etiketler yalnızca
+// BİLİNEN değerler için `settings` sözlüğünden çözülür, bilinmeyeni titleize edilmiş haliyle basılır.
+export function labelForEntityType(entityType: string, t: TFunction): string {
+  return t(`settings:customFields.entityTypes.${entityType}`, {
+    defaultValue: entityType.replace(/\b\w/g, (c) => c.toUpperCase()),
+  })
 }
 
-const FIELD_TYPE_LABELS: Record<string, string> = {
-  text: 'Metin',
-  textarea: 'Uzun Metin',
-  number: 'Sayı',
-  date: 'Tarih',
-  select: 'Seçim (Tekli)',
-  multiselect: 'Seçim (Çoklu)',
-  boolean: 'Evet/Hayır',
-}
-
-function labelForEntityType(entityType: string): string {
-  return ENTITY_TYPE_LABELS[entityType] ?? entityType.replace(/\b\w/g, (c) => c.toUpperCase())
+export function labelForFieldType(type: string, t: TFunction): string {
+  return t(`settings:customFields.fieldTypes.${type}`, {
+    defaultValue: type.replace(/\b\w/g, (c) => c.toUpperCase()),
+  })
 }
 
 type FormModalState = { mode: 'create'; entityType: string } | { mode: 'edit'; field: CustomField } | null
 
 export function CustomFieldsTab() {
+  const { t } = useTranslation(['settings', 'common'])
   const { data, isLoading, isError, refetch } = useCustomFields()
   const updateField = useUpdateCustomField()
   const deactivateField = useDeactivateCustomField()
@@ -61,9 +55,9 @@ export function CustomFieldsTab() {
   if (isError) {
     return (
       <div className="flex flex-col items-center gap-3 py-12 text-center">
-        <p className="text-sm text-fg-muted">Özel alanlar yüklenirken bir hata oluştu.</p>
+        <p className="text-sm text-fg-muted">{t('settings:customFields.loadError')}</p>
         <Button variant="secondary" onClick={() => refetch()}>
-          Tekrar dene
+          {t('common:actions.retry')}
         </Button>
       </div>
     )
@@ -84,22 +78,22 @@ export function CustomFieldsTab() {
         return (
           <div key={entityType} className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-fg">{labelForEntityType(entityType)}</h3>
+              <h3 className="text-sm font-semibold text-fg">{labelForEntityType(entityType, t)}</h3>
               <Button
                 variant="secondary"
                 size="sm"
                 leftIcon={<Plus className="size-3.5" aria-hidden="true" />}
                 onClick={() => setFormModal({ mode: 'create', entityType })}
               >
-                Alan Ekle
+                {t('settings:customFields.addField')}
               </Button>
             </div>
 
             {sectionFields.length === 0 ? (
               <EmptyState
                 icon={<SlidersHorizontal className="size-5" aria-hidden="true" />}
-                title="Özel alan yok"
-                description="Bu kayıt türü için henüz tanımlı bir özel alan yok."
+                title={t('settings:customFields.empty.title')}
+                description={t('settings:customFields.empty.description')}
               />
             ) : (
               <div className="flex flex-col gap-2">
@@ -117,15 +111,15 @@ export function CustomFieldsTab() {
                     </div>
 
                     <Badge variant="neutral" size="sm">
-                      {FIELD_TYPE_LABELS[field.type] ?? field.type}
+                      {labelForFieldType(field.type, t)}
                     </Badge>
                     {field.is_required && (
                       <Badge variant="warning" size="sm">
-                        Zorunlu
+                        {t('settings:customFields.required')}
                       </Badge>
                     )}
                     <Badge variant={field.is_active ? 'success' : 'neutral'} size="sm">
-                      {field.is_active ? 'Aktif' : 'Pasif'}
+                      {field.is_active ? t('settings:status.active') : t('settings:status.inactive')}
                     </Badge>
 
                     <div className="flex items-center gap-1">
@@ -135,7 +129,7 @@ export function CustomFieldsTab() {
                         leftIcon={<Pencil className="size-3.5" aria-hidden="true" />}
                         onClick={() => setFormModal({ mode: 'edit', field })}
                       >
-                        Düzenle
+                        {t('common:actions.edit')}
                       </Button>
                       <Button
                         variant="ghost"
@@ -156,7 +150,7 @@ export function CustomFieldsTab() {
                           else updateField.mutate({ id: field.id, payload: { is_active: true } })
                         }}
                       >
-                        {field.is_active ? 'Pasifleştir' : 'Aktifleştir'}
+                        {field.is_active ? t('settings:customFields.deactivate') : t('settings:customFields.activate')}
                       </Button>
                     </div>
                   </div>

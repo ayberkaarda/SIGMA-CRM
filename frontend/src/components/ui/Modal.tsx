@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom'
 import { forwardRef, useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '../../lib/cn'
 
 export type ModalProps = {
@@ -29,6 +30,7 @@ const FOCUSABLE_SELECTOR =
 
 export const Modal = forwardRef<HTMLDivElement, ModalProps>(
   ({ open, onClose, title, description, size = 'md', footer, closeOnBackdrop = true, children }, ref) => {
+    const { t } = useTranslation('common')
     const autoId = useId()
     const titleId = `${autoId}-title`
     const descriptionId = `${autoId}-description`
@@ -153,7 +155,7 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Kapat"
+                aria-label={t('actions.close')}
                 className={cn(
                   'shrink-0 rounded-md p-1.5 text-fg-muted hover:bg-surface-2 hover:text-fg',
                   'transition-colors duration-150 motion-reduce:transition-none',

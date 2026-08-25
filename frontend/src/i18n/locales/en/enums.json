@@ -1,0 +1,63 @@
+{
+  "activity": {
+    "type": {
+      "call": "Call",
+      "meeting": "Meeting",
+      "email": "Email",
+      "note": "Note"
+    }
+  },
+  "deal": {
+    "status": {
+      "open": "Open",
+      "won": "Won",
+      "lost": "Lost"
+    }
+  },
+  "task": {
+    "priority": { "low": "Low", "normal": "Normal", "high": "High", "urgent": "Urgent" },
+    "status": { "pending": "Pending", "in_progress": "In Progress", "completed": "Completed", "cancelled": "Cancelled" }
+  },
+  "ticket": {
+    "priority": {
+      "low": "Low",
+      "normal": "Normal",
+      "high": "High",
+      "urgent": "Urgent"
+    },
+    "status": {
+      "open": "Open",
+      "pending": "Pending",
+      "in_progress": "In Progress",
+      "resolved": "Resolved",
+      "closed": "Closed"
+    }
+  },
+  "quote": {
+    "status": {
+      "draft": "Draft",
+      "sent": "Sent",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "expired": "Expired"
+    }
+  },
+  "lead": {
+    "status": {
+      "new": "New",
+      "contacted": "Contacted",
+      "qualified": "Qualified",
+      "unqualified": "Unqualified",
+      "converted": "Converted"
+    },
+    "source": {
+      "website": "Website",
+      "referral": "Referral",
+      "cold_call": "Cold Call",
+      "email_campaign": "Email Campaign",
+      "social_media": "Social Media",
+      "event": "Event",
+      "other": "Other"
+    }
+  }
+}

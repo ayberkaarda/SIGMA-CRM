@@ -4,6 +4,7 @@
 // (sunucu tarafı zaten upsert — `PUT` 200 döner, bkz. `priceListsApi.ts` notu).
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Package, X } from 'lucide-react'
 import { Input } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
@@ -22,10 +23,13 @@ export type ProductPickerComboboxProps = {
 export function ProductPickerCombobox({
   value,
   onChange,
-  label = 'Ürün',
+  label,
   error,
-  placeholder = 'Ürün adı veya SKU ara...',
+  placeholder,
 }: ProductPickerComboboxProps) {
+  const { t } = useTranslation()
+  const resolvedLabel = label ?? t('priceLists:productCombobox.label')
+  const resolvedPlaceholder = placeholder ?? t('priceLists:productCombobox.placeholder')
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState('')
   const debouncedDraft = useDebouncedValue(draft, 300)
@@ -68,12 +72,12 @@ export function ProductPickerCombobox({
   return (
     <div ref={containerRef} className="relative">
       <Input
-        label={label}
+        label={resolvedLabel}
         value={displayValue}
         onChange={(e) => setDraft(e.target.value)}
         onFocus={handleFocus}
         onKeyDown={handleKeyDown}
-        placeholder={placeholder}
+        placeholder={resolvedPlaceholder}
         leftIcon={<Package className="size-4" aria-hidden="true" />}
         rightIcon={
           value && !open ? (
@@ -84,7 +88,7 @@ export function ProductPickerCombobox({
                 e.stopPropagation()
                 handleSelect(null)
               }}
-              aria-label="Ürün seçimini temizle"
+              aria-label={t('priceLists:productCombobox.clearAria')}
               className="pointer-events-auto text-fg-muted hover:text-fg"
             >
               <X className="size-4" aria-hidden="true" />
@@ -99,9 +103,9 @@ export function ProductPickerCombobox({
       {open && (
         <div className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-md border border-border-strong bg-surface-2 shadow-popover">
           {isLoading ? (
-            <p className="px-3 py-2 text-sm text-fg-muted">Yükleniyor…</p>
+            <p className="px-3 py-2 text-sm text-fg-muted">{t('priceLists:productCombobox.loading')}</p>
           ) : options.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-fg-muted">Sonuç bulunamadı</p>
+            <p className="px-3 py-2 text-sm text-fg-muted">{t('priceLists:productCombobox.empty')}</p>
           ) : (
             options.map((option) => (
               <button
@@ -116,7 +120,7 @@ export function ProductPickerCombobox({
               >
                 <span className="flex w-full items-center justify-between gap-2">
                   <span>{option.name}</span>
-                  {!option.is_active && <span className="text-xs text-fg-muted">Pasif</span>}
+                  {!option.is_active && <span className="text-xs text-fg-muted">{t('priceLists:status.inactive')}</span>}
                 </span>
                 {option.sku && <span className="font-mono text-xs text-fg-muted">{option.sku}</span>}
               </button>

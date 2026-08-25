@@ -3,6 +3,7 @@
 // URL query string'inde tutulur (`UsersPage` ile aynı desen, bkz. Faz 2).
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Select, Tab, TabList, TabPanel, Tabs } from '../../../components/ui'
 import { Card, CardHeader, CardBody, Pagination } from '../../../components/ui'
 import { usePermission } from '../../auth/hooks/usePermission'
@@ -31,17 +32,14 @@ import type {
   SessionEvent,
   SessionsQuery,
 } from '../types'
-import {
-  ACTIVITY_FILTER_EVENT_OPTIONS,
-  SESSION_EVENT_OPTIONS,
-  SUBJECT_TYPE_OPTIONS,
-} from '../utils'
+import { activityFilterEventOptions, sessionEventOptions, subjectTypeOptions } from '../utils'
 
 const DEFAULT_PER_PAGE = 25
 const SEARCH_DEBOUNCE_MS = 300
 const VALID_TABS: LogsTab[] = ['sessions', 'page-visits', 'activities', 'live']
 
 export function LogsPage() {
+  const { t } = useTranslation('logs')
   const [searchParams, setSearchParams] = useSearchParams()
   const { can } = usePermission()
 
@@ -190,16 +188,16 @@ export function LogsPage() {
   return (
     <div className="flex flex-col gap-4">
       <nav aria-label="breadcrumb" className="text-xs text-fg-muted">
-        <span>Anasayfa</span>
+        <span>{t('logs:breadcrumb.home')}</span>
         <span className="mx-1.5">/</span>
-        <span className="text-primary">Loglar</span>
+        <span className="text-primary">{t('logs:breadcrumb.logs')}</span>
       </nav>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_280px]">
         <Card className="min-w-0">
           <CardHeader
-            title="Loglar"
-            subtitle={activeTotal !== undefined ? `${activeTotal} kayıt` : undefined}
+            title={t('logs:page.title')}
+            subtitle={activeTotal !== undefined ? t('logs:page.subtitle', { count: activeTotal }) : undefined}
             action={
               tab !== 'live' &&
               can('logs.export') && <ExportMenu type={exportType} filters={exportFilters} />
@@ -208,10 +206,10 @@ export function LogsPage() {
 
           <Tabs value={tab} onValueChange={switchTab}>
             <TabList className="px-5 pt-3">
-              <Tab value="sessions">Oturum</Tab>
-              <Tab value="page-visits">Gezinme</Tab>
-              <Tab value="activities">Aksiyon</Tab>
-              <Tab value="live">Canlı Akış</Tab>
+              <Tab value="sessions">{t('logs:tabs.sessions')}</Tab>
+              <Tab value="page-visits">{t('logs:tabs.pageVisits')}</Tab>
+              <Tab value="activities">{t('logs:tabs.activities')}</Tab>
+              <Tab value="live">{t('logs:tabs.live')}</Tab>
             </TabList>
 
             <CardBody noPadding>
@@ -232,8 +230,8 @@ export function LogsPage() {
                     <Select
                       value={eventParam}
                       onChange={(e) => updateParams({ event: e.target.value || null, page: '1' })}
-                      options={[{ value: '', label: 'Tüm olaylar' }, ...SESSION_EVENT_OPTIONS]}
-                      aria-label="Olay tipi filtresi"
+                      options={[{ value: '', label: t('logs:filterBar.allEvents') }, ...sessionEventOptions(t)]}
+                      aria-label={t('logs:filterBar.eventFilterAria')}
                     />
                   </div>
                 </LogsFilterBar>
@@ -314,10 +312,10 @@ export function LogsPage() {
                       value={eventParam}
                       onChange={(e) => updateParams({ event: e.target.value || null, page: '1' })}
                       options={[
-                        { value: '', label: 'Tüm olaylar' },
-                        ...ACTIVITY_FILTER_EVENT_OPTIONS,
+                        { value: '', label: t('logs:filterBar.allEvents') },
+                        ...activityFilterEventOptions(t),
                       ]}
-                      aria-label="Olay tipi filtresi"
+                      aria-label={t('logs:filterBar.eventFilterAria')}
                     />
                   </div>
                   <div className="w-full lg:w-44">
@@ -326,8 +324,8 @@ export function LogsPage() {
                       onChange={(e) =>
                         updateParams({ subject_type: e.target.value || null, page: '1' })
                       }
-                      options={[{ value: '', label: 'Tüm varlıklar' }, ...SUBJECT_TYPE_OPTIONS]}
-                      aria-label="Varlık tipi filtresi"
+                      options={[{ value: '', label: t('logs:filterBar.allSubjectTypes') }, ...subjectTypeOptions(t)]}
+                      aria-label={t('logs:filterBar.subjectTypeFilterAria')}
                     />
                   </div>
                 </LogsFilterBar>

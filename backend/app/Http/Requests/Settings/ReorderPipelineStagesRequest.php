@@ -52,19 +52,6 @@ class ReorderPipelineStagesRequest extends FormRequest
     }
 
     /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'ordered_ids.required' => 'Sıralama listesi (ordered_ids) zorunludur.',
-            'ordered_ids.array' => 'ordered_ids bir aşama id listesi olmalıdır.',
-            'ordered_ids.*.distinct' => 'Sıralama listesinde aynı aşama birden fazla kez yer alamaz.',
-            'ordered_ids.*.exists' => 'Sıralama listesinde var olmayan bir aşama var.',
-        ];
-    }
-
-    /**
      * @return array<int, int>
      */
     public function orderedIds(): array

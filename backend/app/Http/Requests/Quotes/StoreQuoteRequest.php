@@ -62,18 +62,7 @@ class StoreQuoteRequest extends FormRequest
     public function messages(): array
     {
         return array_merge([
-            'title.required' => 'Teklif başlığı zorunludur.',
-            'title.max' => 'Teklif başlığı en fazla :max karakter olabilir.',
-            'deal_id.exists' => 'Seçilen fırsat geçerli değil.',
-            'company_id.exists' => 'Seçilen firma geçerli değil.',
-            'contact_id.exists' => 'Seçilen kişi geçerli değil.',
-            'valid_until.date' => 'Geçerlilik tarihi geçerli bir tarih olmalıdır.',
-            'discount_type.in' => 'İndirim tipi yalnızca "amount" veya "percent" olabilir.',
-            'discount_value.numeric' => 'İndirim değeri sayısal olmalıdır.',
-            'discount_value.min' => 'İndirim değeri negatif olamaz.',
-            'currency.size' => 'Para birimi 3 harfli olmalıdır (ör. TRY).',
-            'items.array' => 'Kalemler bir liste olmalıdır.',
-            'items.max' => 'Bir teklif en fazla :max kalem taşıyabilir.',
+            'discount_type.in' => __('validation.custom.quotes.discount_type_invalid'),
         ], QuoteItemRules::messages());
     }
 }

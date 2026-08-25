@@ -1,6 +1,7 @@
 // Kişi oluşturma/düzenleme modalı. `contact` prop'u verilmezse (null/undefined) oluşturma modu.
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button, Checkbox, Input, Modal, Select, Textarea } from '../../../components/ui'
 import { getFieldErrors } from '../../../lib/axios'
 import { usePermission } from '../../auth/hooks/usePermission'
@@ -16,6 +17,7 @@ type ContactFormModalProps = {
 }
 
 export function ContactFormModal({ open, onClose, contact }: ContactFormModalProps) {
+  const { t } = useTranslation('contacts')
   const isEdit = !!contact
   const { can } = usePermission()
   const canViewUsers = can('users.view')
@@ -79,8 +81,8 @@ export function ContactFormModal({ open, onClose, contact }: ContactFormModalPro
 
   function validate(): boolean {
     const errors: Record<string, string[]> = {}
-    if (!firstName.trim()) errors.first_name = ['Ad zorunludur.']
-    if (!lastName.trim()) errors.last_name = ['Soyad zorunludur.']
+    if (!firstName.trim()) errors.first_name = [t('form.validation.firstNameRequired')]
+    if (!lastName.trim()) errors.last_name = [t('form.validation.lastNameRequired')]
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -120,7 +122,7 @@ export function ContactFormModal({ open, onClose, contact }: ContactFormModalPro
   }
 
   const ownerSelectOptions = [
-    { value: '', label: 'Sahip seçin' },
+    { value: '', label: t('form.selectOwner') },
     ...(userOptions ?? []).map((u) => ({ value: String(u.id), label: u.name })),
   ]
 
@@ -128,15 +130,15 @@ export function ContactFormModal({ open, onClose, contact }: ContactFormModalPro
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? 'Kişiyi Düzenle' : 'Yeni Kişi'}
+      title={isEdit ? t('form.titleEdit') : t('form.titleCreate')}
       size="lg"
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Vazgeç
+            {t('form.cancel')}
           </Button>
           <Button type="submit" form="contact-form" loading={isPending}>
-            {isEdit ? 'Kaydet' : 'Oluştur'}
+            {isEdit ? t('form.submitEdit') : t('form.submitCreate')}
           </Button>
         </div>
       }
@@ -144,40 +146,40 @@ export function ContactFormModal({ open, onClose, contact }: ContactFormModalPro
       <form id="contact-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
-            label="Ad"
+            label={t('form.fields.firstName')}
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
             error={fieldError('first_name')}
             required
           />
           <Input
-            label="Soyad"
+            label={t('form.fields.lastName')}
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
             error={fieldError('last_name')}
             required
           />
           <Input
-            label="E-posta"
+            label={t('form.fields.email')}
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             error={fieldError('email')}
           />
           <Input
-            label="Telefon"
+            label={t('form.fields.phone')}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             error={fieldError('phone')}
           />
           <Input
-            label="Mobil"
+            label={t('form.fields.mobile')}
             value={mobile}
             onChange={(e) => setMobile(e.target.value)}
             error={fieldError('mobile')}
           />
           <Input
-            label="Pozisyon"
+            label={t('form.fields.position')}
             value={position}
             onChange={(e) => setPosition(e.target.value)}
             error={fieldError('position')}
@@ -188,7 +190,7 @@ export function ContactFormModal({ open, onClose, contact }: ContactFormModalPro
           <CompanyCombobox value={company} onChange={setCompany} error={fieldError('company_id')} />
           {canViewUsers && (
             <Select
-              label="Sahip"
+              label={t('form.fields.owner')}
               value={ownerId}
               onChange={(e) => setOwnerId(e.target.value)}
               options={ownerSelectOptions}
@@ -199,30 +201,30 @@ export function ContactFormModal({ open, onClose, contact }: ContactFormModalPro
 
         <div className="flex flex-col gap-1.5">
           <Checkbox
-            label="Birincil kişi"
+            label={t('form.fields.isPrimary')}
             checked={isPrimary}
             onChange={(e) => setIsPrimary(e.target.checked)}
           />
           {isPrimary && company && (
             <p className="text-xs text-warning">
-              Bu firmadaki mevcut birincil kişi otomatik olarak değiştirilecek.
+              {t('form.primaryWarning')}
             </p>
           )}
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <Input label="Adres" value={address} onChange={(e) => setAddress(e.target.value)} error={fieldError('address')} />
-          <Input label="Şehir" value={city} onChange={(e) => setCity(e.target.value)} error={fieldError('city')} />
-          <Input label="Ülke" value={country} onChange={(e) => setCountry(e.target.value)} error={fieldError('country')} />
+          <Input label={t('form.fields.address')} value={address} onChange={(e) => setAddress(e.target.value)} error={fieldError('address')} />
+          <Input label={t('form.fields.city')} value={city} onChange={(e) => setCity(e.target.value)} error={fieldError('city')} />
+          <Input label={t('form.fields.country')} value={country} onChange={(e) => setCountry(e.target.value)} error={fieldError('country')} />
         </div>
 
         <TagMultiSelect value={tags} onChange={setTags} options={tagOptions ?? []} isLoading={tagsLoading} />
 
-        <Textarea label="Notlar" value={notes} onChange={(e) => setNotes(e.target.value)} error={fieldError('notes')} />
+        <Textarea label={t('form.fields.notes')} value={notes} onChange={(e) => setNotes(e.target.value)} error={fieldError('notes')} />
 
         {(customFieldDefs ?? []).length > 0 && (
           <div className="flex flex-col gap-4 border-t border-border-subtle pt-4">
-            <p className="text-xs font-medium text-fg-muted">Özel Alanlar</p>
+            <p className="text-xs font-medium text-fg-muted">{t('form.customFields')}</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {(customFieldDefs ?? []).map((def) => (
                 <Input

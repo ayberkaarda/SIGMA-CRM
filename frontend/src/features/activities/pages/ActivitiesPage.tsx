@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import { ActivitySquare, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import {
   Avatar,
@@ -24,11 +25,12 @@ import {
   Tr,
 } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
+import { formatDateTime } from '../../../lib/datetime'
 import { usePermission } from '../../auth/hooks/usePermission'
 import { useTaskUserOptions } from '../../tasks/api/tasksApi'
 import { relatedRecordMeta, RELATED_RECORD_SELECTABLE_TYPES, relatedRecordTypeLabel } from '../../tasks/components/relatedRecordMeta'
 import { ActivityTypeBadge } from '../components/ActivityTypeBadge'
-import { ACTIVITY_TYPE_OPTIONS } from '../components/activityTypeMeta'
+import { activityTypeOptions } from '../components/activityTypeMeta'
 import { ActivityFormModal } from '../components/ActivityFormModal'
 import { useActivities, useDeleteActivity } from '../api/activitiesApi'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
@@ -37,18 +39,12 @@ import type { ActivitiesQuery, Activity } from '../types'
 const DEFAULT_PER_PAGE = 10
 const SEARCH_DEBOUNCE_MS = 300
 
-function formatDateTime(iso: string | null): string {
-  if (!iso) return '—'
-  try {
-    return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
-  } catch {
-    return iso
-  }
-}
-
 type FormModalState = { mode: 'create' } | { mode: 'edit'; activity: Activity } | null
 
 export function ActivitiesPage() {
+  const { t } = useTranslation('activities')
+  const { t: tEnums } = useTranslation('enums')
+  const { t: tTasks } = useTranslation('tasks')
   const [searchParams, setSearchParams] = useSearchParams()
   const { can } = usePermission()
 
@@ -110,14 +106,14 @@ export function ActivitiesPage() {
     updateParams({ sort: nextSort, page: '1' })
   }
 
-  const typeFilterOptions = [{ value: '', label: 'Tüm türler' }, ...ACTIVITY_TYPE_OPTIONS]
+  const typeFilterOptions = [{ value: '', label: t('filters.allTypes') }, ...activityTypeOptions(tEnums)]
   const userFilterOptions = [
-    { value: '', label: 'Tüm kullanıcılar' },
+    { value: '', label: t('filters.allUsers') },
     ...(userOptions ?? []).map((u) => ({ value: String(u.id), label: u.name })),
   ]
   const activityableFilterOptions = [
-    { value: '', label: 'Tüm kayıt türleri' },
-    ...RELATED_RECORD_SELECTABLE_TYPES.concat('ticket').map((type) => ({ value: type, label: relatedRecordTypeLabel(type) })),
+    { value: '', label: t('filters.allRecordTypes') },
+    ...RELATED_RECORD_SELECTABLE_TYPES.concat('ticket').map((type) => ({ value: type, label: relatedRecordTypeLabel(type, tTasks) })),
   ]
 
   const activities = data?.data ?? []
@@ -127,19 +123,19 @@ export function ActivitiesPage() {
   return (
     <div className="flex flex-col gap-4">
       <nav aria-label="breadcrumb" className="text-xs text-fg-muted">
-        <span>Anasayfa</span>
+        <span>{t('breadcrumb.home')}</span>
         <span className="mx-1.5">/</span>
-        <span className="text-primary">Aktiviteler</span>
+        <span className="text-primary">{t('breadcrumb.activities')}</span>
       </nav>
 
       <Card>
         <CardHeader
-          title="Aktiviteler"
-          subtitle={`${total} aktivite`}
+          title={t('list.title')}
+          subtitle={t('list.subtitle', { count: total })}
           action={
             can('activities.create') && (
               <Button leftIcon={<Plus className="size-4" aria-hidden="true" />} onClick={() => setFormModal({ mode: 'create' })}>
-                Aktivite Kaydet
+                {t('list.createButton')}
               </Button>
             )
           }
@@ -151,9 +147,9 @@ export function ActivitiesPage() {
                 <Input
                   value={searchDraft}
                   onChange={(e) => setSearchDraft(e.target.value)}
-                  placeholder="Konu ara..."
+                  placeholder={t('filters.searchPlaceholder')}
                   leftIcon={<Search className="size-4" aria-hidden="true" />}
-                  aria-label="Aktivite ara"
+                  aria-label={t('filters.searchAria')}
                 />
               </div>
               <div className="w-full lg:w-40">
@@ -161,7 +157,7 @@ export function ActivitiesPage() {
                   value={query.type ?? ''}
                   onChange={(e) => updateParams({ type: e.target.value || null, page: '1' })}
                   options={typeFilterOptions}
-                  aria-label="Tür filtresi"
+                  aria-label={t('filters.typeAria')}
                 />
               </div>
               {!usersForbidden && (
@@ -170,7 +166,7 @@ export function ActivitiesPage() {
                     value={query.user_id ? String(query.user_id) : ''}
                     onChange={(e) => updateParams({ user_id: e.target.value || null, page: '1' })}
                     options={userFilterOptions}
-                    aria-label="Kullanıcı filtresi"
+                    aria-label={t('filters.userAria')}
                   />
                 </div>
               )}
@@ -179,7 +175,7 @@ export function ActivitiesPage() {
                   value={query.activityable_type ?? ''}
                   onChange={(e) => updateParams({ activityable_type: e.target.value || null, page: '1' })}
                   options={activityableFilterOptions}
-                  aria-label="İlgili kayıt türü filtresi"
+                  aria-label={t('filters.recordTypeAria')}
                 />
               </div>
               <div className="flex w-full items-end gap-2 lg:w-auto">
@@ -188,7 +184,7 @@ export function ActivitiesPage() {
                     type="date"
                     value={query.from ?? ''}
                     onChange={(e) => updateParams({ from: e.target.value || null, page: '1' })}
-                    aria-label="Başlangıç tarihi"
+                    aria-label={t('filters.fromDateAria')}
                     max={query.to || undefined}
                   />
                 </div>
@@ -198,7 +194,7 @@ export function ActivitiesPage() {
                     type="date"
                     value={query.to ?? ''}
                     onChange={(e) => updateParams({ to: e.target.value || null, page: '1' })}
-                    aria-label="Bitiş tarihi"
+                    aria-label={t('filters.toDateAria')}
                     min={query.from || undefined}
                   />
                 </div>
@@ -208,35 +204,35 @@ export function ActivitiesPage() {
 
           {isError ? (
             <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
-              <p className="text-sm text-fg-muted">Aktiviteler yüklenirken bir hata oluştu.</p>
+              <p className="text-sm text-fg-muted">{t('list.error')}</p>
               <Button variant="secondary" onClick={() => refetch()}>
-                Tekrar dene
+                {t('list.retry')}
               </Button>
             </div>
           ) : isEmpty ? (
             <EmptyState
               icon={<ActivitySquare className="size-6" aria-hidden="true" />}
-              title="Aktivite bulunamadı"
-              description="Arama veya filtre kriterlerinizle eşleşen aktivite yok."
+              title={t('list.empty.title')}
+              description={t('list.empty.description')}
             />
           ) : (
             <Table>
               <THead>
                 <Tr>
-                  <Th>Tür</Th>
+                  <Th>{t('table.type')}</Th>
                   <Th sortable sortDirection={sortDirectionFor('subject')} onSort={() => toggleSort('subject')}>
-                    Konu
+                    {t('table.subject')}
                   </Th>
-                  <Th>İlgili Kayıt</Th>
-                  <Th>Kullanıcı</Th>
+                  <Th>{t('table.relatedRecord')}</Th>
+                  <Th>{t('table.user')}</Th>
                   <Th sortable sortDirection={sortDirectionFor('occurred_at')} onSort={() => toggleSort('occurred_at')}>
-                    Gerçekleşme
+                    {t('table.occurredAt')}
                   </Th>
                   <Th sortable sortDirection={sortDirectionFor('duration_minutes')} onSort={() => toggleSort('duration_minutes')}>
-                    Süre
+                    {t('table.duration')}
                   </Th>
-                  <Th>Sonuç</Th>
-                  <Th align="right">İşlemler</Th>
+                  <Th>{t('table.outcome')}</Th>
+                  <Th align="right">{t('table.actions')}</Th>
                 </Tr>
               </THead>
               <TBody aria-busy={isLoading}>
@@ -254,7 +250,7 @@ export function ActivitiesPage() {
                       </Tr>
                     ))
                   : activities.map((activity) => {
-                      const meta = activity.activityable ? relatedRecordMeta(activity.activityable.type) : null
+                      const meta = activity.activityable ? relatedRecordMeta(activity.activityable.type, tTasks) : null
                       const Icon = meta?.icon
                       return (
                         <Tr key={activity.id}>
@@ -286,7 +282,7 @@ export function ActivitiesPage() {
                             )}
                           </Td>
                           <Td className="whitespace-nowrap">{formatDateTime(activity.occurred_at)}</Td>
-                          <Td>{activity.duration_minutes !== null ? `${activity.duration_minutes} dk` : '—'}</Td>
+                          <Td>{activity.duration_minutes !== null ? t('table.durationValue', { count: activity.duration_minutes }) : '—'}</Td>
                           <Td className="max-w-40 truncate">{activity.outcome ?? '—'}</Td>
                           <Td align="right">
                             <div className="flex items-center justify-end gap-1">
@@ -296,9 +292,9 @@ export function ActivitiesPage() {
                                   buton GİZLENMEZ, devre dışı + tooltip gösterilir. */}
                               {can('activities.update') && (
                                 <IconButton
-                                  label="Düzenle"
+                                  label={t('table.edit')}
                                   disabled={!activity.can.update}
-                                  title={activity.can.update ? 'Düzenle' : 'Bu aktiviteyi yazan kişi değilsiniz, düzenleyemezsiniz.'}
+                                  title={activity.can.update ? t('table.edit') : t('table.editForbidden')}
                                   onClick={() => setFormModal({ mode: 'edit', activity })}
                                 >
                                   <Pencil className="size-4" aria-hidden="true" />
@@ -312,7 +308,7 @@ export function ActivitiesPage() {
                                   eskiden burada aynı mantığı istemcide yeniden kuran yerel bir
                                   `canDelete()` fonksiyonu vardı, artık gerek yok. */}
                               {activity.can.delete && (
-                                <IconButton label="Sil" danger onClick={() => setDeleteActivityState(activity)}>
+                                <IconButton label={t('table.delete')} danger onClick={() => setDeleteActivityState(activity)}>
                                   <Trash2 className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
@@ -347,12 +343,12 @@ export function ActivitiesPage() {
       <Modal
         open={!!deleteActivityState}
         onClose={() => setDeleteActivityState(null)}
-        title="Aktiviteyi sil"
-        description="Bu işlem geri alınamaz. Aktivite kalıcı olarak silinecek."
+        title={t('deleteModal.title')}
+        description={t('deleteModal.description')}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setDeleteActivityState(null)}>
-              Vazgeç
+              {t('form.cancel')}
             </Button>
             <Button
               variant="danger"
@@ -363,14 +359,19 @@ export function ActivitiesPage() {
                 setDeleteActivityState(null)
               }}
             >
-              Sil
+              {t('table.delete')}
             </Button>
           </div>
         }
       >
         {deleteActivityState && (
           <p className="text-sm text-fg-secondary">
-            <strong className="text-fg">{deleteActivityState.subject}</strong> adlı aktiviteyi silmek istediğinize emin misiniz?
+            <Trans
+              t={t}
+              i18nKey="deleteModal.confirm"
+              values={{ subject: deleteActivityState.subject }}
+              components={{ strong: <strong className="text-fg" /> }}
+            />
           </p>
         )}
       </Modal>

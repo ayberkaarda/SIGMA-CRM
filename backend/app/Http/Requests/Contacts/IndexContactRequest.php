@@ -36,29 +36,6 @@ class IndexContactRequest extends FormRequest
     }
 
     /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'page.integer' => 'Sayfa numarası tam sayı olmalıdır.',
-            'page.min' => 'Sayfa numarası en az :min olmalıdır.',
-            'per_page.integer' => 'Sayfa başına kayıt sayısı tam sayı olmalıdır.',
-            'per_page.min' => 'Sayfa başına kayıt sayısı en az :min olmalıdır.',
-            'per_page.max' => 'Sayfa başına kayıt sayısı en fazla :max olabilir.',
-            'sort.string' => 'Sıralama parametresi metin olmalıdır.',
-            'q.string' => 'Arama terimi metin olmalıdır.',
-            'q.max' => 'Arama terimi en fazla :max karakter olabilir.',
-            'filter.company_id.exists' => 'Seçilen firma geçerli değil.',
-            'filter.owner_id.exists' => 'Seçilen sahip geçerli değil.',
-            'filter.is_primary.boolean' => 'Birincil kişi filtresi true/false olmalıdır.',
-            'filter.tag_id.exists' => 'Seçilen etiket geçerli değil.',
-            'filter.from.date' => 'Başlangıç tarihi geçerli bir tarih olmalıdır.',
-            'filter.to.date' => 'Bitiş tarihi geçerli bir tarih olmalıdır.',
-        ];
-    }
-
-    /**
      * Repository/Service katmanının beklediği düz filtre dizisini üretir.
      *
      * @return array<string, mixed>

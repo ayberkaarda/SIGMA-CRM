@@ -72,20 +72,16 @@ class UpdatePipelineStageRequest extends FormRequest
      */
     public function messages(): array
     {
-        $systemFlagMessage = 'Kazanıldı/Kaybedildi bayrağı sonradan değiştirilemez: '.
-            'sütunun anlamı, içindeki kartların geçmişte yazılmış durumuyla çelişirdi.';
+        $systemFlagMessage = __('validation.custom.settings.pipeline_system_flag_locked');
 
         return [
-            'name.max' => 'Aşama adı en fazla :max karakter olabilir.',
-            'slug.regex' => 'Slug yalnızca küçük harf, rakam ve tire içerebilir (ör. "teklif-gonderildi").',
-            'slug.unique' => 'Bu slug ile bir aşama zaten var.',
-            'probability.between' => 'Kazanma olasılığı 0 ile 100 arasında olmalıdır.',
-            'color.in' => 'Geçersiz renk. Geçerli değerler: '.implode('|', PipelineStageService::COLORS),
-            'move_to_stage_id.exists' => 'Fırsatların taşınacağı aşama bulunamadı.',
+            'slug.regex' => __('validation.custom.settings.pipeline_slug_format'),
+            'color.in' => __('validation.custom.settings.pipeline_color_invalid', [
+                'values' => implode('|', PipelineStageService::COLORS),
+            ]),
             'is_won.missing' => $systemFlagMessage,
             'is_lost.missing' => $systemFlagMessage,
-            'position.missing' => 'Aşama sırası bu uçtan değiştirilemez. '.
-                'POST /api/settings/pipeline-stages/reorder ucunu kullanın.',
+            'position.missing' => __('validation.custom.settings.pipeline_position_locked'),
         ];
     }
 }

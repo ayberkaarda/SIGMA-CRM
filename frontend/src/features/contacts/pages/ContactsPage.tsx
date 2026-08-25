@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import { Eye, Pencil, Plus, Search, Trash2, Users as UsersIcon } from 'lucide-react'
 import {
   Avatar,
@@ -27,6 +28,7 @@ import {
 import { cn } from '../../../lib/cn'
 import { tokenBadgeVariant } from '../../../components/shared/tokenBadgeVariant'
 import { usePermission } from '../../auth/hooks/usePermission'
+import { SavedViewsBar } from '../../saved-views/components/SavedViewsBar'
 import { useAllCompanyOptions, useDeleteContact, useContacts, useTags, useUserOptions } from '../api/contactsApi'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { ContactFormModal } from '../components/ContactFormModal'
@@ -67,6 +69,7 @@ function IconButton({
 type FormModalState = { mode: 'create' } | { mode: 'edit'; contact: Contact } | null
 
 export function ContactsPage() {
+  const { t } = useTranslation('contacts')
   const [searchParams, setSearchParams] = useSearchParams()
   const { can } = usePermission()
   const canViewUsers = can('users.view')
@@ -135,24 +138,24 @@ export function ContactsPage() {
   }
 
   const companyFilterOptions = [
-    { value: '', label: 'Tüm firmalar' },
+    { value: '', label: t('filters.allCompanies') },
     ...(companyOptions ?? []).map((c) => ({ value: String(c.id), label: c.name })),
   ]
 
   const ownerFilterOptions = [
-    { value: '', label: 'Tüm sahipler' },
+    { value: '', label: t('filters.allOwners') },
     ...(userOptions ?? []).map((u) => ({ value: String(u.id), label: u.name })),
   ]
 
   const tagFilterOptions = [
-    { value: '', label: 'Tüm etiketler' },
-    ...(tagOptions ?? []).map((t) => ({ value: String(t.id), label: t.name })),
+    { value: '', label: t('filters.allTags') },
+    ...(tagOptions ?? []).map((tag) => ({ value: String(tag.id), label: tag.name })),
   ]
 
   const primaryFilterOptions = [
-    { value: '', label: 'Tümü' },
-    { value: 'true', label: 'Evet' },
-    { value: 'false', label: 'Hayır' },
+    { value: '', label: t('filters.all') },
+    { value: 'true', label: t('filters.yes') },
+    { value: 'false', label: t('filters.no') },
   ]
 
   const contacts = data?.data ?? []
@@ -162,21 +165,24 @@ export function ContactsPage() {
   return (
     <div className="flex flex-col gap-4">
       <nav aria-label="breadcrumb" className="text-xs text-fg-muted">
-        <span>Anasayfa</span>
+        <span>{t('breadcrumb.home')}</span>
         <span className="mx-1.5">/</span>
-        <span className="text-primary">Kişiler</span>
+        <span className="text-primary">{t('breadcrumb.contacts')}</span>
       </nav>
 
       <Card>
         <CardHeader
-          title="Kişiler"
-          subtitle={`${total} kişi`}
+          title={t('list.title')}
+          subtitle={t('list.subtitle', { count: total })}
           action={
-            can('contacts.create') && (
-              <Button leftIcon={<Plus className="size-4" aria-hidden="true" />} onClick={() => setFormModal({ mode: 'create' })}>
-                Yeni Kişi
-              </Button>
-            )
+            <div className="flex items-center gap-2">
+              <SavedViewsBar module="contacts" filterKeys={['company_id', 'owner_id', 'is_primary', 'city', 'tag_id', 'from', 'to']} />
+              {can('contacts.create') && (
+                <Button leftIcon={<Plus className="size-4" aria-hidden="true" />} onClick={() => setFormModal({ mode: 'create' })}>
+                  {t('list.createButton')}
+                </Button>
+              )}
+            </div>
           }
         />
         <CardBody noPadding>
@@ -185,9 +191,9 @@ export function ContactsPage() {
               <Input
                 value={searchDraft}
                 onChange={(e) => setSearchDraft(e.target.value)}
-                placeholder="İsim, e-posta veya telefon ara..."
+                placeholder={t('filters.searchPlaceholder')}
                 leftIcon={<Search className="size-4" aria-hidden="true" />}
-                aria-label="Kişi ara"
+                aria-label={t('filters.searchAria')}
               />
             </div>
             <div className="w-full lg:w-48">
@@ -195,7 +201,7 @@ export function ContactsPage() {
                 value={query.company_id ? String(query.company_id) : ''}
                 onChange={(e) => updateParams({ company_id: e.target.value || null, page: '1' })}
                 options={companyFilterOptions}
-                aria-label="Firma filtresi"
+                aria-label={t('filters.companyAria')}
               />
             </div>
             {canViewUsers && (
@@ -204,7 +210,7 @@ export function ContactsPage() {
                   value={query.owner_id ? String(query.owner_id) : ''}
                   onChange={(e) => updateParams({ owner_id: e.target.value || null, page: '1' })}
                   options={ownerFilterOptions}
-                  aria-label="Sahip filtresi"
+                  aria-label={t('filters.ownerAria')}
                 />
               </div>
             )}
@@ -212,8 +218,8 @@ export function ContactsPage() {
               <Input
                 value={query.city ?? ''}
                 onChange={(e) => updateParams({ city: e.target.value || null, page: '1' })}
-                placeholder="Şehir"
-                aria-label="Şehir filtresi"
+                placeholder={t('filters.cityPlaceholder')}
+                aria-label={t('filters.cityAria')}
               />
             </div>
             <div className="w-full lg:w-44">
@@ -221,7 +227,7 @@ export function ContactsPage() {
                 value={query.tag_id ? String(query.tag_id) : ''}
                 onChange={(e) => updateParams({ tag_id: e.target.value || null, page: '1' })}
                 options={tagFilterOptions}
-                aria-label="Etiket filtresi"
+                aria-label={t('filters.tagAria')}
               />
             </div>
             <div className="w-full lg:w-36">
@@ -229,7 +235,7 @@ export function ContactsPage() {
                 value={query.is_primary === undefined ? '' : String(query.is_primary)}
                 onChange={(e) => updateParams({ is_primary: e.target.value || null, page: '1' })}
                 options={primaryFilterOptions}
-                aria-label="Birincil filtresi"
+                aria-label={t('filters.primaryAria')}
               />
             </div>
             <div className="flex w-full items-end gap-2 lg:w-auto">
@@ -238,7 +244,7 @@ export function ContactsPage() {
                   type="date"
                   value={query.from ?? ''}
                   onChange={(e) => updateParams({ from: e.target.value || null, page: '1' })}
-                  aria-label="Başlangıç tarihi"
+                  aria-label={t('filters.fromDateAria')}
                   max={query.to || undefined}
                 />
               </div>
@@ -248,7 +254,7 @@ export function ContactsPage() {
                   type="date"
                   value={query.to ?? ''}
                   onChange={(e) => updateParams({ to: e.target.value || null, page: '1' })}
-                  aria-label="Bitiş tarihi"
+                  aria-label={t('filters.toDateAria')}
                   min={query.from || undefined}
                 />
               </div>
@@ -257,36 +263,36 @@ export function ContactsPage() {
 
           {isError ? (
             <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
-              <p className="text-sm text-fg-muted">Kişiler yüklenirken bir hata oluştu.</p>
+              <p className="text-sm text-fg-muted">{t('list.error')}</p>
               <Button variant="secondary" onClick={() => refetch()}>
-                Tekrar dene
+                {t('list.retry')}
               </Button>
             </div>
           ) : isEmpty ? (
             <EmptyState
               icon={<UsersIcon className="size-6" aria-hidden="true" />}
-              title="Kişi bulunamadı"
-              description="Arama veya filtre kriterlerinizle eşleşen kişi yok."
+              title={t('list.empty.title')}
+              description={t('list.empty.description')}
             />
           ) : (
             <Table>
               <THead>
                 <Tr>
                   <Th sortable sortDirection={sortDirectionFor('last_name')} onSort={() => toggleSort('last_name')}>
-                    Kişi
+                    {t('table.contact')}
                   </Th>
-                  <Th>Firma</Th>
+                  <Th>{t('table.company')}</Th>
                   <Th sortable sortDirection={sortDirectionFor('email')} onSort={() => toggleSort('email')}>
-                    E-posta
+                    {t('table.email')}
                   </Th>
-                  <Th>Telefon</Th>
+                  <Th>{t('table.phone')}</Th>
                   <Th sortable sortDirection={sortDirectionFor('city')} onSort={() => toggleSort('city')}>
-                    Şehir
+                    {t('table.city')}
                   </Th>
-                  <Th>Sahip</Th>
-                  <Th>Etiketler</Th>
-                  <Th align="center">Birincil</Th>
-                  <Th align="right">İşlemler</Th>
+                  <Th>{t('table.owner')}</Th>
+                  <Th>{t('table.tags')}</Th>
+                  <Th align="center">{t('table.primary')}</Th>
+                  <Th align="right">{t('table.actions')}</Th>
                 </Tr>
               </THead>
               <TBody aria-busy={isLoading}>
@@ -347,14 +353,14 @@ export function ContactsPage() {
                           )}
                         </Td>
                         <Td align="center">
-                          {c.is_primary && <Badge variant="primary">Birincil</Badge>}
+                          {c.is_primary && <Badge variant="primary">{t('table.primary')}</Badge>}
                         </Td>
                         <Td align="right">
                           <div className="flex items-center justify-end gap-1">
                             <Link
                               to={`/contacts/${c.id}`}
-                              aria-label="Detay"
-                              title="Detay"
+                              aria-label={t('table.detail')}
+                              title={t('table.detail')}
                               className={cn(
                                 'inline-flex size-8 items-center justify-center rounded-md text-fg-muted hover:bg-surface-2 hover:text-fg',
                                 'transition-colors duration-150 motion-reduce:transition-none',
@@ -364,12 +370,12 @@ export function ContactsPage() {
                               <Eye className="size-4" aria-hidden="true" />
                             </Link>
                             {can('contacts.update') && (
-                              <IconButton label="Düzenle" onClick={() => setFormModal({ mode: 'edit', contact: c })}>
+                              <IconButton label={t('table.edit')} onClick={() => setFormModal({ mode: 'edit', contact: c })}>
                                 <Pencil className="size-4" aria-hidden="true" />
                               </IconButton>
                             )}
                             {can('contacts.delete') && (
-                              <IconButton label="Sil" danger onClick={() => setConfirmDeleteContact(c)}>
+                              <IconButton label={t('table.delete')} danger onClick={() => setConfirmDeleteContact(c)}>
                                 <Trash2 className="size-4" aria-hidden="true" />
                               </IconButton>
                             )}
@@ -403,12 +409,12 @@ export function ContactsPage() {
       <Modal
         open={!!confirmDeleteContact}
         onClose={() => setConfirmDeleteContact(null)}
-        title="Kişiyi sil"
-        description="Bu işlem geri alınamaz. Kişi kalıcı olarak silinecek."
+        title={t('deleteModal.title')}
+        description={t('deleteModal.description')}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setConfirmDeleteContact(null)}>
-              Vazgeç
+              {t('form.cancel')}
             </Button>
             <Button
               variant="danger"
@@ -419,15 +425,19 @@ export function ContactsPage() {
                 setConfirmDeleteContact(null)
               }}
             >
-              Sil
+              {t('table.delete')}
             </Button>
           </div>
         }
       >
         {confirmDeleteContact && (
           <p className="text-sm text-fg-secondary">
-            <strong className="text-fg">{confirmDeleteContact.full_name}</strong> adlı kişiyi silmek istediğinize
-            emin misiniz?
+            <Trans
+              t={t}
+              i18nKey="deleteModal.confirm"
+              values={{ name: confirmDeleteContact.full_name }}
+              components={{ strong: <strong className="text-fg" /> }}
+            />
           </p>
         )}
       </Modal>

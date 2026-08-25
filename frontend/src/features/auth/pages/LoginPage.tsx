@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { isAxiosError } from 'axios'
+import { useTranslation } from 'react-i18next'
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react'
 import { Button, Card, CardBody, Checkbox, Input, Modal, toast } from '../../../components/ui'
 import { getErrorMessage, getFieldErrors } from '../../../lib/axios'
 import { useAuth, useForgotPassword } from '../hooks/useAuth'
+import { LanguageSwitcher } from '../../../i18n/LanguageSwitcher'
 
 type LocationState = { from?: { pathname: string } }
 
@@ -19,6 +21,10 @@ function getRetryAfterSeconds(error: unknown): number | null {
 export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
+  // Giriş ekranı PRE-AUTH'tur: burada gösterilen dil localStorage'daki seçimden gelir,
+  // `users.locale` daha okunmamıştır (§1.3). Bu yüzden metinler de çevrilmek ZORUNDA —
+  // kullanıcı uygulamaya ilk temasında kendi dilini görmeli.
+  const { t } = useTranslation('auth')
   const { login, isLoggingIn } = useAuth()
   const forgotPassword = useForgotPassword()
 
@@ -59,12 +65,12 @@ export function LoginPage() {
       const user = await login({ email, password, remember })
       const state = location.state as LocationState | null
       navigate(state?.from?.pathname ?? '/', { replace: true })
-      toast.success(`Hoş geldiniz, ${user.name}`)
+      toast.success(t('login.welcome', { name: user.name }))
     } catch (error) {
       const retryAfter = getRetryAfterSeconds(error)
       if (retryAfter) {
         setLockoutSeconds(retryAfter)
-        setFormError(`Çok fazla başarısız deneme. ${retryAfter} saniye sonra tekrar deneyin.`)
+        setFormError(t('login.lockout', { seconds: retryAfter }))
         return
       }
 
@@ -107,7 +113,7 @@ export function LoginPage() {
             className="mb-2 w-28"
           />
           <span className="text-2xl font-semibold tracking-tight text-fg">Syncra</span>
-          <p className="text-sm text-fg-muted">Devam etmek için hesabınıza giriş yapın</p>
+          <p className="text-sm text-fg-muted">{t('login.subtitle')}</p>
         </div>
 
         <Card>
@@ -124,10 +130,10 @@ export function LoginPage() {
               <Input
                 ref={emailInputRef}
                 type="email"
-                label="E-posta"
+                label={t('login.email')}
                 name="email"
                 autoComplete="email"
-                placeholder="ornek@sirket.com"
+                placeholder={t('login.emailPlaceholder')}
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 leftIcon={<Mail className="size-4" aria-hidden="true" />}
@@ -137,7 +143,7 @@ export function LoginPage() {
 
               <Input
                 type={showPassword ? 'text' : 'password'}
-                label="Şifre"
+                label={t('login.password')}
                 name="password"
                 autoComplete="current-password"
                 placeholder="••••••••"
@@ -149,7 +155,7 @@ export function LoginPage() {
                     type="button"
                     onClick={() => setShowPassword((current) => !current)}
                     className="pointer-events-auto text-fg-muted hover:text-fg"
-                    aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                    aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
                   >
                     {showPassword ? (
                       <EyeOff className="size-4" aria-hidden="true" />
@@ -164,7 +170,7 @@ export function LoginPage() {
 
               <div className="flex items-center justify-between">
                 <Checkbox
-                  label="Beni hatırla"
+                  label={t('login.remember')}
                   checked={remember}
                   onChange={(event) => setRemember(event.target.checked)}
                 />
@@ -173,50 +179,55 @@ export function LoginPage() {
                   onClick={() => setForgotOpen(true)}
                   className="text-sm text-primary hover:underline"
                 >
-                  Şifremi unuttum
+                  {t('login.forgot')}
                 </button>
               </div>
 
               <Button type="submit" fullWidth loading={isLoggingIn} disabled={submitDisabled}>
-                {lockoutSeconds > 0 ? `Tekrar deneyin (${lockoutSeconds}s)` : 'Giriş Yap'}
+                {lockoutSeconds > 0 ? t('login.retryIn', { seconds: lockoutSeconds }) : t('login.submit')}
               </Button>
             </form>
           </CardBody>
         </Card>
 
-        <p className="text-center text-xs text-fg-muted">
-          Hesaplar yalnızca sistem yöneticisi tarafından oluşturulur.
-        </p>
+        <p className="text-center text-xs text-fg-muted">{t('login.accountsAdminOnly')}</p>
+
+        {/* Dil seçici giriş ekranında da ZORUNLU (§1.3): oturum açmadan önce de arayüz
+            kullanıcının dilinde olmalı; seçim localStorage'a yazılır ve girişten sonra
+            `users.locale`'e taşınır. */}
+        <div className="flex justify-center">
+          <LanguageSwitcher align="left" />
+        </div>
       </div>
 
       <Modal
         open={forgotOpen}
         onClose={closeForgotModal}
-        title="Şifremi unuttum"
+        title={t('forgot.title')}
         description={
           forgotSent
             ? undefined
-            : 'E-posta adresinizi girin — talebiniz sistem yöneticisine iletilsin. Kendi kendine sıfırlama bu sistemde kapalıdır.'
+            : t('forgot.description')
         }
         size="sm"
       >
         {forgotSent ? (
           <div className="rounded-md border border-success bg-success-tint px-3 py-2 text-sm text-success">
-            Talebiniz yöneticiye iletildi.
+            {t('forgot.sent')}
           </div>
         ) : (
           <form onSubmit={handleForgotSubmit} className="flex flex-col gap-4" noValidate>
             <Input
               type="email"
-              label="E-posta"
+              label={t('login.email')}
               autoComplete="email"
-              placeholder="ornek@sirket.com"
+              placeholder={t('login.emailPlaceholder')}
               value={forgotEmail}
               onChange={(event) => setForgotEmail(event.target.value)}
               required
             />
             <Button type="submit" fullWidth loading={forgotPassword.isPending}>
-              Talebi Gönder
+              {t('forgot.submit')}
             </Button>
           </form>
         )}

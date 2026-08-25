@@ -63,6 +63,10 @@ class QuotePdfService
             'currencySymbol' => self::currencySymbol(
                 $quote->currency ?: Setting::get('general.currency', 'TRY')
             ),
+            // Faz 14 / İz E (docs/PHASE-INTL.md §2.3/§2.6): blade'in kur
+            // satırını basıp basmayacağına karar verirken temel para birimini
+            // (TRY) sabit yazmak yerine buradan alır.
+            'baseCurrency' => config('exchange.base_currency', 'TRY'),
             'generatedAt' => now(),
         ];
 
@@ -141,7 +145,12 @@ class QuotePdfService
         $fontMetrics = $dompdf->getFontMetrics();
         $font = $fontMetrics->getFont('DejaVu Sans', 'normal');
 
-        $text = 'Sayfa {PAGE_NUM} / {PAGE_COUNT}';
+        // `{PAGE_NUM}`/`{PAGE_COUNT}` dompdf'in KENDİ belirteçleridir — Canvas
+        // bunları render sırasında gerçek sayfa numaralarıyla değiştirir.
+        // `__()`'e literal olarak geçirilir, Laravel'in `:page`/`:total`
+        // yer tutucuları yalnızca ÇEVRESİNDEKİ metni (ör. "Sayfa"/"Page")
+        // dile göre değiştirmek için kullanılır.
+        $text = __('pdf.page_indicator', ['page' => '{PAGE_NUM}', 'total' => '{PAGE_COUNT}']);
         $size = 8;
         $width = $fontMetrics->getTextWidth($text, $font, $size);
 

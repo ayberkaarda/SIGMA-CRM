@@ -7,10 +7,11 @@
 // bir kayıt üretirdi. Tamamlama TEK yol: `/complete` ucu (bkz. satır içi checkbox / `useCompleteTask`).
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button, Input, Modal, Select, Textarea } from '../../../components/ui'
 import { getFieldErrors } from '../../../lib/axios'
-import { PRIORITY_OPTIONS } from './priorityMeta'
-import { CREATE_STATUS_OPTIONS } from './taskStatusMeta'
+import { priorityOptions } from './priorityMeta'
+import { createStatusOptions } from './taskStatusMeta'
 import { RelatedRecordPicker } from './RelatedRecordPicker'
 import type { RelatedRecordValue } from './RelatedRecordPicker'
 import { isoToLocalInput, localInputToIso } from './dateTimeInput'
@@ -27,6 +28,7 @@ export type TaskFormModalProps = {
 }
 
 export function TaskFormModal({ open, onClose, task, defaultDueDate }: TaskFormModalProps) {
+  const { t } = useTranslation(['tasks', 'common'])
   const isEdit = !!task
 
   const { data: userOptions, isForbidden: usersForbidden } = useTaskUserOptions()
@@ -70,10 +72,10 @@ export function TaskFormModal({ open, onClose, task, defaultDueDate }: TaskFormM
 
   function validate(): boolean {
     const errors: Record<string, string[]> = {}
-    if (!title.trim()) errors.title = ['Başlık zorunludur.']
+    if (!title.trim()) errors.title = [t('tasks:form.titleRequired')]
     const reminderAfterDue = !!dueAt && !!reminderAt && reminderAt > dueAt
-    setReminderClientError(reminderAfterDue ? 'Hatırlatıcı, vade tarihinden sonra olamaz.' : undefined)
-    if (reminderAfterDue) errors.reminder_at = ['Hatırlatıcı, vade tarihinden sonra olamaz.']
+    setReminderClientError(reminderAfterDue ? t('tasks:form.reminderAfterDue') : undefined)
+    if (reminderAfterDue) errors.reminder_at = [t('tasks:form.reminderAfterDue')]
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -107,7 +109,7 @@ export function TaskFormModal({ open, onClose, task, defaultDueDate }: TaskFormM
   }
 
   const assigneeOptions = [
-    { value: '', label: 'Atanmamış' },
+    { value: '', label: t('tasks:common.unassigned') },
     ...(userOptions ?? []).map((u) => ({ value: String(u.id), label: u.name })),
   ]
 
@@ -115,24 +117,30 @@ export function TaskFormModal({ open, onClose, task, defaultDueDate }: TaskFormM
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? 'Görevi Düzenle' : 'Yeni Görev'}
+      title={isEdit ? t('tasks:form.editTitle') : t('tasks:form.createTitle')}
       size="lg"
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Vazgeç
+            {t('common:actions.cancel')}
           </Button>
           <Button type="submit" form="task-form" loading={isPending}>
-            {isEdit ? 'Kaydet' : 'Oluştur'}
+            {isEdit ? t('common:actions.save') : t('tasks:form.create')}
           </Button>
         </div>
       }
     >
       <form id="task-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <Input label="Başlık" value={title} onChange={(e) => setTitle(e.target.value)} error={fieldError('title')} required />
+        <Input
+          label={t('tasks:form.titleLabel')}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          error={fieldError('title')}
+          required
+        />
 
         <Textarea
-          label="Açıklama"
+          label={t('tasks:form.descriptionLabel')}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           error={fieldError('description')}
@@ -140,7 +148,7 @@ export function TaskFormModal({ open, onClose, task, defaultDueDate }: TaskFormM
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
-            label="Vade"
+            label={t('tasks:form.dueDateLabel')}
             type="datetime-local"
             value={dueAt}
             onChange={(e) => {
@@ -150,7 +158,7 @@ export function TaskFormModal({ open, onClose, task, defaultDueDate }: TaskFormM
             error={fieldError('due_at')}
           />
           <Input
-            label="Hatırlatıcı"
+            label={t('tasks:form.reminderLabel')}
             type="datetime-local"
             value={reminderAt}
             onChange={(e) => {
@@ -159,30 +167,30 @@ export function TaskFormModal({ open, onClose, task, defaultDueDate }: TaskFormM
             }}
             max={dueAt || undefined}
             disabled={!dueAt}
-            hint={!dueAt ? 'Önce vade tarihi seçin.' : undefined}
+            hint={!dueAt ? t('tasks:form.reminderHintNoDueDate') : undefined}
             error={reminderClientError ?? fieldError('reminder_at')}
           />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Select
-            label="Öncelik"
+            label={t('tasks:form.priorityLabel')}
             value={priority}
             onChange={(e) => setPriority(e.target.value)}
-            options={PRIORITY_OPTIONS}
+            options={priorityOptions(t)}
             error={fieldError('priority')}
           />
           <Select
-            label="Durum"
+            label={t('tasks:form.statusLabel')}
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            options={CREATE_STATUS_OPTIONS}
-            hint="Tamamlama listedeki hızlı işaretleme ile yapılır."
+            options={createStatusOptions(t)}
+            hint={t('tasks:form.statusHint')}
             error={fieldError('status')}
           />
           {!usersForbidden && (
             <Select
-              label="Atanan"
+              label={t('tasks:form.assigneeLabel')}
               value={assignedTo}
               onChange={(e) => setAssignedTo(e.target.value)}
               options={assigneeOptions}

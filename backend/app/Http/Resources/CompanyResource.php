@@ -49,6 +49,17 @@ class CompanyResource extends JsonResource
                 : [],
             'contacts_count' => $this->whenCounted('contacts'),
             'deals_count' => $this->whenCounted('deals'),
+            // Faz 14 / İz F — C3 ilişkili-kayıtlar paneli (docs/PHASE-INTL.md §3).
+            // `contacts` burada YOK: `CompanyDetailPage` bunu zaten ayrı bir uçtan
+            // (`GET /api/contacts?filter[company_id]=`) tam liste olarak çiziyor
+            // (gerekçe CompanyController::loadRelatedRecords() dokümanında).
+            // Her anahtar yalnızca ilgili modülün izniyle YÜKLENDİYSE (Gate::allows
+            // viewAny) var olur — izinsiz modül anahtarı yanıtta HİÇ görünmez.
+            'related' => array_filter([
+                'deals' => $company->relationLoaded('relatedDeals') ? $company->relatedDeals : null,
+                'quotes' => $company->relationLoaded('relatedQuotes') ? $company->relatedQuotes : null,
+                'tickets' => $company->relationLoaded('relatedTickets') ? $company->relatedTickets : null,
+            ], fn ($group) => $group !== null),
             'primary_contact' => $company->relationLoaded('primaryContact') && $company->primaryContact
                 ? [
                     'id' => $company->primaryContact->id,

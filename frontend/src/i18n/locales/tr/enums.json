@@ -1,0 +1,63 @@
+{
+  "activity": {
+    "type": {
+      "call": "Arama",
+      "meeting": "Toplantı",
+      "email": "E-posta",
+      "note": "Not"
+    }
+  },
+  "deal": {
+    "status": {
+      "open": "Açık",
+      "won": "Kazanıldı",
+      "lost": "Kaybedildi"
+    }
+  },
+  "task": {
+    "priority": { "low": "Düşük", "normal": "Normal", "high": "Yüksek", "urgent": "Acil" },
+    "status": { "pending": "Beklemede", "in_progress": "Devam Ediyor", "completed": "Tamamlandı", "cancelled": "İptal Edildi" }
+  },
+  "ticket": {
+    "priority": {
+      "low": "Düşük",
+      "normal": "Normal",
+      "high": "Yüksek",
+      "urgent": "Acil"
+    },
+    "status": {
+      "open": "Açık",
+      "pending": "Beklemede",
+      "in_progress": "Devam Ediyor",
+      "resolved": "Çözüldü",
+      "closed": "Kapandı"
+    }
+  },
+  "quote": {
+    "status": {
+      "draft": "Taslak",
+      "sent": "Gönderildi",
+      "accepted": "Kabul Edildi",
+      "rejected": "Reddedildi",
+      "expired": "Süresi Doldu"
+    }
+  },
+  "lead": {
+    "status": {
+      "new": "Yeni",
+      "contacted": "İletişime Geçildi",
+      "qualified": "Nitelikli",
+      "unqualified": "Niteliksiz",
+      "converted": "Dönüştürüldü"
+    },
+    "source": {
+      "website": "Web Sitesi",
+      "referral": "Referans",
+      "cold_call": "Soğuk Arama",
+      "email_campaign": "E-posta Kampanyası",
+      "social_media": "Sosyal Medya",
+      "event": "Etkinlik",
+      "other": "Diğer"
+    }
+  }
+}

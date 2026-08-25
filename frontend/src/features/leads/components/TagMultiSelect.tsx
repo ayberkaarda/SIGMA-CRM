@@ -4,6 +4,7 @@
 // `firstOrCreate` kullandığından aynı isim tekrar gönderilirse hata vermez).
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ChevronDown, Plus, X } from 'lucide-react'
 import { Badge, Checkbox, Input } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
@@ -15,6 +16,7 @@ export type TagMultiSelectProps = {
 }
 
 export function TagMultiSelect({ selectedIds, onChange }: TagMultiSelectProps) {
+  const { t } = useTranslation('leads')
   const { data: tags, isLoading } = useTags()
   const createTag = useCreateTag()
   const [open, setOpen] = useState(false)
@@ -48,7 +50,7 @@ export function TagMultiSelect({ selectedIds, onChange }: TagMultiSelectProps) {
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-fg-muted">Etiketler</label>
+      <label className="text-xs font-medium text-fg-muted">{t('leads:tagMultiSelect.label')}</label>
       <div ref={containerRef} className="relative">
         <button
           type="button"
@@ -62,9 +64,9 @@ export function TagMultiSelect({ selectedIds, onChange }: TagMultiSelectProps) {
           )}
         >
           {selectedTags.length === 0 ? (
-            <span className="text-fg-muted">Etiket seçin…</span>
+            <span className="text-fg-muted">{t('leads:tagMultiSelect.placeholder')}</span>
           ) : (
-            <span className="text-fg">{selectedTags.length} etiket seçildi</span>
+            <span className="text-fg">{t('leads:tagMultiSelect.selectedCount', { count: selectedTags.length })}</span>
           )}
           <ChevronDown className="ml-auto size-4 shrink-0 text-fg-muted" aria-hidden="true" />
         </button>
@@ -72,13 +74,13 @@ export function TagMultiSelect({ selectedIds, onChange }: TagMultiSelectProps) {
         {open && (
           <div
             role="listbox"
-            aria-label="Etiket seçimi"
+            aria-label={t('leads:tagMultiSelect.listboxAria')}
             className="absolute left-0 top-full z-20 mt-2 w-full overflow-hidden rounded-lg border border-border bg-surface-3 shadow-popover"
           >
             <div className="max-h-48 overflow-y-auto p-1.5">
-              {isLoading && <p className="px-2 py-2 text-xs text-fg-muted">Yükleniyor…</p>}
+              {isLoading && <p className="px-2 py-2 text-xs text-fg-muted">{t('leads:tagMultiSelect.loading')}</p>}
               {!isLoading && (tags ?? []).length === 0 && (
-                <p className="px-2 py-2 text-xs text-fg-muted">Henüz etiket yok.</p>
+                <p className="px-2 py-2 text-xs text-fg-muted">{t('leads:tagMultiSelect.empty')}</p>
               )}
               {(tags ?? []).map((tag) => (
                 <label
@@ -94,14 +96,14 @@ export function TagMultiSelect({ selectedIds, onChange }: TagMultiSelectProps) {
               <Input
                 value={newTagName}
                 onChange={(e) => setNewTagName(e.target.value)}
-                placeholder="Yeni etiket adı…"
+                placeholder={t('leads:tagMultiSelect.newTagPlaceholder')}
                 inputSize="sm"
-                aria-label="Yeni etiket adı"
+                aria-label={t('leads:tagMultiSelect.newTagAria')}
               />
               <button
                 type="submit"
                 disabled={!newTagName.trim() || createTag.isPending}
-                aria-label="Etiket ekle"
+                aria-label={t('leads:tagMultiSelect.addAria')}
                 className={cn(
                   'inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-fg',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
@@ -121,7 +123,7 @@ export function TagMultiSelect({ selectedIds, onChange }: TagMultiSelectProps) {
               <button
                 type="button"
                 onClick={() => toggleTag(tag.id)}
-                aria-label={`${tag.name} etiketini kaldır`}
+                aria-label={t('leads:tagMultiSelect.removeAria', { name: tag.name })}
                 className="ml-0.5 hover:text-danger"
               >
                 <X className="size-3" aria-hidden="true" />

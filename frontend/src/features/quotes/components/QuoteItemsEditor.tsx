@@ -8,9 +8,10 @@
 // `QuoteFormPage`'de) — ürün ekleme, serbest kalem ekleme, silme, sıralama, alan düzenleme
 // hepsi kapanır.
 import { useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ArrowDown, ArrowUp, Package, Plus, Trash2 } from 'lucide-react'
 import { Button, Input, Table, TBody, Td, THead, Th, Tr } from '../../../components/ui'
-import { formatTRY } from '../utils/money'
+import { formatMoney } from '../../../lib/money'
 import { resolveProductPrice } from '../api/catalogApi'
 // D şeridin (`features/price-lists/`) hazır ürün combobox'ı YENİDEN KULLANILIYOR (görev tanımı:
 // "aranabilir Select, D şeridinin features/products/ api'sini yeniden kullan") — kendi kopyamızı
@@ -27,6 +28,13 @@ export type QuoteItemsEditorProps = {
   onChange: (items: EditableQuoteItem[]) => void
   /** Yeni eklenen ürün bazlı satırların fiyatını çözerken kullanılan liste (formun üstündeki seçici). */
   priceListId: number | null
+  /**
+   * Teklifin KENDİ para birimi (`quote.currency`) — ZORUNLU, varsayılan verilmez. Görev
+   * sözleşmesi (docs/PHASE-INTL.md §2, Karar B): "kayıtlar kendi para biriminde saklanır" ve
+   * gösterilir; çağıran bunu unutursa derleme hatası alsın, sessizce yanlış sembole (`TRY`)
+   * düşülmesin. Bu bir DÖNÜŞÜM değildir — yalnızca doğru sembolün basılmasıdır.
+   */
+  currency: string
   fieldErrors?: Record<string, string[]>
   readOnly?: boolean
 }
@@ -35,7 +43,8 @@ function itemError(fieldErrors: Record<string, string[]> | undefined, index: num
   return fieldErrors?.[`items.${index}.${field}`]?.[0]
 }
 
-export function QuoteItemsEditor({ items, onChange, priceListId, fieldErrors, readOnly = false }: QuoteItemsEditorProps) {
+export function QuoteItemsEditor({ items, onChange, priceListId, currency, fieldErrors, readOnly = false }: QuoteItemsEditorProps) {
+  const { t } = useTranslation()
   // Controlled bileşen — kendi state'i yok, `items` daima prop'tan gelir. Async fiyat çözümleme
   // (`handleAddProduct`) beklerken kullanıcı başka bir satırı değiştirmiş olabileceğinden, o an
   // kapanışta yakalanmış (stale) `items` yerine EN GÜNCEL değere bu ref üzerinden erişilir.
@@ -93,20 +102,20 @@ export function QuoteItemsEditor({ items, onChange, priceListId, fieldErrors, re
     <div className="flex flex-col gap-3">
       {items.length === 0 ? (
         <p className="rounded-md border border-dashed border-border-strong px-4 py-6 text-center text-sm text-fg-muted">
-          Henüz kalem eklenmedi. {!readOnly && 'Aşağıdan ürün arayarak ya da serbest kalem ekleyerek başlayın.'}
+          {t('quotes:itemsEditor.emptyMessage')} {!readOnly && t('quotes:itemsEditor.emptyHint')}
         </p>
       ) : (
         <Table>
           <THead>
             <Tr>
-              <Th align="center">Sıra</Th>
-              <Th>Kalem</Th>
-              <Th align="right">Miktar</Th>
-              <Th align="right">Birim Fiyat</Th>
-              <Th align="right">İndirim %</Th>
-              <Th align="right">KDV %</Th>
-              <Th align="right">Satır Toplamı</Th>
-              {!readOnly && <Th align="right">İşlemler</Th>}
+              <Th align="center">{t('quotes:itemsEditor.columns.order')}</Th>
+              <Th>{t('quotes:itemsEditor.columns.item')}</Th>
+              <Th align="right">{t('quotes:itemsEditor.columns.quantity')}</Th>
+              <Th align="right">{t('quotes:itemsEditor.columns.unitPrice')}</Th>
+              <Th align="right">{t('quotes:itemsEditor.columns.discountPercent')}</Th>
+              <Th align="right">{t('quotes:itemsEditor.columns.taxRate')}</Th>
+              <Th align="right">{t('quotes:itemsEditor.columns.lineTotal')}</Th>
+              {!readOnly && <Th align="right">{t('quotes:itemsEditor.columns.actions')}</Th>}
             </Tr>
           </THead>
           <TBody>
@@ -121,7 +130,7 @@ export function QuoteItemsEditor({ items, onChange, priceListId, fieldErrors, re
                         type="button"
                         onClick={() => moveItem(index, -1)}
                         disabled={index === 0}
-                        aria-label="Yukarı taşı"
+                        aria-label={t('quotes:itemsEditor.moveUp')}
                         className="rounded text-fg-muted hover:text-fg disabled:opacity-30"
                       >
                         <ArrowUp className="size-3.5" aria-hidden="true" />
@@ -131,7 +140,7 @@ export function QuoteItemsEditor({ items, onChange, priceListId, fieldErrors, re
                         type="button"
                         onClick={() => moveItem(index, 1)}
                         disabled={index === items.length - 1}
-                        aria-label="Aşağı taşı"
+                        aria-label={t('quotes:itemsEditor.moveDown')}
                         className="rounded text-fg-muted hover:text-fg disabled:opacity-30"
                       >
                         <ArrowDown className="size-3.5" aria-hidden="true" />
@@ -153,16 +162,16 @@ export function QuoteItemsEditor({ items, onChange, priceListId, fieldErrors, re
                       <Input
                         value={item.name}
                         onChange={(e) => updateItem(index, { name: e.target.value })}
-                        placeholder="Kalem adı"
+                        placeholder={t('quotes:itemsEditor.namePlaceholder')}
                         error={itemError(fieldErrors, index, 'name')}
-                        aria-label="Kalem adı"
+                        aria-label={t('quotes:itemsEditor.nameLabel')}
                       />
                       <Input
                         value={item.description}
                         onChange={(e) => updateItem(index, { description: e.target.value })}
-                        placeholder="Açıklama (opsiyonel)"
+                        placeholder={t('quotes:itemsEditor.descriptionPlaceholder')}
                         inputSize="sm"
-                        aria-label="Kalem açıklaması"
+                        aria-label={t('quotes:itemsEditor.descriptionLabel')}
                       />
                     </div>
                   )}
@@ -178,13 +187,13 @@ export function QuoteItemsEditor({ items, onChange, priceListId, fieldErrors, re
                       value={item.quantity}
                       onChange={(e) => updateItem(index, { quantity: e.target.value })}
                       error={itemError(fieldErrors, index, 'quantity')}
-                      aria-label="Miktar"
+                      aria-label={t('quotes:itemsEditor.quantityLabel')}
                     />
                   )}
                 </Td>
                 <Td align="right" className="min-w-32">
                   {readOnly ? (
-                    formatTRY(Number(item.unit_price) || 0)
+                    formatMoney(Number(item.unit_price) || 0, currency)
                   ) : (
                     <Input
                       type="number"
@@ -193,7 +202,7 @@ export function QuoteItemsEditor({ items, onChange, priceListId, fieldErrors, re
                       value={item.unit_price}
                       onChange={(e) => updateItem(index, { unit_price: e.target.value })}
                       error={itemError(fieldErrors, index, 'unit_price')}
-                      aria-label="Birim fiyat"
+                      aria-label={t('quotes:itemsEditor.unitPriceLabel')}
                     />
                   )}
                 </Td>
@@ -209,7 +218,7 @@ export function QuoteItemsEditor({ items, onChange, priceListId, fieldErrors, re
                       value={item.discount_percent}
                       onChange={(e) => updateItem(index, { discount_percent: e.target.value })}
                       error={itemError(fieldErrors, index, 'discount_percent')}
-                      aria-label="Kalem indirim yüzdesi"
+                      aria-label={t('quotes:itemsEditor.discountPercentLabel')}
                     />
                   )}
                 </Td>
@@ -225,20 +234,20 @@ export function QuoteItemsEditor({ items, onChange, priceListId, fieldErrors, re
                       value={item.tax_rate}
                       onChange={(e) => updateItem(index, { tax_rate: e.target.value })}
                       error={itemError(fieldErrors, index, 'tax_rate')}
-                      aria-label="KDV oranı"
+                      aria-label={t('quotes:itemsEditor.taxRateLabel')}
                     />
                   )}
                 </Td>
                 <Td align="right" className="whitespace-nowrap font-medium text-fg">
-                  {formatTRY(clientLineTotal(item))}
+                  {formatMoney(clientLineTotal(item), currency)}
                 </Td>
                 {!readOnly && (
                   <Td align="right">
                     <button
                       type="button"
                       onClick={() => removeItem(index)}
-                      aria-label="Kalemi sil"
-                      title="Kalemi sil"
+                      aria-label={t('quotes:itemsEditor.removeItem')}
+                      title={t('quotes:itemsEditor.removeItem')}
                       className="inline-flex size-8 items-center justify-center rounded-md text-fg-muted hover:bg-surface-2 hover:text-danger"
                     >
                       <Trash2 className="size-4" aria-hidden="true" />
@@ -261,12 +270,12 @@ export function QuoteItemsEditor({ items, onChange, priceListId, fieldErrors, re
               onChange={(product) => {
                 if (product) void handleAddProduct(product)
               }}
-              label="Ürün Ekle"
-              placeholder="Ürün ara ve ekle..."
+              label={t('quotes:itemsEditor.addProductLabel')}
+              placeholder={t('quotes:itemsEditor.addProductPlaceholder')}
             />
           </div>
           <Button type="button" variant="secondary" leftIcon={<Plus className="size-4" aria-hidden="true" />} onClick={handleAddFreeItem}>
-            Serbest Kalem Ekle
+            {t('quotes:itemsEditor.addFreeItem')}
           </Button>
         </div>
       )}

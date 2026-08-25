@@ -23,15 +23,4 @@ class AssignLeadRequest extends FormRequest
             'owner_id' => ['required', 'integer', 'exists:users,id'],
         ];
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'owner_id.required' => 'Sahip alanı zorunludur.',
-            'owner_id.exists' => 'Seçilen sahip geçerli değil.',
-        ];
-    }
 }

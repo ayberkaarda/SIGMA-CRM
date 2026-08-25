@@ -2,6 +2,12 @@
 // Not: `contacts` modülüyle paralel bir şerit tarafından geliştiriliyor; bilinçli olarak
 // buradan bağımsız, kendi tip tanımlarımız tutulur (import edilmez).
 
+// Faz 14 / İz F — C3 ilişkili-kayıtlar paneli (docs/PHASE-INTL.md §3). `related.*` yalnızca
+// ilgili modül izniyle YÜKLENDİYSE anahtarı taşır — bkz. backend `CompanyController::
+// loadRelatedRecords()`. `RelatedGroupData` şekli `features/related/types.ts`'te tanımlı
+// (TEK ortak sözleşme, kopyalanmadı).
+import type { DealRelatedItem, QuoteRelatedItem, RelatedGroupData, TicketRelatedItem } from '../related/types'
+
 export type Tag = {
   id: number
   name: string
@@ -40,6 +46,13 @@ export type Company = {
   contacts_count: number
   deals_count: number
   primary_contact: { id: number; full_name: string; email: string | null } | null
+  // `contacts` burada YOK: bu yön zaten `useCompanyContacts` ile ayrı bir uçtan (tam liste)
+  // karşılanıyor (bkz. `CompanyController::loadRelatedRecords()` dokümanı).
+  related?: {
+    deals?: RelatedGroupData<DealRelatedItem>
+    quotes?: RelatedGroupData<QuoteRelatedItem>
+    tickets?: RelatedGroupData<TicketRelatedItem>
+  }
   created_at: string
   updated_at: string
 }

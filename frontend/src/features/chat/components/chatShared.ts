@@ -6,6 +6,8 @@
 // `features/tickets/components/ticketsShared.ts`, `features/notifications/components/
 // notificationMeta.ts`). Projede `dayjs`/`date-fns` YOK — yalnızca yerleşik `Intl` kullanılır.
 import { useEffect, useRef } from 'react'
+import i18n, { getIntlLocale } from '../../../i18n'
+import { formatDate, formatTime } from '../../../lib/datetime'
 
 type RelativeStep = { limitSeconds: number; divisor: number; unit: Intl.RelativeTimeFormatUnit }
 
@@ -18,8 +20,6 @@ const RELATIVE_STEPS: RelativeStep[] = [
   { limitSeconds: 31557600, divisor: 2629800, unit: 'month' },
 ]
 
-const relativeFormatter = new Intl.RelativeTimeFormat('tr', { numeric: 'auto' })
-
 /** ISO-8601 tarihi "5 dakika önce" gibi göreli metne çevirir (konuşma listesi önizlemesi). */
 export function formatRelativeTime(iso: string): string {
   const date = new Date(iso)
@@ -28,7 +28,10 @@ export function formatRelativeTime(iso: string): string {
   const diffSeconds = (date.getTime() - Date.now()) / 1000
   const absSeconds = Math.abs(diffSeconds)
 
-  if (absSeconds < 5) return 'az önce'
+  if (absSeconds < 5) return i18n.t('chat:time.justNow')
+
+  // Aktif arayüz diline göre (sabit 'tr' DEĞİL, PHASE-INTL §1.8) — bkz. `components/shared/Timeline.tsx`.
+  const relativeFormatter = new Intl.RelativeTimeFormat(getIntlLocale(), { numeric: 'auto' })
 
   for (const { limitSeconds, divisor, unit } of RELATIVE_STEPS) {
     if (absSeconds < limitSeconds) {
@@ -39,14 +42,9 @@ export function formatRelativeTime(iso: string): string {
   return relativeFormatter.format(Math.round(diffSeconds / 31557600), 'year')
 }
 
-const timeFormatter = new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' })
-const dateFormatter = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
-
-/** Mesaj balonundaki saat etiketi ("14:32"). */
+/** Mesaj balonundaki saat etiketi ("14:32") — merkezi `lib/datetime.ts` biçimlendiricisi (PHASE-INTL §1.8). */
 export function formatMessageTime(iso: string): string {
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return ''
-  return timeFormatter.format(date)
+  return formatTime(iso)
 }
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -59,13 +57,13 @@ export function formatDayDivider(iso: string): string {
   if (Number.isNaN(date.getTime())) return ''
 
   const now = new Date()
-  if (isSameDay(date, now)) return 'Bugün'
+  if (isSameDay(date, now)) return i18n.t('chat:time.today')
 
   const yesterday = new Date(now)
   yesterday.setDate(now.getDate() - 1)
-  if (isSameDay(date, yesterday)) return 'Dün'
+  if (isSameDay(date, yesterday)) return i18n.t('chat:time.yesterday')
 
-  return dateFormatter.format(date)
+  return formatDate(date)
 }
 
 /** İki ISO tarihinin aynı takvim gününe düşüp düşmediği — gün ayracı eklenip eklenmeyeceğine karar vermek için. */
@@ -128,10 +126,12 @@ export function linkifyMessageBody(text: string): MessageTextPart[] {
   return parts
 }
 
-export const CONVERSATION_TYPE_LABEL: Record<'dm' | 'group' | 'record', string> = {
-  dm: 'Birebir',
-  group: 'Grup',
-  record: 'Kayıt',
+/**
+ * Konuşma tipi etiketi — sabit bir metin haritası DEĞİL, çağrı anında `i18n.t()` ile çözülür
+ * (PHASE-INTL §1.3: modül seviyesinde donmuş bir metin dil değişince güncellenmezdi).
+ */
+export function conversationTypeLabel(type: 'dm' | 'group' | 'record'): string {
+  return i18n.t(`chat:conversationType.${type}`)
 }
 
 /**

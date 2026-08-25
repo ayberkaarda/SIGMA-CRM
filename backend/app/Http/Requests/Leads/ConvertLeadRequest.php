@@ -29,19 +29,4 @@ class ConvertLeadRequest extends FormRequest
             'contact_id' => ['sometimes', 'nullable', 'integer', 'exists:contacts,id'],
         ];
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'create_deal.boolean' => 'create_deal true/false olmalıdır.',
-            'deal_title.max' => 'Fırsat başlığı en fazla :max karakter olabilir.',
-            'deal_amount.numeric' => 'Fırsat tutarı sayısal olmalıdır.',
-            'deal_amount.min' => 'Fırsat tutarı negatif olamaz.',
-            'company_id.exists' => 'Seçilen şirket geçerli değil.',
-            'contact_id.exists' => 'Seçilen kişi geçerli değil.',
-        ];
-    }
 }

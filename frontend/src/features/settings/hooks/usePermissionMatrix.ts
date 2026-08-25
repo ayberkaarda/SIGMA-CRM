@@ -11,6 +11,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '../../../components/ui'
 import { getErrorMessage } from '../../../lib/axios'
+import i18n from '../../../i18n'
 import { extractUnknownPermissions, fetchPermissionMatrix, getErrorCode, settingsKeys, updateRolePermissionsRequest } from '../api'
 import type { PermissionMatrix } from '../types'
 
@@ -25,16 +26,20 @@ function toastForRoleError(error: unknown) {
   const code = getErrorCode(error)
 
   if (code === 'ROLE_NOT_EDITABLE') {
-    toast.error('Bu rol düzenlenemez.')
+    toast.error(i18n.t('settings:toast.roleNotEditable'))
     return
   }
   if (code === 'CANNOT_REVOKE_OWN_SETTINGS_ACCESS') {
-    toast.error('Bu değişiklik kendi ayar erişiminizi kaldırırdı.')
+    toast.error(i18n.t('settings:toast.cannotRevokeOwnAccess'))
     return
   }
   if (code === 'UNKNOWN_PERMISSION') {
     const unknown = extractUnknownPermissions(error)
-    toast.error(unknown && unknown.length > 0 ? `Tanımsız izin(ler): ${unknown.join(', ')}` : getErrorMessage(error))
+    toast.error(
+      unknown && unknown.length > 0
+        ? i18n.t('settings:toast.unknownPermissions', { list: unknown.join(', ') })
+        : getErrorMessage(error)
+    )
     return
   }
   toast.error(getErrorMessage(error))

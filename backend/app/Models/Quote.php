@@ -33,6 +33,10 @@ class Quote extends Model
         'tax_amount',
         'total',
         'currency',
+        // `sent` anında DONAN kur (1 birim `currency` = X TRY) ve yayın
+        // tarihi — bkz. QuoteStatusMachine::freezeExchangeRate().
+        'exchange_rate',
+        'exchange_rate_date',
         'notes',
         'terms',
         'sent_at',
@@ -58,6 +62,9 @@ class Quote extends Model
             'discount_amount' => 'decimal:2',
             'tax_amount' => 'decimal:2',
             'total' => 'decimal:2',
+            // Float DEĞİL — decimal cast'i string döndürür (bcmath ile işlenir).
+            'exchange_rate' => 'decimal:6',
+            'exchange_rate_date' => 'date',
             'sent_at' => 'datetime',
             'accepted_at' => 'datetime',
             'rejected_at' => 'datetime',

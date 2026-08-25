@@ -48,11 +48,9 @@ class StatusQuoteRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'status.required' => 'Durum alanı zorunludur.',
-            'status.in' => 'Bu uçtan yalnızca şu durumlar verilebilir: '.
-                implode(', ', QuoteStatusMachine::MANUAL_STATUSES).'. '.
-                'Teklifi göndermek için POST /api/quotes/{quote}/send ucunu kullanın.',
-            'reason.max' => 'Gerekçe en fazla :max karakter olabilir.',
+            'status.in' => __('validation.custom.quotes.status_transition', [
+                'statuses' => implode(', ', QuoteStatusMachine::MANUAL_STATUSES),
+            ]),
         ];
     }
 }

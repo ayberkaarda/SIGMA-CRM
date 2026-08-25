@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import { KeyRound, Pencil, Plus, Power, PowerOff, Search, Trash2, UserCog } from 'lucide-react'
 import {
   Avatar,
@@ -25,8 +26,10 @@ import {
   Tr,
 } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
+import { formatDateTime } from '../../../lib/datetime'
 import { useAuth } from '../../auth/hooks/useAuth'
 import { usePermission } from '../../auth/hooks/usePermission'
+import { SavedViewsBar } from '../../saved-views/components/SavedViewsBar'
 import { useDeleteUser, useRoles, useToggleActive, useUsers } from '../api/usersApi'
 import { UserFormModal } from '../components/UserFormModal'
 import { ResetPasswordModal } from '../components/ResetPasswordModal'
@@ -42,15 +45,6 @@ function useDebouncedValue<T>(value: T, delay: number): T {
     return () => clearTimeout(timeout)
   }, [value, delay])
   return debounced
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return 'Hiç giriş yapmadı'
-  try {
-    return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
-  } catch {
-    return iso
-  }
 }
 
 function IconButton({
@@ -85,6 +79,7 @@ function IconButton({
 type FormModalState = { mode: 'create' } | { mode: 'edit'; user: User } | null
 
 export function UsersPage() {
+  const { t } = useTranslation(['users', 'common'])
   const [searchParams, setSearchParams] = useSearchParams()
   const { user: currentUser } = useAuth()
   const { can } = usePermission()
@@ -149,14 +144,14 @@ export function UsersPage() {
   }
 
   const roleFilterOptions = [
-    { value: '', label: 'Tüm roller' },
+    { value: '', label: t('users:list.allRoles') },
     ...(roles ?? []).map((role) => ({ value: role.name, label: role.name })),
   ]
 
   const statusFilterOptions = [
-    { value: '', label: 'Tümü' },
-    { value: 'true', label: 'Aktif' },
-    { value: 'false', label: 'Pasif' },
+    { value: '', label: t('users:list.allStatuses') },
+    { value: 'true', label: t('users:status.active') },
+    { value: 'false', label: t('users:status.inactive') },
   ]
 
   const users = data?.data ?? []
@@ -166,21 +161,24 @@ export function UsersPage() {
   return (
     <div className="flex flex-col gap-4">
       <nav aria-label="breadcrumb" className="text-xs text-fg-muted">
-        <span>Anasayfa</span>
+        <span>{t('users:breadcrumb.home')}</span>
         <span className="mx-1.5">/</span>
-        <span className="text-primary">Kullanıcılar</span>
+        <span className="text-primary">{t('users:breadcrumb.users')}</span>
       </nav>
 
       <Card>
         <CardHeader
-          title="Kullanıcılar"
-          subtitle={`${total} kullanıcı`}
+          title={t('users:list.title')}
+          subtitle={t('users:list.subtitle', { count: total })}
           action={
-            can('users.create') && (
-              <Button leftIcon={<Plus className="size-4" aria-hidden="true" />} onClick={() => setFormModal({ mode: 'create' })}>
-                Yeni Kullanıcı
-              </Button>
-            )
+            <div className="flex items-center gap-2">
+              <SavedViewsBar module="users" filterKeys={['role', 'is_active']} />
+              {can('users.create') && (
+                <Button leftIcon={<Plus className="size-4" aria-hidden="true" />} onClick={() => setFormModal({ mode: 'create' })}>
+                  {t('users:list.createButton')}
+                </Button>
+              )}
+            </div>
           }
         />
         <CardBody noPadding>
@@ -189,9 +187,9 @@ export function UsersPage() {
               <Input
                 value={searchDraft}
                 onChange={(e) => setSearchDraft(e.target.value)}
-                placeholder="İsim veya e-posta ara..."
+                placeholder={t('users:list.searchPlaceholder')}
                 leftIcon={<Search className="size-4" aria-hidden="true" />}
-                aria-label="Kullanıcı ara"
+                aria-label={t('users:list.searchAria')}
               />
             </div>
             <div className="w-full sm:w-48">
@@ -199,7 +197,7 @@ export function UsersPage() {
                 value={query.role ?? ''}
                 onChange={(e) => updateParams({ role: e.target.value || null, page: '1' })}
                 options={roleFilterOptions}
-                aria-label="Rol filtresi"
+                aria-label={t('users:list.roleFilterAria')}
               />
             </div>
             <div className="w-full sm:w-40">
@@ -207,42 +205,42 @@ export function UsersPage() {
                 value={query.is_active === undefined ? '' : String(query.is_active)}
                 onChange={(e) => updateParams({ is_active: e.target.value || null, page: '1' })}
                 options={statusFilterOptions}
-                aria-label="Durum filtresi"
+                aria-label={t('users:list.statusFilterAria')}
               />
             </div>
           </div>
 
           {isError ? (
             <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
-              <p className="text-sm text-fg-muted">Kullanıcılar yüklenirken bir hata oluştu.</p>
+              <p className="text-sm text-fg-muted">{t('users:list.loadError')}</p>
               <Button variant="secondary" onClick={() => refetch()}>
-                Tekrar dene
+                {t('common:actions.retry')}
               </Button>
             </div>
           ) : isEmpty ? (
             <EmptyState
               icon={<UserCog className="size-6" aria-hidden="true" />}
-              title="Kullanıcı bulunamadı"
-              description="Arama veya filtre kriterlerinizle eşleşen kullanıcı yok."
+              title={t('users:list.emptyTitle')}
+              description={t('users:list.emptyDescription')}
             />
           ) : (
             <Table>
               <THead>
                 <Tr>
                   <Th sortable sortDirection={sortDirectionFor('name')} onSort={() => toggleSort('name')}>
-                    Kullanıcı
+                    {t('users:list.columns.user')}
                   </Th>
-                  <Th>Rol</Th>
+                  <Th>{t('users:list.columns.role')}</Th>
                   <Th sortable sortDirection={sortDirectionFor('department')} onSort={() => toggleSort('department')}>
-                    Departman
+                    {t('users:list.columns.department')}
                   </Th>
                   <Th sortable sortDirection={sortDirectionFor('is_active')} onSort={() => toggleSort('is_active')}>
-                    Durum
+                    {t('users:list.columns.status')}
                   </Th>
                   <Th sortable sortDirection={sortDirectionFor('last_login_at')} onSort={() => toggleSort('last_login_at')}>
-                    Son Giriş
+                    {t('users:list.columns.lastLogin')}
                   </Th>
-                  <Th align="right">İşlemler</Th>
+                  <Th align="right">{t('users:list.columns.actions')}</Th>
                 </Tr>
               </THead>
               <TBody aria-busy={isLoading}>
@@ -280,24 +278,26 @@ export function UsersPage() {
                           </Td>
                           <Td>{u.department ?? '—'}</Td>
                           <Td>
-                            <Badge variant={u.is_active ? 'success' : 'danger'}>{u.is_active ? 'Aktif' : 'Pasif'}</Badge>
+                            <Badge variant={u.is_active ? 'success' : 'danger'}>
+                              {u.is_active ? t('users:status.active') : t('users:status.inactive')}
+                            </Badge>
                           </Td>
-                          <Td>{formatDate(u.last_login_at)}</Td>
+                          <Td>{u.last_login_at ? formatDateTime(u.last_login_at) : t('users:list.neverLoggedIn')}</Td>
                           <Td align="right">
                             <div className="flex items-center justify-end gap-1">
                               {can('users.update') && (
-                                <IconButton label="Düzenle" onClick={() => setFormModal({ mode: 'edit', user: u })}>
+                                <IconButton label={t('users:list.actions.edit')} onClick={() => setFormModal({ mode: 'edit', user: u })}>
                                   <Pencil className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
                               {can('users.reset_password') && (
-                                <IconButton label="Şifre sıfırla" onClick={() => setResetPasswordUser(u)}>
+                                <IconButton label={t('users:list.actions.resetPassword')} onClick={() => setResetPasswordUser(u)}>
                                   <KeyRound className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
                               {!isSelf && can('users.toggle_active') && (
                                 <IconButton
-                                  label={u.is_active ? 'Pasifleştir' : 'Aktifleştir'}
+                                  label={u.is_active ? t('users:list.actions.deactivate') : t('users:list.actions.activate')}
                                   onClick={() => {
                                     if (u.is_active) setConfirmDeactivateUser(u)
                                     else toggleActive.mutate({ id: u.id, is_active: true })
@@ -311,7 +311,7 @@ export function UsersPage() {
                                 </IconButton>
                               )}
                               {!isSelf && can('users.delete') && (
-                                <IconButton label="Sil" danger onClick={() => setConfirmDeleteUser(u)}>
+                                <IconButton label={t('users:list.actions.delete')} danger onClick={() => setConfirmDeleteUser(u)}>
                                   <Trash2 className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
@@ -348,12 +348,12 @@ export function UsersPage() {
       <Modal
         open={!!confirmDeleteUser}
         onClose={() => setConfirmDeleteUser(null)}
-        title="Kullanıcıyı sil"
-        description="Bu işlem geri alınamaz. Kullanıcı kalıcı olarak silinecek."
+        title={t('users:deleteModal.title')}
+        description={t('users:deleteModal.description')}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setConfirmDeleteUser(null)}>
-              Vazgeç
+              {t('common:actions.cancel')}
             </Button>
             <Button
               variant="danger"
@@ -364,15 +364,18 @@ export function UsersPage() {
                 setConfirmDeleteUser(null)
               }}
             >
-              Sil
+              {t('common:actions.delete')}
             </Button>
           </div>
         }
       >
         {confirmDeleteUser && (
           <p className="text-sm text-fg-secondary">
-            <strong className="text-fg">{confirmDeleteUser.name}</strong> ({confirmDeleteUser.email}) kullanıcısını
-            silmek istediğinize emin misiniz?
+            <Trans
+              i18nKey="users:deleteModal.confirmText"
+              values={{ name: confirmDeleteUser.name, email: confirmDeleteUser.email }}
+              components={{ bold: <strong className="text-fg" /> }}
+            />
           </p>
         )}
       </Modal>
@@ -380,12 +383,12 @@ export function UsersPage() {
       <Modal
         open={!!confirmDeactivateUser}
         onClose={() => setConfirmDeactivateUser(null)}
-        title="Kullanıcıyı pasifleştir"
-        description="Bu işlem geri alınamaz — kullanıcının oturumu anında sonlandırılır ve tekrar aktifleştirilene kadar sisteme giriş yapamaz."
+        title={t('users:deactivateModal.title')}
+        description={t('users:deactivateModal.description')}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setConfirmDeactivateUser(null)}>
-              Vazgeç
+              {t('common:actions.cancel')}
             </Button>
             <Button
               variant="danger"
@@ -396,15 +399,18 @@ export function UsersPage() {
                 setConfirmDeactivateUser(null)
               }}
             >
-              Pasifleştir
+              {t('users:list.actions.deactivate')}
             </Button>
           </div>
         }
       >
         {confirmDeactivateUser && (
           <p className="text-sm text-fg-secondary">
-            <strong className="text-fg">{confirmDeactivateUser.name}</strong> kullanıcısını pasifleştirmek
-            istediğinize emin misiniz?
+            <Trans
+              i18nKey="users:deactivateModal.confirmText"
+              values={{ name: confirmDeactivateUser.name }}
+              components={{ bold: <strong className="text-fg" /> }}
+            />
           </p>
         )}
       </Modal>

@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import { Building2, Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import {
   Badge,
@@ -28,6 +29,7 @@ import { cn } from '../../../lib/cn'
 import { formatMoney } from '../../../lib/money'
 import { tokenBadgeVariant } from '../../../components/shared/tokenBadgeVariant'
 import { usePermission } from '../../auth/hooks/usePermission'
+import { SavedViewsBar } from '../../saved-views/components/SavedViewsBar'
 import { useCompanies, useDeleteCompany, useTags, useUserOptions } from '../api/companiesApi'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { CompanyFormModal } from '../components/CompanyFormModal'
@@ -87,6 +89,7 @@ function IconLink({ to, label, children }: { to: string; label: string; children
 type FormModalState = { mode: 'create' } | { mode: 'edit'; company: Company } | null
 
 export function CompaniesPage() {
+  const { t } = useTranslation(['companies', 'common'])
   const [searchParams, setSearchParams] = useSearchParams()
   const { can } = usePermission()
   const canViewUsers = can('users.view')
@@ -154,12 +157,12 @@ export function CompaniesPage() {
   }
 
   const tagFilterOptions = [
-    { value: '', label: 'Tüm etiketler' },
+    { value: '', label: t('companies:list.allTags') },
     ...(tags ?? []).map((tag) => ({ value: String(tag.id), label: tag.name })),
   ]
 
   const ownerFilterOptions = [
-    { value: '', label: 'Tüm sahipler' },
+    { value: '', label: t('companies:list.allOwners') },
     ...(userOptions ?? []).map((user) => ({ value: String(user.id), label: user.name })),
   ]
 
@@ -170,21 +173,27 @@ export function CompaniesPage() {
   return (
     <div className="flex flex-col gap-4">
       <nav aria-label="breadcrumb" className="text-xs text-fg-muted">
-        <span>Anasayfa</span>
+        <span>{t('companies:breadcrumb.home')}</span>
         <span className="mx-1.5">/</span>
-        <span className="text-primary">Firmalar</span>
+        <span className="text-primary">{t('companies:breadcrumb.companies')}</span>
       </nav>
 
       <Card>
         <CardHeader
-          title="Firmalar"
-          subtitle={`${total} firma`}
+          title={t('companies:list.title')}
+          subtitle={t('companies:list.subtitle', { count: total })}
           action={
-            can('companies.create') && (
-              <Button leftIcon={<Plus className="size-4" aria-hidden="true" />} onClick={() => setFormModal({ mode: 'create' })}>
-                Yeni Firma
-              </Button>
-            )
+            <div className="flex items-center gap-2">
+              <SavedViewsBar
+                module="companies"
+                filterKeys={['industry', 'owner_id', 'city', 'country', 'tag_id', 'from', 'to']}
+              />
+              {can('companies.create') && (
+                <Button leftIcon={<Plus className="size-4" aria-hidden="true" />} onClick={() => setFormModal({ mode: 'create' })}>
+                  {t('companies:list.createButton')}
+                </Button>
+              )}
+            </div>
           }
         />
         <CardBody noPadding>
@@ -193,17 +202,17 @@ export function CompaniesPage() {
               <Input
                 value={searchDraft}
                 onChange={(e) => setSearchDraft(e.target.value)}
-                placeholder="Firma ara..."
+                placeholder={t('companies:list.searchPlaceholder')}
                 leftIcon={<Search className="size-4" aria-hidden="true" />}
-                aria-label="Firma ara"
+                aria-label={t('companies:list.searchAria')}
               />
             </div>
             <div className="w-full lg:w-44">
               <Input
                 value={query.industry ?? ''}
                 onChange={(e) => updateParams({ industry: e.target.value || null, page: '1' })}
-                placeholder="Sektör"
-                aria-label="Sektör filtresi"
+                placeholder={t('companies:list.industryPlaceholder')}
+                aria-label={t('companies:list.industryAria')}
               />
             </div>
             {canViewUsers && (
@@ -212,7 +221,7 @@ export function CompaniesPage() {
                   value={query.owner_id ? String(query.owner_id) : ''}
                   onChange={(e) => updateParams({ owner_id: e.target.value || null, page: '1' })}
                   options={ownerFilterOptions}
-                  aria-label="Sahip filtresi"
+                  aria-label={t('companies:list.ownerAria')}
                 />
               </div>
             )}
@@ -220,16 +229,16 @@ export function CompaniesPage() {
               <Input
                 value={query.city ?? ''}
                 onChange={(e) => updateParams({ city: e.target.value || null, page: '1' })}
-                placeholder="Şehir"
-                aria-label="Şehir filtresi"
+                placeholder={t('companies:list.cityPlaceholder')}
+                aria-label={t('companies:list.cityAria')}
               />
             </div>
             <div className="w-full lg:w-36">
               <Input
                 value={query.country ?? ''}
                 onChange={(e) => updateParams({ country: e.target.value || null, page: '1' })}
-                placeholder="Ülke"
-                aria-label="Ülke filtresi"
+                placeholder={t('companies:list.countryPlaceholder')}
+                aria-label={t('companies:list.countryAria')}
               />
             </div>
             <div className="w-full lg:w-44">
@@ -237,7 +246,7 @@ export function CompaniesPage() {
                 value={query.tag_id ? String(query.tag_id) : ''}
                 onChange={(e) => updateParams({ tag_id: e.target.value || null, page: '1' })}
                 options={tagFilterOptions}
-                aria-label="Etiket filtresi"
+                aria-label={t('companies:list.tagAria')}
               />
             </div>
             <div className="flex w-full items-end gap-2 lg:w-auto">
@@ -246,7 +255,7 @@ export function CompaniesPage() {
                   type="date"
                   value={query.from ?? ''}
                   onChange={(e) => updateParams({ from: e.target.value || null, page: '1' })}
-                  aria-label="Başlangıç tarihi"
+                  aria-label={t('companies:list.fromDateAria')}
                   max={query.to || undefined}
                 />
               </div>
@@ -256,7 +265,7 @@ export function CompaniesPage() {
                   type="date"
                   value={query.to ?? ''}
                   onChange={(e) => updateParams({ to: e.target.value || null, page: '1' })}
-                  aria-label="Bitiş tarihi"
+                  aria-label={t('companies:list.toDateAria')}
                   min={query.from || undefined}
                 />
               </div>
@@ -265,49 +274,49 @@ export function CompaniesPage() {
 
           {isError ? (
             <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
-              <p className="text-sm text-fg-muted">Firmalar yüklenirken bir hata oluştu.</p>
+              <p className="text-sm text-fg-muted">{t('companies:list.loadError')}</p>
               <Button variant="secondary" onClick={() => refetch()}>
-                Tekrar dene
+                {t('companies:list.retry')}
               </Button>
             </div>
           ) : isEmpty ? (
             <EmptyState
               icon={<Building2 className="size-6" aria-hidden="true" />}
-              title="Firma bulunamadı"
-              description="Arama veya filtre kriterlerinizle eşleşen firma yok."
+              title={t('companies:list.emptyTitle')}
+              description={t('companies:list.emptyDescription')}
             />
           ) : (
             <Table>
               <THead>
                 <Tr>
                   <Th sortable sortDirection={sortDirectionFor('name')} onSort={() => toggleSort('name')}>
-                    Firma
+                    {t('companies:list.columns.name')}
                   </Th>
                   <Th sortable sortDirection={sortDirectionFor('industry')} onSort={() => toggleSort('industry')}>
-                    Sektör
+                    {t('companies:list.columns.industry')}
                   </Th>
-                  <Th>Birincil Kişi</Th>
-                  <Th>E-posta</Th>
-                  <Th>Telefon</Th>
+                  <Th>{t('companies:list.columns.primaryContact')}</Th>
+                  <Th>{t('companies:list.columns.email')}</Th>
+                  <Th>{t('companies:list.columns.phone')}</Th>
                   <Th
                     sortable
                     sortDirection={sortDirectionFor('city')}
                     onSort={() => toggleSort('city')}
-                    title="Sıralama şehre göre yapılır"
+                    title={t('companies:list.columns.cityCountrySortHint')}
                   >
-                    Şehir / Ülke
+                    {t('companies:list.columns.cityCountry')}
                   </Th>
                   <Th sortable sortDirection={sortDirectionFor('employee_count')} onSort={() => toggleSort('employee_count')} align="right">
-                    Çalışan Sayısı
+                    {t('companies:list.columns.employeeCount')}
                   </Th>
                   <Th sortable sortDirection={sortDirectionFor('annual_revenue')} onSort={() => toggleSort('annual_revenue')} align="right">
-                    Yıllık Ciro
+                    {t('companies:list.columns.annualRevenue')}
                   </Th>
-                  <Th align="right">Kişi Sayısı</Th>
-                  <Th align="right">Fırsat Sayısı</Th>
-                  <Th>Sahip</Th>
-                  <Th>Etiketler</Th>
-                  <Th align="right">İşlemler</Th>
+                  <Th align="right">{t('companies:list.columns.contactsCount')}</Th>
+                  <Th align="right">{t('companies:list.columns.dealsCount')}</Th>
+                  <Th>{t('companies:list.columns.owner')}</Th>
+                  <Th>{t('companies:list.columns.tags')}</Th>
+                  <Th align="right">{t('companies:list.columns.actions')}</Th>
                 </Tr>
               </THead>
               <TBody aria-busy={isLoading}>
@@ -377,16 +386,16 @@ export function CompaniesPage() {
                         </Td>
                         <Td align="right">
                           <div className="flex items-center justify-end gap-1">
-                            <IconLink to={`/companies/${c.id}`} label="Detay">
+                            <IconLink to={`/companies/${c.id}`} label={t('companies:actions.detail')}>
                               <Eye className="size-4" aria-hidden="true" />
                             </IconLink>
                             {can('companies.update') && (
-                              <IconButton label="Düzenle" onClick={() => setFormModal({ mode: 'edit', company: c })}>
+                              <IconButton label={t('companies:actions.edit')} onClick={() => setFormModal({ mode: 'edit', company: c })}>
                                 <Pencil className="size-4" aria-hidden="true" />
                               </IconButton>
                             )}
                             {can('companies.delete') && (
-                              <IconButton label="Sil" danger onClick={() => setConfirmDeleteCompany(c)}>
+                              <IconButton label={t('companies:actions.delete')} danger onClick={() => setConfirmDeleteCompany(c)}>
                                 <Trash2 className="size-4" aria-hidden="true" />
                               </IconButton>
                             )}
@@ -420,12 +429,12 @@ export function CompaniesPage() {
       <Modal
         open={!!confirmDeleteCompany}
         onClose={() => setConfirmDeleteCompany(null)}
-        title="Firmayı sil"
-        description="Bu işlem geri alınamaz. Firma kalıcı olarak silinecek."
+        title={t('companies:deleteModal.title')}
+        description={t('companies:deleteModal.description')}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setConfirmDeleteCompany(null)}>
-              Vazgeç
+              {t('common:actions.cancel')}
             </Button>
             <Button
               variant="danger"
@@ -438,14 +447,18 @@ export function CompaniesPage() {
                 setConfirmDeleteCompany(null)
               }}
             >
-              Sil
+              {t('companies:actions.delete')}
             </Button>
           </div>
         }
       >
         {confirmDeleteCompany && (
           <p className="text-sm text-fg-secondary">
-            <strong className="text-fg">{confirmDeleteCompany.name}</strong> firmasını silmek istediğinize emin misiniz?
+            <Trans
+              i18nKey="companies:deleteModal.confirmText"
+              values={{ name: confirmDeleteCompany.name }}
+              components={{ bold: <strong className="text-fg" /> }}
+            />
           </p>
         )}
       </Modal>

@@ -10,6 +10,9 @@ use App\Models\User;
  * bir kullanıcıya ayarlandığında
  * `App\Observers\Notifications\TicketNotificationObserver` tarafından
  * üretilir.
+ *
+ * FAZ 14 / İz D — anahtar moduna dönüştürüldü. `ticket_number`/`subject`
+ * KULLANICI VERİSİDİR (destek talebinin konusu), parametre olarak taşınır.
  */
 class TicketAssignedNotification extends CrmNotification
 {
@@ -18,8 +21,12 @@ class TicketAssignedNotification extends CrmNotification
         return new self(
             recipientId: (int) $ticket->assigned_to,
             notificationType: 'ticket.assigned',
-            notificationTitle: 'Size bir destek talebi atandı',
-            notificationBody: sprintf('%s — %s', $ticket->ticket_number, $ticket->subject),
+            titleKey: 'notifications.ticket_assigned.title',
+            bodyKey: 'notifications.ticket_assigned.body',
+            params: [
+                'ticket_number' => (string) $ticket->ticket_number,
+                'subject' => (string) $ticket->subject,
+            ],
             notificationLink: '/tickets/'.$ticket->getKey(),
             meta: [
                 'ticket_id' => (int) $ticket->getKey(),

@@ -26,6 +26,11 @@ class Deal extends Model
         'description',
         'amount',
         'currency',
+        // Kapanışta (won/lost) DONAN temel-para-birimi (TRY) karşılığı —
+        // üçü birlikte yazılır/temizlenir, bkz. DealMoveService::freezeBaseAmount().
+        'base_amount',
+        'base_rate',
+        'base_rate_date',
         'pipeline_stage_id',
         'position',
         'version',
@@ -49,6 +54,12 @@ class Deal extends Model
     {
         return [
             'amount' => 'decimal:2',
+            // Donmuş alanlar float DEĞİL: `decimal` cast'i Eloquent'te
+            // string döndürür ve bcmath ile kayıpsız işlenir
+            // (docs/QUOTE-FINANCIALS.md float disiplini).
+            'base_amount' => 'decimal:2',
+            'base_rate' => 'decimal:6',
+            'base_rate_date' => 'date',
             'version' => 'integer',
             'probability' => 'integer',
             'expected_close_date' => 'date',

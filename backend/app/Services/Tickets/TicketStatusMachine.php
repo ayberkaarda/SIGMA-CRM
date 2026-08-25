@@ -159,6 +159,12 @@ class TicketStatusMachine
      *   { "errors": { "message": "...", "code": "INVALID_STATUS_TRANSITION",
      *                 "fields": { "status": ["..."] } } }
      *
+     * FAZ 14 / İz D: sabit Türkçe cümleler `lang/{tr,en,de,fr}/errors.php`'ye taşındı
+     * (`errors.ticket_status.*` + QuoteStatusMachine ile paylaşılan
+     * `errors.status_transition.invalid`) — dosya sahipliği ayrı olduğu için mesaj tek
+     * bir dosyaya değil, iki durum makinesinin de kullandığı ortak anahtara + kendi
+     * domain anahtarlarına bölündü.
+     *
      * @throws HttpResponseException
      */
     protected function denyTransition(string $from, string $to): never
@@ -166,12 +172,15 @@ class TicketStatusMachine
         $allowed = self::TRANSITIONS[$from] ?? [];
 
         $detail = $allowed === []
-            ? "\"{$from}\" durumu terminaldir; bu ticket'ın durumu artık değiştirilemez."
-            : "\"{$from}\" durumundan yalnızca şunlara geçilebilir: ".implode(', ', $allowed).'.';
+            ? __('errors.ticket_status.terminal', ['from' => $from])
+            : __('errors.ticket_status.allowed_transitions', [
+                'from' => $from,
+                'allowed' => implode(', ', $allowed),
+            ]);
 
         throw new HttpResponseException(response()->json([
             'errors' => [
-                'message' => "Bu durum geçişine izin verilmiyor: {$from} → {$to}.",
+                'message' => __('errors.status_transition.invalid', ['from' => $from, 'to' => $to]),
                 'code' => 'INVALID_STATUS_TRANSITION',
                 'fields' => [
                     'status' => [$detail],

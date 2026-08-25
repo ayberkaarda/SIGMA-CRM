@@ -74,22 +74,4 @@ class StoreTaskRequest extends FormRequest
             }
         });
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'title.required' => 'Başlık alanı zorunludur.',
-            'title.max' => 'Başlık en fazla :max karakter olabilir.',
-            'reminder_at.before_or_equal' => 'Hatırlatıcı, vade tarihinden sonra olamaz.',
-            'priority.in' => 'Seçilen öncelik geçerli değil.',
-            'status.in' => 'Seçilen durum geçerli değil.',
-            'assigned_to.exists' => 'Seçilen atanan kişi geçerli değil.',
-            'taskable_type.in' => 'Seçilen hedef türü geçerli değil.',
-            'taskable_type.required_with' => 'Hedef türü ve hedef kimliği birlikte gönderilmelidir.',
-            'taskable_id.required_with' => 'Hedef türü ve hedef kimliği birlikte gönderilmelidir.',
-        ];
-    }
 }

@@ -14,6 +14,12 @@ use App\Events\TaskReminderDue;
  * devreye girmez (actor null verilir), yalnızca alıcının aktif olup olmadığı
  * kontrol edilir.
  *
+ * FAZ 14 / İz D — anahtar moduna dönüştürüldü. `title`/`label`
+ * (`MorphTargets::label()` çıktısı — görev başlığı/hedef etiketi) KULLANICI
+ * VERİSİDİR, parametre olarak taşınır; etiket varsa/yoksa ayrı `body`/
+ * `body_with_label` anahtarı (TaskAssignedNotification'daki `body`/
+ * `body_with_due` ayrımıyla aynı disiplin).
+ *
  * @see TaskReminderDue Payload alanları için (task_id, title,
  *      due_at, priority, taskable_type, taskable_id, taskable_label).
  */
@@ -29,10 +35,14 @@ class TaskReminderNotification extends CrmNotification
         return new self(
             recipientId: $assignedTo,
             notificationType: 'task.reminder',
-            notificationTitle: 'Görev hatırlatması',
-            notificationBody: $label !== null
-                ? sprintf('%s — %s', $payload['title'], $label)
-                : (string) $payload['title'],
+            titleKey: 'notifications.task_reminder.title',
+            bodyKey: $label !== null
+                ? 'notifications.task_reminder.body_with_label'
+                : 'notifications.task_reminder.body',
+            params: array_filter([
+                'title' => (string) $payload['title'],
+                'label' => $label !== null ? (string) $label : null,
+            ], static fn (?string $value): bool => $value !== null),
             notificationLink: '/tasks/'.$payload['task_id'],
             meta: [
                 'task_id' => $payload['task_id'],

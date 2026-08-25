@@ -32,17 +32,6 @@ class IndexConversationRequest extends FormRequest
     }
 
     /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'per_page.max' => 'Sayfa başına kayıt sayısı en fazla :max olabilir.',
-            'filter.type.in' => 'Seçilen sohbet türü geçerli değil.',
-        ];
-    }
-
-    /**
      * @return array<string, mixed>
      */
     public function filters(): array

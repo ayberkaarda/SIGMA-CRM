@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import {
   ArrowLeft,
   Briefcase,
@@ -19,7 +20,8 @@ import { usePermission } from '../../auth/hooks/usePermission'
 import { QuoteStatusBadge } from '../components/QuoteStatusBadge'
 import { QuoteTotalsPanel } from '../components/QuoteTotalsPanel'
 import { useQuotePdfPreview } from '../hooks/useQuotePdfPreview'
-import { formatDate, formatDateTime, formatTRY } from '../utils/money'
+import { formatDate, formatDateTime } from '../../../lib/datetime'
+import { formatMoney } from '../../../lib/money'
 import {
   buildQuotePdfUrl,
   useChangeQuoteStatus,
@@ -32,16 +34,11 @@ import {
 } from '../api/quotesApi'
 import { MANUAL_QUOTE_STATUSES } from '../types'
 import type { QuoteStatus } from '../types'
-
-const MANUAL_STATUS_LABELS: Record<QuoteStatus, string> = {
-  draft: 'Taslak',
-  sent: 'Gönderildi',
-  accepted: 'Kabul Edildi',
-  rejected: 'Reddedildi',
-  expired: 'Süresi Doldu',
-}
+import { companyGroupConfig, contactGroupConfig, dealGroupConfig } from '../../related/adapters'
+import { RelatedRecordsPanel } from '../../related/RelatedRecordsPanel'
 
 export function QuoteDetailPage() {
+  const { t } = useTranslation()
   const params = useParams<{ id: string }>()
   const quoteId = Number(params.id)
   const navigate = useNavigate()
@@ -82,9 +79,9 @@ export function QuoteDetailPage() {
   if (isError || !quote) {
     return (
       <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-fg-muted">Teklif yüklenirken bir hata oluştu.</p>
+        <p className="text-sm text-fg-muted">{t('quotes:detail.loadError')}</p>
         <Button variant="secondary" onClick={() => refetch()}>
-          Tekrar dene
+          {t('quotes:retry')}
         </Button>
       </div>
     )
@@ -138,7 +135,7 @@ export function QuoteDetailPage() {
       <nav aria-label="breadcrumb" className="flex items-center gap-1.5 text-xs text-fg-muted">
         <Link to="/quotes" className="inline-flex items-center gap-1 hover:text-fg">
           <ArrowLeft className="size-3.5" aria-hidden="true" />
-          Teklifler
+          {t('quotes:breadcrumb.quotes')}
         </Link>
         <span className="mx-1">/</span>
         <span className="text-primary">{quote.quote_number}</span>
@@ -148,14 +145,15 @@ export function QuoteDetailPage() {
         <div className="flex flex-wrap items-center gap-2 rounded-lg bg-primary-tint px-4 py-3 text-sm text-primary">
           <GitBranch className="size-4 shrink-0" aria-hidden="true" />
           <span>
-            Bu, {parentQuote ? (
-              <Link to={`/quotes/${parentQuote.id}`} className="font-medium underline">
-                {parentQuote.quote_number}
-              </Link>
+            {parentQuote ? (
+              <Trans
+                i18nKey="quotes:detail.revisionNoteWithParent"
+                values={{ quoteNumber: parentQuote.quote_number, revision: quote.revision }}
+                components={{ link: <Link to={`/quotes/${parentQuote.id}`} className="font-medium underline" /> }}
+              />
             ) : (
-              'ebeveyn teklifin'
-            )}{' '}
-            {quote.revision}. revizyonudur.
+              t('quotes:detail.revisionNoteNoParent', { revision: quote.revision })
+            )}
           </span>
         </div>
       )}
@@ -163,7 +161,7 @@ export function QuoteDetailPage() {
       {siblings.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg bg-surface-2 px-4 py-3 text-sm text-fg-secondary">
           <GitBranch className="size-4 shrink-0 text-fg-muted" aria-hidden="true" />
-          <span>Bu teklifin diğer revizyonları:</span>
+          <span>{t('quotes:detail.siblingsLabel')}</span>
           {siblings.map((sibling) => (
             <Link key={sibling.id} to={`/quotes/${sibling.id}`} className="font-medium text-primary hover:underline">
               {sibling.quote_number}
@@ -179,22 +177,22 @@ export function QuoteDetailPage() {
           // JSX verilirse tip hatası. Teklif no + başlık burada düz metin, monospace vurgusu
           // olmadan; büyük toplam `subtitle`'da (o alan çakışmıyor, JSX kabul eder).
           title={`${quote.quote_number} — ${quote.title}`}
-          subtitle={<span className="text-2xl font-semibold text-fg">{formatTRY(quote.total)}</span>}
+          subtitle={<span className="text-2xl font-semibold text-fg">{formatMoney(quote.total, quote.currency)}</span>}
           action={
             <div className="flex flex-wrap items-center justify-end gap-2">
               {canEdit && (
                 <Button variant="secondary" leftIcon={<Pencil className="size-4" aria-hidden="true" />} onClick={() => navigate(`/quotes/${quote.id}/edit`)}>
-                  Düzenle
+                  {t('quotes:actions.edit')}
                 </Button>
               )}
               {canSend && (
                 <Button leftIcon={<Send className="size-4" aria-hidden="true" />} loading={sendQuote.isPending} onClick={handleSend}>
-                  Gönder
+                  {t('quotes:actions.send')}
                 </Button>
               )}
               {canChangeStatus && (
                 <Button variant="secondary" onClick={() => setStatusOpen(true)}>
-                  Durum Değiştir
+                  {t('quotes:actions.changeStatus')}
                 </Button>
               )}
               {canRevise && (
@@ -204,17 +202,17 @@ export function QuoteDetailPage() {
                   loading={reviseQuote.isPending}
                   onClick={handleRevise}
                 >
-                  Revize Et
+                  {t('quotes:actions.revise')}
                 </Button>
               )}
               <a href={pdfUrl} target="_blank" rel="noreferrer">
                 <Button variant="secondary" leftIcon={<Download className="size-4" aria-hidden="true" />}>
-                  PDF İndir
+                  {t('quotes:actions.pdfDownload')}
                 </Button>
               </a>
               {canDelete && (
                 <Button variant="danger" leftIcon={<Trash2 className="size-4" aria-hidden="true" />} onClick={() => setDeleteOpen(true)}>
-                  Sil
+                  {t('quotes:actions.delete')}
                 </Button>
               )}
             </div>
@@ -222,13 +220,13 @@ export function QuoteDetailPage() {
         >
           <div className="flex flex-wrap items-center gap-1.5 pt-1">
             <QuoteStatusBadge status={quote.status} />
-            {quote.revision > 1 && <Badge variant="neutral">{`Revizyon ${quote.revision}`}</Badge>}
-            {quote.is_expired && quote.status === 'sent' && <Badge variant="warning">Süresi Doldu</Badge>}
+            {quote.revision > 1 && <Badge variant="neutral">{t('quotes:detail.revisionBadge', { revision: quote.revision })}</Badge>}
+            {quote.is_expired && quote.status === 'sent' && <Badge variant="warning">{t('enums:quote.status.expired')}</Badge>}
           </div>
         </CardHeader>
         <CardBody className="flex flex-col gap-6">
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <DetailField label="Firma">
+            <DetailField label={t('quotes:fields.company')}>
               {quote.company ? (
                 <Link to={`/companies/${quote.company.id}`} className="flex items-center gap-1.5 text-sm text-primary hover:underline">
                   <Building2 className="size-3.5" aria-hidden="true" />
@@ -238,7 +236,7 @@ export function QuoteDetailPage() {
                 <span className="text-sm text-fg-muted">—</span>
               )}
             </DetailField>
-            <DetailField label="Kişi">
+            <DetailField label={t('quotes:fields.contact')}>
               {quote.contact ? (
                 <Link to={`/contacts/${quote.contact.id}`} className="flex items-center gap-1.5 text-sm text-primary hover:underline">
                   <UserIcon className="size-3.5" aria-hidden="true" />
@@ -248,7 +246,7 @@ export function QuoteDetailPage() {
                 <span className="text-sm text-fg-muted">—</span>
               )}
             </DetailField>
-            <DetailField label="Fırsat">
+            <DetailField label={t('quotes:fields.deal')}>
               {quote.deal ? (
                 <Link to={`/deals/${quote.deal.id}`} className="flex items-center gap-1.5 text-sm text-primary hover:underline">
                   <Briefcase className="size-3.5" aria-hidden="true" />
@@ -258,30 +256,30 @@ export function QuoteDetailPage() {
                 <span className="text-sm text-fg-muted">—</span>
               )}
             </DetailField>
-            <DetailField label="Geçerlilik Tarihi">
+            <DetailField label={t('quotes:fields.validUntil')}>
               <span className={quote.is_expired ? 'text-sm font-medium text-warning' : 'text-sm text-fg'}>
                 {formatDate(quote.valid_until)}
-                {quote.is_expired && ' (süresi doldu)'}
+                {quote.is_expired && t('quotes:detail.expiredSuffix')}
               </span>
             </DetailField>
-            <DetailField label="Oluşturan">
+            <DetailField label={t('quotes:fields.creator')}>
               <span className="text-sm text-fg">{quote.creator?.name ?? '—'}</span>
             </DetailField>
-            <DetailField label="Oluşturma Tarihi">
+            <DetailField label={t('quotes:fields.createdAt')}>
               <span className="text-sm text-fg">{formatDateTime(quote.created_at)}</span>
             </DetailField>
             {quote.sent_at && (
-              <DetailField label="Gönderim Tarihi">
+              <DetailField label={t('quotes:fields.sentAt')}>
                 <span className="text-sm text-fg">{formatDateTime(quote.sent_at)}</span>
               </DetailField>
             )}
             {quote.accepted_at && (
-              <DetailField label="Kabul Tarihi">
+              <DetailField label={t('quotes:fields.acceptedAt')}>
                 <span className="text-sm text-success">{formatDateTime(quote.accepted_at)}</span>
               </DetailField>
             )}
             {quote.rejected_at && (
-              <DetailField label="Red Tarihi">
+              <DetailField label={t('quotes:fields.rejectedAt')}>
                 <span className="text-sm text-danger">{formatDateTime(quote.rejected_at)}</span>
               </DetailField>
             )}
@@ -290,19 +288,19 @@ export function QuoteDetailPage() {
       </Card>
 
       <Card>
-        <CardHeader title="Kalemler" subtitle={`${quote.items_count} kalem`} />
+        <CardHeader title={t('quotes:form.itemsTitle')} subtitle={t('quotes:detail.itemsCount', { count: quote.items_count })} />
         <CardBody noPadding>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left text-sm">
               <thead>
                 <tr className="border-b border-border-subtle">
-                  <th className="px-4 py-3 text-xs font-medium text-fg-muted">#</th>
-                  <th className="px-4 py-3 text-xs font-medium text-fg-muted">Kalem</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-fg-muted">Miktar</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-fg-muted">Birim Fiyat</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-fg-muted">İndirim %</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-fg-muted">KDV %</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-fg-muted">Satır Toplamı</th>
+                  <th className="px-4 py-3 text-xs font-medium text-fg-muted">{t('quotes:detail.itemsTable.columns.position')}</th>
+                  <th className="px-4 py-3 text-xs font-medium text-fg-muted">{t('quotes:detail.itemsTable.columns.item')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-fg-muted">{t('quotes:detail.itemsTable.columns.quantity')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-fg-muted">{t('quotes:detail.itemsTable.columns.unitPrice')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-fg-muted">{t('quotes:detail.itemsTable.columns.discountPercent')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-fg-muted">{t('quotes:detail.itemsTable.columns.taxRate')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-fg-muted">{t('quotes:detail.itemsTable.columns.lineTotal')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -316,16 +314,16 @@ export function QuoteDetailPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right text-fg">{item.quantity}</td>
-                    <td className="px-4 py-3 text-right text-fg">{formatTRY(item.unit_price)}</td>
+                    <td className="px-4 py-3 text-right text-fg">{formatMoney(item.unit_price, quote.currency)}</td>
                     <td className="px-4 py-3 text-right text-fg">%{item.discount_percent}</td>
                     <td className="px-4 py-3 text-right text-fg">%{item.tax_rate}</td>
-                    <td className="px-4 py-3 text-right font-medium text-fg">{formatTRY(item.line_total)}</td>
+                    <td className="px-4 py-3 text-right font-medium text-fg">{formatMoney(item.line_total, quote.currency)}</td>
                   </tr>
                 ))}
                 {(quote.items ?? []).length === 0 && (
                   <tr>
                     <td colSpan={7} className="px-4 py-8 text-center text-sm text-fg-muted">
-                      Bu teklifte henüz kalem yok.
+                      {t('quotes:detail.itemsTable.empty')}
                     </td>
                   </tr>
                 )}
@@ -336,7 +334,7 @@ export function QuoteDetailPage() {
       </Card>
 
       <Card>
-        <CardHeader title="Toplamlar" />
+        <CardHeader title={t('quotes:form.totalsTitle')} />
         <CardBody>
           <QuoteTotalsPanel
             subtotal={quote.subtotal}
@@ -346,23 +344,24 @@ export function QuoteDetailPage() {
             taxAmount={quote.tax_amount}
             total={quote.total}
             taxBreakdown={quote.tax_breakdown ?? []}
+            currency={quote.currency}
           />
         </CardBody>
       </Card>
 
       {(quote.notes || quote.terms) && (
         <Card>
-          <CardHeader title="Notlar ve Şartlar" />
+          <CardHeader title={t('quotes:detail.notesTermsTitle')} />
           <CardBody className="flex flex-col gap-4">
             {quote.notes && (
               <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium uppercase tracking-wide text-fg-muted">Notlar</span>
+                <span className="text-xs font-medium uppercase tracking-wide text-fg-muted">{t('quotes:fields.notes')}</span>
                 <p className="whitespace-pre-wrap text-sm text-fg-secondary">{quote.notes}</p>
               </div>
             )}
             {quote.terms && (
               <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium uppercase tracking-wide text-fg-muted">Şartlar</span>
+                <span className="text-xs font-medium uppercase tracking-wide text-fg-muted">{t('quotes:fields.terms')}</span>
                 <p className="whitespace-pre-wrap text-sm text-fg-secondary">{quote.terms}</p>
               </div>
             )}
@@ -370,13 +369,27 @@ export function QuoteDetailPage() {
         </Card>
       )}
 
+      {/* Faz 14 / İz F — C3 ilişkili-kayıtlar paneli (docs/PHASE-INTL.md §3). Ters yön
+          (`firma → teklifler`, `fırsat → teklifler`) CompanyController/DealController'da zaten
+          var — burada YENİ açılan tek şey teklifin KENDİ yönü: teklif → firma/fırsat/kişi.
+          Backend `related.*` yalnızca ilgili modülün izniyle doludur (izinsiz anahtar hiç
+          gelmez) — bu yüzden `quote.related?.x` üzerinden `undefined` ayrımı korunuyor,
+          `quote.company`/`quote.deal`/`quote.contact` (yukarıdaki özet alanları) DEĞİL. */}
+      <RelatedRecordsPanel
+        groups={[
+          companyGroupConfig('company', t('related:groups.company'), t('related:empty.company'), quote.related?.company),
+          dealGroupConfig('deal', t('related:groups.deal'), t('related:empty.deal'), quote.related?.deal),
+          contactGroupConfig('contact', t('related:groups.contact'), t('related:empty.contact'), quote.related?.contact),
+        ]}
+      />
+
       <Card>
         <CardHeader
-          title="PDF Önizleme"
+          title={t('quotes:detail.pdfPreviewTitle')}
           action={
             <a href={pdfUrl} target="_blank" rel="noreferrer">
               <Button variant="secondary" size="sm" leftIcon={<FileText className="size-4" aria-hidden="true" />}>
-                Yeni Sekmede Aç
+                {t('quotes:actions.openNewTab')}
               </Button>
             </a>
           }
@@ -398,16 +411,14 @@ export function QuoteDetailPage() {
               className="flex w-full flex-col items-center justify-center gap-1.5 rounded-b-lg bg-surface-2 px-6 text-center"
               style={{ height: 720 }}
             >
-              <p className="text-sm text-fg-secondary">Teklif PDF'i yüklenemedi: {pdfPreview.message}</p>
-              <p className="text-xs text-fg-muted">
-                Yukarıdaki &ldquo;Yeni Sekmede Aç&rdquo; bağlantısını kullanarak PDF&apos;i doğrudan açabilirsiniz.
-              </p>
+              <p className="text-sm text-fg-secondary">{t('quotes:detail.pdfPreview.error', { message: pdfPreview.message })}</p>
+              <p className="text-xs text-fg-muted">{t('quotes:detail.pdfPreview.errorHint')}</p>
             </div>
           )}
           {pdfPreview.status === 'success' && (
             <iframe
               src={pdfPreview.url}
-              title="Teklif PDF Önizleme"
+              title={t('quotes:detail.pdfPreview.iframeTitle')}
               className="w-full rounded-b-lg border-0"
               style={{ height: 720 }}
             />
@@ -418,12 +429,12 @@ export function QuoteDetailPage() {
       <Modal
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
-        title="Teklifi sil"
-        description="Bu işlem geri alınamaz. Teklif kalıcı olarak silinecek."
+        title={t('quotes:deleteModal.title')}
+        description={t('quotes:deleteModal.description')}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setDeleteOpen(false)}>
-              Vazgeç
+              {t('common:actions.cancel')}
             </Button>
             <Button
               variant="danger"
@@ -434,43 +445,44 @@ export function QuoteDetailPage() {
                 navigate('/quotes')
               }}
             >
-              Sil
+              {t('quotes:actions.delete')}
             </Button>
           </div>
         }
       >
         <p className="text-sm text-fg-secondary">
-          <strong className="text-fg">
-            {quote.quote_number} — {quote.title}
-          </strong>{' '}
-          adlı teklifi silmek istediğinize emin misiniz?
+          <Trans
+            i18nKey="quotes:deleteModal.confirmText"
+            values={{ number: quote.quote_number, title: quote.title }}
+            components={{ bold: <strong className="text-fg" /> }}
+          />
         </p>
       </Modal>
 
       <Modal
         open={statusOpen}
         onClose={() => setStatusOpen(false)}
-        title="Teklif durumunu değiştir"
+        title={t('quotes:statusModal.title')}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setStatusOpen(false)}>
-              Vazgeç
+              {t('common:actions.cancel')}
             </Button>
             <Button loading={changeStatus.isPending} onClick={handleChangeStatus}>
-              Kaydet
+              {t('common:actions.save')}
             </Button>
           </div>
         }
       >
         <div className="flex flex-col gap-4">
           <Select
-            label="Yeni Durum"
+            label={t('quotes:statusModal.newStatusLabel')}
             value={statusTarget}
             onChange={(e) => setStatusTarget(e.target.value as QuoteStatus)}
-            options={MANUAL_QUOTE_STATUSES.map((status) => ({ value: status, label: MANUAL_STATUS_LABELS[status] }))}
+            options={MANUAL_QUOTE_STATUSES.map((status) => ({ value: status, label: t(`enums:quote.status.${status}`) }))}
           />
           <Textarea
-            label="Gerekçe (opsiyonel)"
+            label={t('quotes:statusModal.reasonLabel')}
             value={statusReason}
             onChange={(e) => setStatusReason(e.target.value)}
             rows={3}

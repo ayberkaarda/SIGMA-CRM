@@ -2,13 +2,23 @@
 // ile paylaşılan `evaluatePassword`/`generateStrongPassword` yardımcılarını kullanır.
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Check, Copy, Eye, EyeOff, Wand2 } from 'lucide-react'
 import { Button, Input, Modal, toast } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
 import { getFieldErrors } from '../../../lib/axios'
 import { useResetPassword } from '../api/usersApi'
-import { evaluatePassword, generateStrongPassword } from '../utils/password'
+import { PASSWORD_MIN_LENGTH, PASSWORD_STRENGTH_KEYS, evaluatePassword, generateStrongPassword } from '../utils/password'
+import type { PasswordRuleId } from '../utils/password'
 import type { User } from '../types'
+
+const RULE_LABEL_KEYS: Record<PasswordRuleId, string> = {
+  length: 'users:passwordRules.length',
+  upper: 'users:passwordRules.upper',
+  lower: 'users:passwordRules.lower',
+  digit: 'users:passwordRules.digit',
+  special: 'users:passwordRules.special',
+}
 
 type ResetPasswordModalProps = {
   open: boolean
@@ -27,6 +37,7 @@ const STRENGTH_BAR_COLOR: Record<number, string> = {
 }
 
 export function ResetPasswordModal({ open, onClose, user }: ResetPasswordModalProps) {
+  const { t } = useTranslation(['users', 'common'])
   const resetPassword = useResetPassword()
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -56,9 +67,9 @@ export function ResetPasswordModal({ open, onClose, user }: ResetPasswordModalPr
     if (!password) return
     try {
       await navigator.clipboard.writeText(password)
-      toast.success('Şifre panoya kopyalandı.')
+      toast.success(t('users:form.toast.passwordCopied'))
     } catch {
-      toast.error('Panoya kopyalanamadı. Şifreyi elle seçip kopyalayın.')
+      toast.error(t('users:form.toast.passwordCopyFailed'))
     }
   }
 
@@ -66,7 +77,7 @@ export function ResetPasswordModal({ open, onClose, user }: ResetPasswordModalPr
     event.preventDefault()
     if (!user) return
     if (!evaluation.isValid) {
-      setError('Şifre, politika kurallarının tamamını karşılamalıdır.')
+      setError(t('users:resetPasswordModal.errors.passwordPolicy'))
       return
     }
     try {
@@ -82,16 +93,16 @@ export function ResetPasswordModal({ open, onClose, user }: ResetPasswordModalPr
     <Modal
       open={open}
       onClose={onClose}
-      title="Şifreyi Sıfırla"
-      description={user ? `${user.name} (${user.email}) için yeni geçici şifre belirleyin.` : undefined}
+      title={t('users:resetPasswordModal.title')}
+      description={user ? t('users:resetPasswordModal.description', { name: user.name, email: user.email }) : undefined}
       size="md"
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Vazgeç
+            {t('common:actions.cancel')}
           </Button>
           <Button type="submit" form="reset-password-form" loading={resetPassword.isPending} disabled={!user}>
-            Şifreyi Sıfırla
+            {t('users:resetPasswordModal.submit')}
           </Button>
         </div>
       }
@@ -100,7 +111,7 @@ export function ResetPasswordModal({ open, onClose, user }: ResetPasswordModalPr
         <div className="flex items-end gap-2">
           <div className="flex-1">
             <Input
-              label="Yeni Şifre"
+              label={t('users:resetPasswordModal.newPasswordLabel')}
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -110,7 +121,7 @@ export function ResetPasswordModal({ open, onClose, user }: ResetPasswordModalPr
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                  aria-label={showPassword ? t('users:form.hidePassword') : t('users:form.showPassword')}
                   className="pointer-events-auto text-fg-muted hover:text-fg"
                 >
                   {showPassword ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
@@ -122,8 +133,8 @@ export function ResetPasswordModal({ open, onClose, user }: ResetPasswordModalPr
             type="button"
             variant="secondary"
             onClick={handleGenerate}
-            title="Rastgele güçlü şifre üret"
-            aria-label="Rastgele güçlü şifre üret"
+            title={t('users:form.generatePasswordTitle')}
+            aria-label={t('users:form.generatePasswordTitle')}
           >
             <Wand2 className="size-4" aria-hidden="true" />
           </Button>
@@ -132,8 +143,8 @@ export function ResetPasswordModal({ open, onClose, user }: ResetPasswordModalPr
             variant="secondary"
             onClick={handleCopy}
             disabled={!password}
-            title="Panoya kopyala"
-            aria-label="Şifreyi panoya kopyala"
+            title={t('users:form.copyPasswordTitle')}
+            aria-label={t('users:form.copyPasswordAria')}
           >
             <Copy className="size-4" aria-hidden="true" />
           </Button>
@@ -152,12 +163,16 @@ export function ResetPasswordModal({ open, onClose, user }: ResetPasswordModalPr
                 />
               ))}
             </div>
-            <p className="text-xs text-fg-muted">Güç: {evaluation.strengthLabel}</p>
+            <p className="text-xs text-fg-muted">
+              {t('users:form.strengthLabel', {
+                strength: t(`users:passwordStrength.${PASSWORD_STRENGTH_KEYS[evaluation.score]}`),
+              })}
+            </p>
             <ul className="flex flex-col gap-1">
               {evaluation.rules.map((rule) => (
                 <li key={rule.id} className={cn('flex items-center gap-1.5 text-xs', rule.met ? 'text-success' : 'text-fg-muted')}>
                   <Check className="size-3.5" aria-hidden="true" />
-                  {rule.label}
+                  {t(RULE_LABEL_KEYS[rule.id], { count: PASSWORD_MIN_LENGTH })}
                 </li>
               ))}
             </ul>

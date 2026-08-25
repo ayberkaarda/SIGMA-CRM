@@ -8,6 +8,7 @@
 // olan bir sütunda gerçeğin altında bir sayı gösterirdi.
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { useTranslation } from 'react-i18next'
 import { CircleSlash2, Plus, Trophy } from 'lucide-react'
 import { Badge, Button } from '../../../../components/ui'
 import { cn } from '../../../../lib/cn'
@@ -33,6 +34,7 @@ export function BoardStageColumn({
   onCreate,
   recentlyMoved,
 }: BoardStageColumnProps) {
+  const { t } = useTranslation('deals')
   const { stage, deals, meta } = column
   const { setNodeRef, isOver } = useDroppable({ id: columnDroppableId(stage.id) })
 
@@ -40,7 +42,7 @@ export function BoardStageColumn({
 
   return (
     <section
-      aria-label={`${stage.name} aşaması, ${meta.count} kart`}
+      aria-label={t('board.column.aria', { stage: stage.name, count: meta.count })}
       className="flex h-full w-80 shrink-0 flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface-2"
     >
       <div className={cn('h-1 w-full', stageAccentClass(stage.color))} aria-hidden="true" />
@@ -94,13 +96,13 @@ export function BoardStageColumn({
 
         {deals.length === 0 && (
           <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-xs text-fg-muted">
-            Bu aşamada kart yok
+            {t('board.column.empty')}
           </p>
         )}
 
         {meta.has_more && (
           <p className="pt-2 text-center text-xs text-fg-muted">
-            Daha fazla ({notLoaded} kart) — filtreleyerek daraltın
+            {t('board.column.moreHidden', { count: notLoaded })}
           </p>
         )}
       </div>
@@ -114,7 +116,7 @@ export function BoardStageColumn({
             leftIcon={<Plus className="size-4" aria-hidden="true" />}
             onClick={() => onCreate(stage.id)}
           >
-            Fırsat
+            {t('board.column.addDeal')}
           </Button>
         </footer>
       )}

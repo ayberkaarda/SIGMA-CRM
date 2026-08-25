@@ -4,6 +4,7 @@
 // `features/presence/components/OnlineUsersPopover.tsx` ile AYNIDIR.
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Bell, CheckCheck } from 'lucide-react'
 import { cn } from '../../../lib/cn'
 import { useMarkAllRead, useUnreadCount } from '../hooks/useNotifications'
@@ -13,6 +14,7 @@ import { NotificationList } from './NotificationList'
 const OVERFLOW_THRESHOLD = 99
 
 export function NotificationBell() {
+  const { t } = useTranslation('notifications')
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
@@ -64,7 +66,7 @@ export function NotificationBell() {
         onClick={() => setOpen((prev) => !prev)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label={unreadCount > 0 ? `Bildirimler (${unreadCount} okunmamış)` : 'Bildirimler'}
+        aria-label={unreadCount > 0 ? t('notifications:bell.ariaLabelUnread', { count: unreadCount }) : t('notifications:bell.ariaLabel')}
         className={cn(
           'relative inline-flex size-9 shrink-0 items-center justify-center rounded-md text-fg-muted hover:bg-surface-2 hover:text-fg',
           'transition-colors duration-150 motion-reduce:transition-none',
@@ -85,11 +87,11 @@ export function NotificationBell() {
       {open && (
         <div
           role="dialog"
-          aria-label="Bildirimler"
+          aria-label={t('notifications:bell.dialogAria')}
           className="absolute right-0 top-full z-50 mt-2 w-80 rounded-lg border border-border bg-surface-3 py-2 shadow-popover"
         >
           <div className="flex items-center justify-between px-3 pb-2">
-            <p className="text-sm font-medium text-fg">Bildirimler</p>
+            <p className="text-sm font-medium text-fg">{t('notifications:bell.title')}</p>
             <button
               type="button"
               onClick={() => markAllRead.mutate()}
@@ -100,7 +102,7 @@ export function NotificationBell() {
               )}
             >
               <CheckCheck className="size-3.5" aria-hidden="true" />
-              Tümünü okundu işaretle
+              {t('notifications:bell.markAllRead')}
             </button>
           </div>
 
@@ -114,7 +116,7 @@ export function NotificationBell() {
               onClick={() => setOpen(false)}
               className="block text-center text-xs font-medium text-primary hover:underline"
             >
-              Tüm bildirimleri gör
+              {t('notifications:bell.viewAll')}
             </Link>
           </div>
         </div>

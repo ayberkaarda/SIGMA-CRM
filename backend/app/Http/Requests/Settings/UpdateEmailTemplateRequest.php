@@ -58,16 +58,4 @@ class UpdateEmailTemplateRequest extends FormRequest
             'key' => ['sometimes', 'string', 'max:255'],
         ];
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'name.max' => 'Şablon adı en fazla :max karakter olabilir.',
-            'subject.max' => 'E-posta konusu en fazla :max karakter olabilir.',
-            'variables.array' => 'Değişken listesi bir dizi olmalıdır.',
-        ];
-    }
 }

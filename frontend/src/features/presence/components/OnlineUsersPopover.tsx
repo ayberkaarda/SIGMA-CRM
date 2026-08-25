@@ -2,6 +2,7 @@
 // toplam sayı; tıklanınca tam liste açılır (avatar, isim, rol, departman).
 import { useEffect, useRef, useState } from 'react'
 import { Users } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Avatar, AvatarGroup, Badge, EmptyState } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
 import { useOnlineUsers } from '../hooks/useOnlineUsers'
@@ -9,6 +10,7 @@ import { useOnlineUsers } from '../hooks/useOnlineUsers'
 const MAX_AVATARS_IN_TRIGGER = 4
 
 export function OnlineUsersPopover() {
+  const { t } = useTranslation('presence')
   const { users, meta, isLoading } = useOnlineUsers()
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -45,7 +47,7 @@ export function OnlineUsersPopover() {
         onClick={() => setOpen((prev) => !prev)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label={`Çevrimiçi kullanıcılar (${users.length})`}
+        aria-label={t('trigger.aria', { count: users.length })}
         className={cn(
           'flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-surface-2',
           'transition-colors duration-150 motion-reduce:transition-none',
@@ -67,16 +69,16 @@ export function OnlineUsersPopover() {
       {open && (
         <div
           role="dialog"
-          aria-label="Çevrimiçi kullanıcılar"
+          aria-label={t('panel.aria')}
           className="absolute right-0 top-full z-50 mt-2 w-72 rounded-lg border border-border bg-surface-3 py-2 shadow-popover"
         >
           <div className="flex items-center justify-between px-3 pb-2">
-            <p className="text-sm font-medium text-fg">Çevrimiçi ({users.length})</p>
+            <p className="text-sm font-medium text-fg">{t('panel.title', { count: users.length })}</p>
           </div>
 
           {meta?.stale && (
             <div className="mx-3 mb-2 rounded-md bg-warning-tint px-2.5 py-1.5 text-xs text-warning">
-              Liste güncel olmayabilir.
+              {t('panel.staleWarning')}
             </div>
           )}
 
@@ -84,8 +86,8 @@ export function OnlineUsersPopover() {
             {isLoading ? null : users.length === 0 ? (
               <EmptyState
                 icon={<Users className="size-6" aria-hidden="true" />}
-                title="Çevrimiçi kullanıcı yok"
-                description="Şu anda başka kimse bağlı değil."
+                title={t('empty.title')}
+                description={t('empty.description')}
                 className="px-4 py-6"
               />
             ) : (

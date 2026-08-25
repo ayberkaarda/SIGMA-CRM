@@ -24,14 +24,4 @@ class PriceProductRequest extends FormRequest
             'price_list_id' => ['sometimes', 'nullable', 'integer', 'exists:price_lists,id'],
         ];
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'price_list_id.exists' => 'Seçilen fiyat listesi geçerli değil.',
-        ];
-    }
 }

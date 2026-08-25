@@ -12,10 +12,16 @@ use Illuminate\Support\Str;
  * (Faz 12).
  *
  * Faz 10'un `CrmNotification` taban sınıfı OLDUĞU GİBİ kullanılır: payload
- * sözleşmesi (`type`/`title`/`body`/`link`/`meta`), `via()` sırası
- * (`database` önce, `broadcast` sonra — `unread_count` bir eksik gelmesin),
- * `afterCommit()` ve `broadcastOn()` mantığı orada bir kez çözülmüştür ve
- * burada yeniden yazılmaz. Bu sınıfın tek işi kendi dört metnini üretmektir.
+ * sözleşmesi, `via()` sırası, `afterCommit()` ve `broadcastOn()` mantığı
+ * orada bir kez çözülmüştür ve burada yeniden yazılmaz.
+ *
+ * FAZ 14 / İz D — ANAHTAR MODUNA DÖNÜŞTÜRÜLDÜ. Dört başlık varyantı vardır
+ * (aktör bilinen/bilinmeyen × grup/birebir) çünkü "Bir kullanıcı" ("A user")
+ * ve grup parantezi CÜMLENİN parçasıdır, ham parametre DEĞİL — çevirmenin
+ * sözcük sırasını değiştirebilmesi için her varyant kendi tam cümlesiyle
+ * sözlükte durmalı (bkz. TaskAssignedNotification'ın `body`/`body_with_due`
+ * ayrımıyla aynı disiplin). `actor`/`conversation` parametreleri KULLANICI
+ * VERİSİDİR (isim), çevrilmez.
  *
  * -----------------------------------------------------------------------------
  * `body` NEDEN MESAJIN KENDİSİ (KIRPILMIŞ)
@@ -26,8 +32,9 @@ use Illuminate\Support\Str;
  * 5.000 karakterlik bir mesajı oraya kopyalamak, bildirim listesini mesaj
  * tablosunun ikinci bir kopyasına dönüştürürdü.
  *
- * Dosya mesajlarında gövde boş olabilir; o durumda dosya adı ya da sabit bir
- * ifade kullanılır — boş bir bildirim satırı göstermek yerine.
+ * Dosya mesajlarında gövde boş olabilir; o durumda dosya adı parametre olarak
+ * taşınır. İkisi de yoksa (excerpt null) `body_no_content` anahtarı — sabit
+ * "Bir dosya paylaştı." cümlesi artık burada değil, sözlükte durur.
  */
 class ChatMentionNotification extends CrmNotification
 {
@@ -42,15 +49,32 @@ class ChatMentionNotification extends CrmNotification
         Conversation $conversation,
         ?User $actor,
     ): self {
-        $where = $conversation->isGroup() && $conversation->name !== null
-            ? sprintf(' (%s)', $conversation->name)
-            : '';
+        $inGroup = $conversation->isGroup() && $conversation->name !== null;
+        $hasActor = $actor !== null;
+
+        $titleKey = match (true) {
+            $hasActor && $inGroup => 'notifications.chat_mention.title_in_group',
+            $hasActor && ! $inGroup => 'notifications.chat_mention.title',
+            ! $hasActor && $inGroup => 'notifications.chat_mention.title_unknown_actor_in_group',
+            default => 'notifications.chat_mention.title_unknown_actor',
+        };
+
+        $excerpt = self::excerpt($message);
+
+        [$bodyKey, $bodyParams] = $excerpt !== null
+            ? ['notifications.chat_mention.body', ['excerpt' => $excerpt]]
+            : ['notifications.chat_mention.body_no_content', []];
 
         return new self(
             recipientId: $recipientId,
             notificationType: 'chat.mention',
-            notificationTitle: sprintf('%s sizden bahsetti%s', $actor?->name ?? 'Bir kullanıcı', $where),
-            notificationBody: self::excerpt($message),
+            titleKey: $titleKey,
+            bodyKey: $bodyKey,
+            params: array_filter([
+                'actor' => $hasActor ? (string) $actor->name : null,
+                'conversation' => $inGroup ? (string) $conversation->name : null,
+                ...$bodyParams,
+            ], static fn (?string $value): bool => $value !== null),
             // Faz 12 arayüz yolu — sohbet ekranı konuşmayı id ile açar.
             notificationLink: '/chat/'.$conversation->getKey(),
             meta: [
@@ -63,7 +87,7 @@ class ChatMentionNotification extends CrmNotification
         );
     }
 
-    private static function excerpt(Message $message): string
+    private static function excerpt(Message $message): ?string
     {
         $body = trim((string) $message->body);
 
@@ -75,6 +99,6 @@ class ChatMentionNotification extends CrmNotification
             return (string) $message->attachment->original_name;
         }
 
-        return 'Bir dosya paylaştı.';
+        return null;
     }
 }

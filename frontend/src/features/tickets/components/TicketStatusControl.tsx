@@ -11,16 +11,18 @@
 // Durum geçişi ile not kaydı iki AYRI istektir; not boşsa hiç gönderilmez.
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button, Modal, Textarea } from '../../../components/ui'
 import { getErrorMessage } from '../../../lib/axios'
 import { toast } from '../../../components/ui'
 import { usePermission } from '../../auth/hooks/usePermission'
 import { useCreateActivity } from '../../activities/api/activitiesApi'
 import { useChangeTicketStatus } from '../api/ticketsApi'
-import { allowedTransitions, STATUS_LABEL } from './ticketStatusMeta'
+import { allowedTransitions, statusLabel } from './ticketStatusMeta'
 import type { Ticket, TicketStatus } from '../types'
 
 export function TicketStatusControl({ ticket }: { ticket: Ticket }) {
+  const { t } = useTranslation(['tickets', 'enums'])
   // Faz 13: bu bileşende ÖNCEDEN hiçbir izin denetimi YOKTU — salt okunur bir rolün bile durum
   // butonlarını görüp tıklayabilmesi (ve 403 yemesi) bir boşluktu. `tickets.update` ucu
   // `/status` isteğini de yetkilendirdiği için (bkz. `TicketPolicy::update` dokümanı) modül
@@ -63,7 +65,7 @@ export function TicketStatusControl({ ticket }: { ticket: Ticket }) {
         try {
           await createNote.mutateAsync({
             type: 'note',
-            subject: 'Çözüm notu',
+            subject: t('tickets:status.resolveModal.defaultNoteSubject'),
             body: resolutionNote.trim(),
             occurred_at: new Date().toISOString(),
             activityable_type: 'ticket',
@@ -73,7 +75,7 @@ export function TicketStatusControl({ ticket }: { ticket: Ticket }) {
           // Durum geçişi zaten BAŞARILI oldu (üstteki await patlamadı); not eklemesi ayrı bir
           // istektir ve başarısız olsa dahi durum geçişini GERİ ALMAYIZ — kullanıcıyı yalnızca
           // notun kaydedilmediği konusunda uyarırız.
-          toast.error(`Durum güncellendi ama not kaydedilemedi: ${getErrorMessage(error)}`)
+          toast.error(t('tickets:status.toastNoteFailed', { error: getErrorMessage(error) }))
         }
       }
       setResolveOpen(false)
@@ -89,7 +91,11 @@ export function TicketStatusControl({ ticket }: { ticket: Ticket }) {
   }
 
   if (targets.length === 0) {
-    return <p className="text-sm text-fg-muted">"Kapandı" durumu terminaldir; bu talebin durumu artık değiştirilemez.</p>
+    return (
+      <p className="text-sm text-fg-muted">
+        {t('tickets:status.terminalHint', { status: statusLabel('closed', t) })}
+      </p>
+    )
   }
 
   // İzin var ama BU talepte `can.status` false — kalan tek engel sahipliktir (atanan kişi,
@@ -101,7 +107,7 @@ export function TicketStatusControl({ ticket }: { ticket: Ticket }) {
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium text-fg-muted">Durumu değiştir:</span>
+        <span className="text-xs font-medium text-fg-muted">{t('tickets:status.changeLabel')}</span>
         {targets.map((target) => (
           <Button
             key={target}
@@ -110,39 +116,39 @@ export function TicketStatusControl({ ticket }: { ticket: Ticket }) {
             size="sm"
             loading={changeStatus.isPending && pendingTarget === target}
             disabled={lockedByOwnership || (changeStatus.isPending && pendingTarget !== target)}
-            title={lockedByOwnership ? 'Bu talebin sahibi değilsiniz, durumunu değiştiremezsiniz.' : undefined}
+            title={lockedByOwnership ? t('tickets:status.ownershipLockedHint') : undefined}
             onClick={() => handleClick(target)}
           >
-            {STATUS_LABEL[target]}
+            {statusLabel(target, t)}
           </Button>
         ))}
       </div>
       {lockedByOwnership && (
-        <p className="text-xs text-fg-muted">Bu talebin sahibi değilsiniz, durumunu değiştiremezsiniz.</p>
+        <p className="text-xs text-fg-muted">{t('tickets:status.ownershipLockedHint')}</p>
       )}
 
       <Modal
         open={resolveOpen}
         onClose={() => setResolveOpen(false)}
-        title="Talebi Çözüldü Olarak İşaretle"
-        description="Çözüm notu eklemek zorunlu değildir ama önerilir — eklerseniz talebe iç not olarak kaydedilir."
+        title={t('tickets:status.resolveModal.title')}
+        description={t('tickets:status.resolveModal.description')}
         footer={
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => setResolveOpen(false)}>
-              Vazgeç
+              {t('tickets:status.resolveModal.cancel')}
             </Button>
             <Button type="submit" form="ticket-resolve-form" loading={changeStatus.isPending && pendingTarget === 'resolved'}>
-              Çözüldü Olarak İşaretle
+              {t('tickets:status.resolveModal.confirm')}
             </Button>
           </div>
         }
       >
         <form id="ticket-resolve-form" onSubmit={handleResolveSubmit}>
           <Textarea
-            label="Çözüm Notu (opsiyonel)"
+            label={t('tickets:status.resolveModal.noteLabel')}
             value={resolutionNote}
             onChange={(e) => setResolutionNote(e.target.value)}
-            placeholder="Sorun nasıl çözüldü?"
+            placeholder={t('tickets:status.resolveModal.notePlaceholder')}
           />
         </form>
       </Modal>

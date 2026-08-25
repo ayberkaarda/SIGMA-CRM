@@ -2,9 +2,10 @@
 // ad-soyad alanlarını doldurdukça (debounce ~500ms) `POST /api/leads/check-duplicates`
 // çağrılır (bkz. `LeadFormModal`/`ConvertLeadModal`); sonuç varsa burada gösterilir.
 // KAYDETMEYİ ENGELLEMEZ — yalnızca uyarır, karar kullanıcının.
+import { useTranslation } from 'react-i18next'
 import { AlertTriangle, ExternalLink } from 'lucide-react'
 import { cn } from '../../../lib/cn'
-import { DUPLICATE_LEVEL_LABELS, MATCH_REASON_LABELS } from '../utils'
+import { DUPLICATE_LEVEL_LABEL_KEY, MATCH_REASON_LABEL_KEY } from '../utils'
 import type { DuplicateCandidate } from '../types'
 
 export type DuplicateWarningPanelProps = {
@@ -17,12 +18,13 @@ function candidateHref(candidate: DuplicateCandidate): string {
 }
 
 export function DuplicateWarningPanel({ candidates, loading }: DuplicateWarningPanelProps) {
+  const { t } = useTranslation('leads')
   if (!loading && candidates.length === 0) return null
 
   return (
     <div className="flex flex-col gap-2" aria-live="polite">
       {loading && candidates.length === 0 && (
-        <p className="text-xs text-fg-muted">Olası eşleşmeler kontrol ediliyor…</p>
+        <p className="text-xs text-fg-muted">{t('leads:duplicateWarningPanel.checking')}</p>
       )}
       {candidates.map((candidate) => {
         const isStrong = candidate.level === 'strong'
@@ -41,20 +43,21 @@ export function DuplicateWarningPanel({ candidates, loading }: DuplicateWarningP
             <div className="flex items-center justify-between gap-2">
               <span className="flex items-center gap-1.5 font-medium">
                 <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
-                {candidate.type === 'lead' ? 'Aday' : 'Kişi'}: {candidate.name || '—'}
-                <span className="font-normal opacity-80">— {DUPLICATE_LEVEL_LABELS[candidate.level]}</span>
+                {candidate.type === 'lead' ? t('leads:duplicateWarningPanel.leadLabel') : t('leads:duplicateWarningPanel.contactLabel')}:{' '}
+                {candidate.name || '—'}
+                <span className="font-normal opacity-80">— {t(DUPLICATE_LEVEL_LABEL_KEY[candidate.level])}</span>
               </span>
               <ExternalLink className="size-3.5 shrink-0 opacity-70" aria-hidden="true" />
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs opacity-90">
-              {candidate.email && <span>E-posta: {candidate.email}</span>}
-              {candidate.phone && <span>Telefon: {candidate.phone}</span>}
-              {candidate.company && <span>Firma: {candidate.company}</span>}
+              {candidate.email && <span>{t('leads:duplicateWarningPanel.emailLabel', { value: candidate.email })}</span>}
+              {candidate.phone && <span>{t('leads:duplicateWarningPanel.phoneLabel', { value: candidate.phone })}</span>}
+              {candidate.company && <span>{t('leads:duplicateWarningPanel.companyLabel', { value: candidate.company })}</span>}
             </div>
             <div className="flex flex-wrap gap-1.5 text-xs">
               {candidate.matched_on.map((reason) => (
                 <span key={reason} className="rounded-sm bg-surface-0 px-1.5 py-0.5">
-                  {MATCH_REASON_LABELS[reason]}
+                  {t(MATCH_REASON_LABEL_KEY[reason])}
                 </span>
               ))}
             </div>

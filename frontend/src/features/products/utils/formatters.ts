@@ -6,22 +6,11 @@
 // `price-lists/` içindeki mevcut importları kırmamak için `formatCurrency` adını `formatMoney`
 // olarak yeniden dışa aktarır; kuruş burada GÖSTERİLİR (2 ondalık) — birim fiyatlar ve liste
 // fiyatları çoğu zaman küsuratlıdır (ör. 149,90), yuvarlamak kullanıcıyı yanıltır.
+//
+// Tarih biçimlendirme de aynı gerekçeyle (Faz 14 / İz D §1.8) merkezi `src/lib/datetime.ts`e
+// devredilmiştir — burada sabit `'tr-TR'` yerine aktif arayüz diline göre basılır. İmza/davranış
+// (`string | null | undefined` girdi, boşta `'—'`) mevcut çağrı yerlerini kırmadan korunur;
+// `date-only` girdi (`YYYY-MM-DD`) merkezi `formatDate` de aynı `T00:00:00` yerelleştirmesini
+// zaten uygular (bkz. o dosyanın `toDate` yardımcısı).
 export { formatMoney as formatCurrency } from '../../../lib/money'
-
-export function formatDate(value: string | null | undefined): string {
-  if (!value) return '—'
-  try {
-    return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium' }).format(new Date(`${value}T00:00:00`))
-  } catch {
-    return value
-  }
-}
-
-export function formatDateTime(value: string | null | undefined): string {
-  if (!value) return '—'
-  try {
-    return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
-  } catch {
-    return value
-  }
-}
+export { formatDate, formatDateTime } from '../../../lib/datetime'

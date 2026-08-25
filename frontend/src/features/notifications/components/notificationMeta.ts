@@ -17,6 +17,7 @@ import {
   UserPlus,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import i18n, { getIntlLocale } from '../../../i18n'
 import type { NotificationType } from '../types'
 
 export const NOTIFICATION_TYPE_ICON: Record<NotificationType, LucideIcon> = {
@@ -49,12 +50,22 @@ const RELATIVE_STEPS: RelativeStep[] = [
   { limitSeconds: 31557600, divisor: 2629800, unit: 'month' },
 ]
 
-const relativeFormatter = new Intl.RelativeTimeFormat('tr', { numeric: 'auto' })
+const relativeFormatterCache = new Map<string, Intl.RelativeTimeFormat>()
+
+function getRelativeFormatter(intlLocale: string): Intl.RelativeTimeFormat {
+  let formatter = relativeFormatterCache.get(intlLocale)
+  if (!formatter) {
+    formatter = new Intl.RelativeTimeFormat(intlLocale, { numeric: 'auto' })
+    relativeFormatterCache.set(intlLocale, formatter)
+  }
+  return formatter
+}
 
 /**
  * ISO-8601 tarihi "5 dakika önce" gibi göreli metne çevirir. Projede `dayjs`/`date-fns` yok
  * (bkz. `package.json`) — yalnızca yerleşik `Intl.RelativeTimeFormat` kullanılır, ek bağımlılık
- * eklemez.
+ * eklemez. Faz 14/İz D: aktif arayüz diline göre biçimlenir (bkz. `lib/datetime.ts`), "az önce"
+ * eşiği `notifications` namespace'inden çözülür.
  */
 export function formatRelativeTime(iso: string): string {
   const date = new Date(iso)
@@ -63,13 +74,15 @@ export function formatRelativeTime(iso: string): string {
   const diffSeconds = (date.getTime() - Date.now()) / 1000
   const absSeconds = Math.abs(diffSeconds)
 
-  if (absSeconds < 5) return 'az önce'
+  if (absSeconds < 5) return i18n.t('notifications:relativeTime.justNow')
+
+  const formatter = getRelativeFormatter(getIntlLocale())
 
   for (const { limitSeconds, divisor, unit } of RELATIVE_STEPS) {
     if (absSeconds < limitSeconds) {
-      return relativeFormatter.format(Math.round(diffSeconds / divisor), unit)
+      return formatter.format(Math.round(diffSeconds / divisor), unit)
     }
   }
 
-  return relativeFormatter.format(Math.round(diffSeconds / 31557600), 'year')
+  return formatter.format(Math.round(diffSeconds / 31557600), 'year')
 }

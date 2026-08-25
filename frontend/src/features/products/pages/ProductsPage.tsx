@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import { ListChecks, Package, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import {
   Badge,
@@ -30,6 +31,7 @@ import {
 } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
 import { usePermission } from '../../auth/hooks/usePermission'
+import { SavedViewsBar } from '../../saved-views/components/SavedViewsBar'
 import { tokenBadgeVariant } from '../../../components/shared/tokenBadgeVariant'
 import { useProductCategories, useProducts, useDeleteProduct } from '../api/productsApi'
 import type { ProductsQuery } from '../api/productsApi'
@@ -45,6 +47,7 @@ const SEARCH_DEBOUNCE_MS = 300
 type FormModalState = { mode: 'create' } | { mode: 'edit'; product: Product } | null
 
 export function ProductsPage() {
+  const { t } = useTranslation('products')
   const [searchParams, setSearchParams] = useSearchParams()
   const { can } = usePermission()
 
@@ -112,16 +115,16 @@ export function ProductsPage() {
   }
 
   const categoryFilterOptions = [
-    { value: '', label: 'Tüm kategoriler' },
+    { value: '', label: t('list.allCategories') },
     ...(categories ?? []).map((c) => ({ value: c, label: c })),
   ]
   const statusFilterOptions = [
-    { value: '', label: 'Tüm durumlar' },
-    { value: '1', label: 'Aktif' },
-    { value: '0', label: 'Pasif' },
+    { value: '', label: t('list.allStatuses') },
+    { value: '1', label: t('status.active') },
+    { value: '0', label: t('status.inactive') },
   ]
   const tagFilterOptions = [
-    { value: '', label: 'Tüm etiketler' },
+    { value: '', label: t('list.allTags') },
     ...(tags ?? []).map((tag) => ({ value: String(tag.id), label: tag.name })),
   ]
 
@@ -133,15 +136,15 @@ export function ProductsPage() {
   return (
     <div className="flex flex-col gap-4">
       <nav aria-label="breadcrumb" className="text-xs text-fg-muted">
-        <span>Anasayfa</span>
+        <span>{t('list.breadcrumbHome')}</span>
         <span className="mx-1.5">/</span>
-        <span className="text-primary">Ürünler</span>
+        <span className="text-primary">{t('list.breadcrumbCurrent')}</span>
       </nav>
 
       <Card>
         <CardHeader
-          title="Ürünler"
-          subtitle={`${total} ürün`}
+          title={t('list.title')}
+          subtitle={t('list.subtitle', { count: total })}
           action={
             <div className="flex items-center gap-2">
               <Link
@@ -149,11 +152,15 @@ export function ProductsPage() {
                 className="inline-flex h-10 items-center gap-1.5 rounded-md border border-border bg-surface-2 px-4 text-sm font-medium text-fg hover:bg-surface-3"
               >
                 <ListChecks className="size-4" aria-hidden="true" />
-                Fiyat Listeleri
+                {t('list.priceListsLink')}
               </Link>
+              <SavedViewsBar
+                module="products"
+                filterKeys={['category', 'is_active', 'tag_id', 'price_min', 'price_max', 'in_stock']}
+              />
               {can('products.create') && (
                 <Button leftIcon={<Plus className="size-4" aria-hidden="true" />} onClick={() => setFormModal({ mode: 'create' })}>
-                  Yeni Ürün
+                  {t('list.newProduct')}
                 </Button>
               )}
             </div>
@@ -166,9 +173,9 @@ export function ProductsPage() {
                 <Input
                   value={searchDraft}
                   onChange={(e) => setSearchDraft(e.target.value)}
-                  placeholder="Ürün adı veya SKU ara..."
+                  placeholder={t('list.searchPlaceholder')}
                   leftIcon={<Search className="size-4" aria-hidden="true" />}
-                  aria-label="Ürün ara"
+                  aria-label={t('list.searchAria')}
                 />
               </div>
               <div className="w-full lg:w-48">
@@ -176,7 +183,7 @@ export function ProductsPage() {
                   value={query.category ?? ''}
                   onChange={(e) => updateParams({ category: e.target.value || null, page: '1' })}
                   options={categoryFilterOptions}
-                  aria-label="Kategori filtresi"
+                  aria-label={t('list.categoryFilterAria')}
                 />
               </div>
               <div className="w-full lg:w-40">
@@ -184,7 +191,7 @@ export function ProductsPage() {
                   value={searchParams.get('is_active') ?? ''}
                   onChange={(e) => updateParams({ is_active: e.target.value || null, page: '1' })}
                   options={statusFilterOptions}
-                  aria-label="Durum filtresi"
+                  aria-label={t('list.statusFilterAria')}
                 />
               </div>
               <div className="w-full lg:w-44">
@@ -192,7 +199,7 @@ export function ProductsPage() {
                   value={query.tag_id ? String(query.tag_id) : ''}
                   onChange={(e) => updateParams({ tag_id: e.target.value || null, page: '1' })}
                   options={tagFilterOptions}
-                  aria-label="Etiket filtresi"
+                  aria-label={t('list.tagFilterAria')}
                 />
               </div>
             </div>
@@ -204,8 +211,8 @@ export function ProductsPage() {
                     min={0}
                     value={query.price_min ?? ''}
                     onChange={(e) => updateParams({ price_min: e.target.value || null, page: '1' })}
-                    placeholder="Min fiyat"
-                    aria-label="Minimum fiyat"
+                    placeholder={t('list.minPricePlaceholder')}
+                    aria-label={t('list.minPriceAria')}
                   />
                 </div>
                 <span className="pb-2.5 text-xs text-fg-muted">—</span>
@@ -215,13 +222,13 @@ export function ProductsPage() {
                     min={0}
                     value={query.price_max ?? ''}
                     onChange={(e) => updateParams({ price_max: e.target.value || null, page: '1' })}
-                    placeholder="Maks fiyat"
-                    aria-label="Maksimum fiyat"
+                    placeholder={t('list.maxPricePlaceholder')}
+                    aria-label={t('list.maxPriceAria')}
                   />
                 </div>
               </div>
               <Checkbox
-                label="Sadece stokta olanlar"
+                label={t('list.inStockOnly')}
                 checked={inStockOnly}
                 onChange={(e) => updateParams({ in_stock: e.target.checked ? '1' : null, page: '1' })}
               />
@@ -230,38 +237,38 @@ export function ProductsPage() {
 
           {isError ? (
             <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
-              <p className="text-sm text-fg-muted">Ürünler yüklenirken bir hata oluştu.</p>
+              <p className="text-sm text-fg-muted">{t('list.loadError')}</p>
               <Button variant="secondary" onClick={() => refetch()}>
-                Tekrar dene
+                {t('list.retry')}
               </Button>
             </div>
           ) : isEmpty ? (
             <EmptyState
               icon={<Package className="size-6" aria-hidden="true" />}
-              title="Ürün bulunamadı"
-              description="Arama veya filtre kriterlerinizle eşleşen ürün yok."
+              title={t('list.empty.title')}
+              description={t('list.empty.description')}
             />
           ) : (
             <Table>
               <THead>
                 <Tr>
                   <Th sortable sortDirection={sortDirectionFor('name')} onSort={() => toggleSort('name')}>
-                    Ürün
+                    {t('list.columns.product')}
                   </Th>
                   <Th sortable sortDirection={sortDirectionFor('category')} onSort={() => toggleSort('category')}>
-                    Kategori
+                    {t('list.columns.category')}
                   </Th>
                   <Th align="right" sortable sortDirection={sortDirectionFor('unit_price')} onSort={() => toggleSort('unit_price')}>
-                    Birim Fiyat
+                    {t('list.columns.unitPrice')}
                   </Th>
-                  <Th align="right">KDV %</Th>
-                  <Th>Birim</Th>
+                  <Th align="right">{t('list.columns.taxRate')}</Th>
+                  <Th>{t('list.columns.unit')}</Th>
                   <Th align="right" sortable sortDirection={sortDirectionFor('stock_quantity')} onSort={() => toggleSort('stock_quantity')}>
-                    Stok
+                    {t('list.columns.stock')}
                   </Th>
-                  <Th>Durum</Th>
-                  <Th>Etiketler</Th>
-                  <Th align="right">İşlemler</Th>
+                  <Th>{t('list.columns.status')}</Th>
+                  <Th>{t('list.columns.tags')}</Th>
+                  <Th align="right">{t('list.columns.actions')}</Th>
                 </Tr>
               </THead>
               <TBody aria-busy={isLoading}>
@@ -302,7 +309,7 @@ export function ProductsPage() {
                           </Td>
                           <Td>
                             <Badge variant={product.is_active ? 'success' : 'neutral'}>
-                              {product.is_active ? 'Aktif' : 'Pasif'}
+                              {product.is_active ? t('status.active') : t('status.inactive')}
                             </Badge>
                           </Td>
                           <Td>
@@ -318,12 +325,12 @@ export function ProductsPage() {
                           <Td align="right">
                             <div className="flex items-center justify-end gap-1">
                               {can('products.update') && (
-                                <IconButton label="Düzenle" onClick={() => setFormModal({ mode: 'edit', product })}>
+                                <IconButton label={t('list.actions.edit')} onClick={() => setFormModal({ mode: 'edit', product })}>
                                   <Pencil className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
                               {can('products.delete') && (
-                                <IconButton label="Sil" danger onClick={() => setDeleteProductState(product)}>
+                                <IconButton label={t('list.actions.delete')} danger onClick={() => setDeleteProductState(product)}>
                                   <Trash2 className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
@@ -354,12 +361,12 @@ export function ProductsPage() {
       <Modal
         open={!!deleteProductState}
         onClose={() => setDeleteProductState(null)}
-        title="Ürünü sil"
-        description="Bu işlem geri alınamaz. Ürün kalıcı olarak silinecek."
+        title={t('list.deleteModal.title')}
+        description={t('list.deleteModal.description')}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setDeleteProductState(null)}>
-              Vazgeç
+              {t('list.deleteModal.cancel')}
             </Button>
             <Button
               variant="danger"
@@ -370,14 +377,18 @@ export function ProductsPage() {
                 setDeleteProductState(null)
               }}
             >
-              Sil
+              {t('list.deleteModal.confirm')}
             </Button>
           </div>
         }
       >
         {deleteProductState && (
           <p className="text-sm text-fg-secondary">
-            <strong className="text-fg">{deleteProductState.name}</strong> adlı ürünü silmek istediğinize emin misiniz?
+            <Trans
+              i18nKey="products:list.deleteModal.confirmText"
+              values={{ name: deleteProductState.name }}
+              components={{ bold: <strong className="text-fg" /> }}
+            />
           </p>
         )}
       </Modal>

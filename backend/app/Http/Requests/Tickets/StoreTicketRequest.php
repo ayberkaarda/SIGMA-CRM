@@ -58,23 +58,4 @@ class StoreTicketRequest extends FormRequest
             'custom_fields' => ['sometimes', 'nullable', 'array'],
         ];
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'subject.required' => 'Konu alanı zorunludur.',
-            'subject.max' => 'Konu en fazla :max karakter olabilir.',
-            'description.required' => 'Açıklama alanı zorunludur.',
-            'priority.in' => 'Seçilen öncelik geçerli değil.',
-            'contact_id.exists' => 'Seçilen kişi geçerli değil.',
-            'company_id.exists' => 'Seçilen firma geçerli değil.',
-            'assigned_to.exists' => 'Seçilen atanan kişi geçerli değil.',
-            'tag_ids.array' => 'Etiketler bir liste olmalıdır.',
-            'tag_ids.*.exists' => 'Seçilen etiketlerden biri geçerli değil.',
-            'custom_fields.array' => 'Özel alanlar bir liste olmalıdır.',
-        ];
-    }
 }

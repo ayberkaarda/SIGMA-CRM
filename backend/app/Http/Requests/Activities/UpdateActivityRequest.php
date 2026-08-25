@@ -58,19 +58,4 @@ class UpdateActivityRequest extends FormRequest
             }
         });
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'type.in' => 'Seçilen tür geçerli değil.',
-            'subject.max' => 'Konu en fazla :max karakter olabilir.',
-            'duration_minutes.max' => 'Süre en fazla :max dakika olabilir.',
-            'activityable_type.in' => 'Seçilen hedef türü geçerli değil.',
-            'activityable_type.required_with' => 'Hedef türü ve hedef kimliği birlikte gönderilmelidir.',
-            'activityable_id.required_with' => 'Hedef türü ve hedef kimliği birlikte gönderilmelidir.',
-        ];
-    }
 }

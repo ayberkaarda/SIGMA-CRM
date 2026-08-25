@@ -55,15 +55,12 @@ class StorePipelineStageRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required' => 'Aşama adı zorunludur.',
-            'name.max' => 'Aşama adı en fazla :max karakter olabilir.',
-            'slug.regex' => 'Slug yalnızca küçük harf, rakam ve tire içerebilir (ör. "teklif-gonderildi").',
-            'slug.unique' => 'Bu slug ile bir aşama zaten var.',
-            'probability.between' => 'Kazanma olasılığı 0 ile 100 arasında olmalıdır.',
-            'color.in' => 'Geçersiz renk. Geçerli değerler: '.implode('|', PipelineStageService::COLORS),
-            'position.missing' => 'Aşama sırası bu uçtan verilemez; yeni aşama listenin sonuna eklenir. '.
-                'Sıralama için POST /api/settings/pipeline-stages/reorder ucunu kullanın.',
-            'is_active.missing' => 'Yeni aşama daima aktif oluşturulur.',
+            'slug.regex' => __('validation.custom.settings.pipeline_slug_format'),
+            'color.in' => __('validation.custom.settings.pipeline_color_invalid', [
+                'values' => implode('|', PipelineStageService::COLORS),
+            ]),
+            'position.missing' => __('validation.custom.settings.pipeline_position_locked'),
+            'is_active.missing' => __('validation.custom.settings.pipeline_is_active_locked'),
         ];
     }
 }

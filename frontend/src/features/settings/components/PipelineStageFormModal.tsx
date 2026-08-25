@@ -5,23 +5,13 @@
 // aşamadır. Düzenleme modunda sistem aşaması olduğu bir rozetle bilgilendirilir.
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Badge, Button, Input, Modal, Select } from '../../../components/ui'
 import { getFieldErrors } from '../../../lib/axios'
 import { tokenBadgeVariant } from '../../../components/shared/tokenBadgeVariant'
 import { useCreatePipelineStage, useUpdatePipelineStage } from '../hooks/usePipelineStages'
 import { STAGE_COLOR_TOKENS } from '../types'
 import type { PipelineStage } from '../types'
-
-const COLOR_LABELS: Record<(typeof STAGE_COLOR_TOKENS)[number], string> = {
-  primary: 'Birincil',
-  success: 'Yeşil (Başarı)',
-  danger: 'Kırmızı (Tehlike)',
-  warning: 'Turuncu (Uyarı)',
-  neutral: 'Gri (Nötr)',
-  info: 'Mavi (Bilgi)',
-}
-
-const COLOR_OPTIONS = STAGE_COLOR_TOKENS.map((token) => ({ value: token, label: COLOR_LABELS[token] }))
 
 export type PipelineStageFormModalProps = {
   open: boolean
@@ -30,10 +20,16 @@ export type PipelineStageFormModalProps = {
 }
 
 export function PipelineStageFormModal({ open, onClose, stage }: PipelineStageFormModalProps) {
+  const { t } = useTranslation(['settings', 'common'])
   const isEdit = !!stage
 
   const createStage = useCreatePipelineStage()
   const updateStage = useUpdatePipelineStage()
+
+  const COLOR_OPTIONS = STAGE_COLOR_TOKENS.map((token) => ({
+    value: token,
+    label: t(`settings:pipelineStageForm.colors.${token}`),
+  }))
 
   const [name, setName] = useState('')
   const [probability, setProbability] = useState('50')
@@ -60,10 +56,10 @@ export function PipelineStageFormModal({ open, onClose, stage }: PipelineStageFo
 
   function validate(): boolean {
     const errors: Record<string, string[]> = {}
-    if (!name.trim()) errors.name = ['Aşama adı zorunludur.']
+    if (!name.trim()) errors.name = [t('settings:pipelineStageForm.errors.nameRequired')]
     const probabilityNum = Number(probability)
     if (probability.trim() === '' || Number.isNaN(probabilityNum) || probabilityNum < 0 || probabilityNum > 100) {
-      errors.probability = ['Olasılık 0 ile 100 arasında bir sayı olmalıdır.']
+      errors.probability = [t('settings:pipelineStageForm.errors.probabilityInvalid')]
     }
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
@@ -93,14 +89,14 @@ export function PipelineStageFormModal({ open, onClose, stage }: PipelineStageFo
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? 'Aşamayı Düzenle' : 'Yeni Aşama'}
+      title={isEdit ? t('settings:pipelineStageForm.titleEdit') : t('settings:pipelineStageForm.titleCreate')}
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Vazgeç
+            {t('common:actions.cancel')}
           </Button>
           <Button type="submit" form="pipeline-stage-form" loading={isPending}>
-            {isEdit ? 'Kaydet' : 'Oluştur'}
+            {isEdit ? t('common:actions.save') : t('common:actions.create')}
           </Button>
         </div>
       }
@@ -108,15 +104,23 @@ export function PipelineStageFormModal({ open, onClose, stage }: PipelineStageFo
       <form id="pipeline-stage-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
         {isEdit && stage && (stage.is_won || stage.is_lost) && (
           <div className="flex items-center gap-2 rounded-md bg-surface-2 px-3 py-2">
-            <Badge variant={stage.is_won ? 'success' : 'danger'}>{stage.is_won ? 'Kazanıldı (sistem)' : 'Kaybedildi (sistem)'}</Badge>
-            <span className="text-xs text-fg-muted">Bu aşama sistem aşamasıdır, pasifleştirilemez.</span>
+            <Badge variant={stage.is_won ? 'success' : 'danger'}>
+              {stage.is_won ? t('settings:pipelineStageForm.systemBadgeWon') : t('settings:pipelineStageForm.systemBadgeLost')}
+            </Badge>
+            <span className="text-xs text-fg-muted">{t('settings:pipelineStageForm.systemNote')}</span>
           </div>
         )}
 
-        <Input label="Aşama Adı" value={name} onChange={(e) => setName(e.target.value)} error={fieldError('name')} required />
+        <Input
+          label={t('settings:pipelineStageForm.nameLabel')}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          error={fieldError('name')}
+          required
+        />
 
         <Input
-          label="Kazanma Olasılığı (%)"
+          label={t('settings:pipelineStageForm.probabilityLabel')}
           type="number"
           min={0}
           max={100}
@@ -127,10 +131,16 @@ export function PipelineStageFormModal({ open, onClose, stage }: PipelineStageFo
         />
 
         <div className="flex flex-col gap-2">
-          <Select label="Renk" value={color} onChange={(e) => setColor(e.target.value)} options={COLOR_OPTIONS} error={fieldError('color')} />
+          <Select
+            label={t('settings:pipelineStageForm.colorLabel')}
+            value={color}
+            onChange={(e) => setColor(e.target.value)}
+            options={COLOR_OPTIONS}
+            error={fieldError('color')}
+          />
           <div className="flex items-center gap-2">
-            <span className="text-xs text-fg-muted">Önizleme:</span>
-            <Badge variant={tokenBadgeVariant(color)}>{name || 'Aşama Adı'}</Badge>
+            <span className="text-xs text-fg-muted">{t('settings:pipelineStageForm.previewLabel')}</span>
+            <Badge variant={tokenBadgeVariant(color)}>{name || t('settings:pipelineStageForm.previewDefaultName')}</Badge>
           </div>
         </div>
       </form>

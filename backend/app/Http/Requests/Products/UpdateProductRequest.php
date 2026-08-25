@@ -38,27 +38,4 @@ class UpdateProductRequest extends FormRequest
             'custom_fields' => ['sometimes', 'array'],
         ];
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'name.required' => 'Ürün adı zorunludur.',
-            'name.max' => 'Ürün adı en fazla :max karakter olabilir.',
-            'sku.unique' => 'Bu SKU zaten kullanılıyor.',
-            'unit_price.required' => 'Birim fiyat zorunludur.',
-            'unit_price.numeric' => 'Birim fiyat sayısal olmalıdır.',
-            'unit_price.min' => 'Birim fiyat negatif olamaz.',
-            'currency.size' => 'Para birimi 3 karakterli bir kod olmalıdır (ör. TRY).',
-            'tax_rate.numeric' => 'KDV oranı sayısal olmalıdır.',
-            'tax_rate.max' => 'KDV oranı en fazla :max olabilir.',
-            'stock_quantity.integer' => 'Stok miktarı tam sayı olmalıdır.',
-            'stock_quantity.min' => 'Stok miktarı negatif olamaz.',
-            'tag_ids.array' => 'Etiketler bir liste olmalıdır.',
-            'tag_ids.*.exists' => 'Seçilen etiketlerden biri geçerli değil.',
-            'custom_fields.array' => 'Özel alanlar bir liste olmalıdır.',
-        ];
-    }
 }

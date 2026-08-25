@@ -2,6 +2,7 @@
 // olmadığından `Input` + yerel bir açılır panel üzerine inşa edildi (bkz. görev tanımı).
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Building2, X } from 'lucide-react'
 import { Input } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
@@ -17,7 +18,10 @@ export type CompanyComboboxProps = {
   placeholder?: string
 }
 
-export function CompanyCombobox({ value, onChange, label = 'Firma', error, placeholder = 'Firma ara...' }: CompanyComboboxProps) {
+export function CompanyCombobox({ value, onChange, label, error, placeholder }: CompanyComboboxProps) {
+  const { t } = useTranslation('contacts')
+  const resolvedLabel = label ?? t('company.label')
+  const resolvedPlaceholder = placeholder ?? t('company.placeholder')
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState('')
   const debouncedDraft = useDebouncedValue(draft, 300)
@@ -60,12 +64,12 @@ export function CompanyCombobox({ value, onChange, label = 'Firma', error, place
   return (
     <div ref={containerRef} className="relative">
         <Input
-          label={label}
+          label={resolvedLabel}
           value={displayValue}
           onChange={(e) => setDraft(e.target.value)}
           onFocus={handleFocus}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
+          placeholder={resolvedPlaceholder}
           leftIcon={<Building2 className="size-4" aria-hidden="true" />}
           rightIcon={
             value && !open ? (
@@ -76,7 +80,7 @@ export function CompanyCombobox({ value, onChange, label = 'Firma', error, place
                   e.stopPropagation()
                   handleSelect(null)
                 }}
-                aria-label="Firma seçimini temizle"
+                aria-label={t('company.clearAria')}
                 className="pointer-events-auto text-fg-muted hover:text-fg"
               >
                 <X className="size-4" aria-hidden="true" />
@@ -98,12 +102,12 @@ export function CompanyCombobox({ value, onChange, label = 'Firma', error, place
                 !value && 'text-fg'
               )}
             >
-              Firma yok / temizle
+              {t('company.clearOption')}
             </button>
             {isLoading ? (
-              <p className="px-3 py-2 text-sm text-fg-muted">Yükleniyor…</p>
+              <p className="px-3 py-2 text-sm text-fg-muted">{t('company.loading')}</p>
             ) : (options ?? []).length === 0 ? (
-              <p className="px-3 py-2 text-sm text-fg-muted">Sonuç bulunamadı</p>
+              <p className="px-3 py-2 text-sm text-fg-muted">{t('company.noResults')}</p>
             ) : (
               (options ?? []).map((option) => (
                 <button

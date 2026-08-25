@@ -23,6 +23,7 @@
 // `notifyTyping` prop olarak akar (bkz. o dosyanın başındaki gerekçe — çoğaltılmış abonelik
 // önlenir). `MessageComposer`'ın istediği `members` de `useRecordConversation`'ın döndürdüğü
 // `Conversation.members`'tan gelir — ekstra istek YOK.
+import { useTranslation } from 'react-i18next'
 import { MessageCircle } from 'lucide-react'
 import { Card, CardBody, CardHeader, EmptyState, Skeleton } from '../../../components/ui'
 import { usePermission } from '../../auth/hooks/usePermission'
@@ -57,6 +58,7 @@ export function RecordChatPanel({ recordType, recordId }: RecordChatPanelProps) 
 }
 
 function RecordChatPanelContent({ recordType, recordId }: RecordChatPanelProps) {
+  const { t } = useTranslation('chat')
   const { data: conversation, isLoading: isConversationLoading } = useRecordConversation(recordType, recordId)
   const conversationId = conversation?.id ?? null
 
@@ -73,7 +75,7 @@ function RecordChatPanelContent({ recordType, recordId }: RecordChatPanelProps) 
 
   return (
     <Card>
-      <CardHeader title="Sohbet" subtitle="Bu kayıtla ilgili ekip içi yazışma" />
+      <CardHeader title={t('recordPanel.title')} subtitle={t('recordPanel.subtitle')} />
       <CardBody noPadding className="flex flex-col" aria-busy={isLoading}>
         <div className={`flex ${PANEL_HEIGHT_CLASS} flex-col`}>
           {isLoading || conversationId === null ? (
@@ -88,8 +90,8 @@ function RecordChatPanelContent({ recordType, recordId }: RecordChatPanelProps) 
                 {isEmpty ? (
                   <EmptyState
                     icon={<MessageCircle className="size-6" aria-hidden="true" />}
-                    title="Bu kayıt hakkında henüz konuşulmamış."
-                    description="İlk mesajı siz yazın."
+                    title={t('recordPanel.emptyTitle')}
+                    description={t('recordPanel.emptyDescription')}
                   />
                 ) : (
                   // `key`: konuşma değişince `MessageList`i sıfırdan mount eder — bkz. o dosyanın

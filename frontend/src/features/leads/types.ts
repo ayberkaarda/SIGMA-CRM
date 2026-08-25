@@ -2,6 +2,11 @@
 // (bkz. Faz 6 / E görev tanımı). `LeadResource`/`DuplicateCandidateResource` PHP
 // tarafındaki alan adlarıyla aynı isimlendirme kullanılır.
 
+// Faz 14 / İz F — C3 ilişkili-kayıtlar paneli (docs/PHASE-INTL.md §3). Ters yön
+// (bir kişi/firma/fırsatın hangi lead'den geldiği) şemada YOK — bkz.
+// `LeadController::loadRelatedRecords()` dokümanı.
+import type { RelatedGroupData } from '../related/types'
+
 export const LEAD_SOURCES = [
   'website',
   'referral',
@@ -52,6 +57,11 @@ export type Lead = {
   converted_contact_id: number | null
   converted_company_id: number | null
   converted_deal_id: number | null
+  related?: {
+    converted_contact?: RelatedGroupData<{ id: number; full_name: string }>
+    converted_company?: RelatedGroupData<{ id: number; name: string }>
+    converted_deal?: RelatedGroupData<{ id: number; title: string }>
+  }
   created_at: string
   updated_at: string
   can: LeadAbilities

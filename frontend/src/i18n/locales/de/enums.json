@@ -1,0 +1,63 @@
+{
+  "activity": {
+    "type": {
+      "call": "Anruf",
+      "meeting": "Meeting",
+      "email": "E-Mail",
+      "note": "Notiz"
+    }
+  },
+  "deal": {
+    "status": {
+      "open": "Offen",
+      "won": "Gewonnen",
+      "lost": "Verloren"
+    }
+  },
+  "task": {
+    "priority": { "low": "Niedrig", "normal": "Normal", "high": "Hoch", "urgent": "Dringend" },
+    "status": { "pending": "Ausstehend", "in_progress": "In Bearbeitung", "completed": "Abgeschlossen", "cancelled": "Storniert" }
+  },
+  "ticket": {
+    "priority": {
+      "low": "Niedrig",
+      "normal": "Normal",
+      "high": "Hoch",
+      "urgent": "Dringend"
+    },
+    "status": {
+      "open": "Offen",
+      "pending": "Wartend",
+      "in_progress": "In Bearbeitung",
+      "resolved": "Gelöst",
+      "closed": "Geschlossen"
+    }
+  },
+  "quote": {
+    "status": {
+      "draft": "Entwurf",
+      "sent": "Gesendet",
+      "accepted": "Angenommen",
+      "rejected": "Abgelehnt",
+      "expired": "Abgelaufen"
+    }
+  },
+  "lead": {
+    "status": {
+      "new": "Neu",
+      "contacted": "Kontaktiert",
+      "qualified": "Qualifiziert",
+      "unqualified": "Nicht qualifiziert",
+      "converted": "Konvertiert"
+    },
+    "source": {
+      "website": "Website",
+      "referral": "Empfehlung",
+      "cold_call": "Kaltakquise",
+      "email_campaign": "E-Mail-Kampagne",
+      "social_media": "Soziale Medien",
+      "event": "Veranstaltung",
+      "other": "Sonstiges"
+    }
+  }
+}

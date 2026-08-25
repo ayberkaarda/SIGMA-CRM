@@ -1,0 +1,264 @@
+{
+  "board": {
+    "title": "Deals",
+    "openTotalLabel": "Offener Gesamtwert:",
+    "viewSwitcher": {
+      "aria": "Ansicht",
+      "board": "Board",
+      "list": "Liste"
+    },
+    "refresh": "Aktualisieren",
+    "newDeal": "Deal",
+    "offlineWarning": "Keine Live-Verbindung — Verschiebungen anderer sind gerade nicht sichtbar. Das Board wird automatisch aktualisiert, sobald die Verbindung wiederhergestellt ist.",
+    "readOnlyHint": "Sie haben keine Berechtigung, Karten zu verschieben; das Board wird schreibgeschützt angezeigt.",
+    "loadError": {
+      "title": "Board konnte nicht geladen werden",
+      "description": "Beim Laden des Deal-Boards ist ein Fehler aufgetreten.",
+      "retry": "Erneut versuchen"
+    },
+    "empty": {
+      "title": "Keine Deals vorhanden",
+      "description": "Kein Deal entspricht den ausgewählten Filtern.",
+      "create": "Deal erstellen"
+    },
+    "column": {
+      "aria_one": "Phase {{stage}}, {{count}} Karte",
+      "aria_other": "Phase {{stage}}, {{count}} Karten",
+      "empty": "Keine Karten in dieser Phase",
+      "moreHidden_one": "{{count}} weitere Karte — mit Filtern eingrenzen",
+      "moreHidden_other": "{{count}} weitere Karten — mit Filtern eingrenzen",
+      "addDeal": "Deal"
+    },
+    "card": {
+      "lockedTooltip": "Sie sind nicht Inhaber dieser Karte und können sie daher nicht verschieben.",
+      "unassigned": "Nicht zugewiesen",
+      "movedBy": "{{name}} hat diese Karte verschoben",
+      "overdueSrOnly": "(überfällig)",
+      "draggableRole": "Verschiebbare Deal-Karte",
+      "ariaLabel": "{{title}}, {{amount}}"
+    },
+    "announcements": {
+      "pickedUp": "Karte {{title}} aufgenommen. Mit den Pfeiltasten verschieben.",
+      "overStage": "Karte {{title}} befindet sich über der Phase {{stage}}.",
+      "overNone": "Karte {{title}} befindet sich außerhalb eines ablegbaren Bereichs.",
+      "droppedOnStage": "Karte {{title}} wurde in der Phase {{stage}} abgelegt.",
+      "droppedBack": "Karte {{title}} wurde an ihre vorherige Position zurückgesetzt.",
+      "cancelled": "Das Verschieben der Karte {{title}} wurde abgebrochen.",
+      "defaultCardName": "Karte",
+      "keyboardInstructions": "Um eine Deal-Karte per Tastatur zu verschieben, drücken Sie Leertaste oder Eingabe, um sie aufzunehmen. Verschieben Sie die Karte mit den Pfeiltasten zwischen und innerhalb von Phasen. Drücken Sie erneut Leertaste oder Eingabe, um sie abzulegen, oder Escape, um abzubrechen."
+    },
+    "filters": {
+      "searchLabel": "Suchen",
+      "searchPlaceholder": "Deal-Titel oder Beschreibung",
+      "ownerLabel": "Inhaber",
+      "allOwners": "Alle Inhaber",
+      "companyLabel": "Unternehmen",
+      "allCompanies": "Alle Unternehmen",
+      "closeFrom": "Abschluss (von)",
+      "closeTo": "Abschluss (bis)",
+      "clear": "Zurücksetzen"
+    },
+    "toast": {
+      "conflict": "Diese Karte wurde inzwischen von jemand anderem verschoben; sie wurde mit dem aktuellen Serverstand aktualisiert.",
+      "networkError": "Verbindungsfehler: Die Karte konnte nicht verschoben werden und wurde an ihre vorherige Position zurückgesetzt."
+    }
+  },
+  "stageReason": {
+    "lostRequired": "Ein Verlustgrund ist erforderlich.",
+    "titleLost": "Verlustgrund",
+    "titleWon": "Gewinngrund",
+    "description": "Die Karte „{{dealTitle}}“ wird in die Phase „{{stageName}}“ verschoben.",
+    "cancel": "Abbrechen",
+    "submitLost": "Als verloren verschieben",
+    "submitWon": "Als gewonnen verschieben",
+    "fieldLabelLost": "Verlustgrund",
+    "fieldLabelWon": "Gewinngrund (optional)",
+    "placeholderLost": "Z. B. Preis lag über einem Konkurrenzangebot",
+    "placeholderWon": "Z. B. Einfluss eines Referenzkunden",
+    "hintLost": "Der Verlustgrund ist die wertvollste Kennzahl für die Vertriebsanalyse und daher erforderlich.",
+    "hintWon": "Sie können dies leer lassen."
+  },
+  "form": {
+    "titleCreate": "Neuer Deal",
+    "titleEdit": "Deal bearbeiten",
+    "cancel": "Abbrechen",
+    "submitCreate": "Erstellen",
+    "submitEdit": "Speichern",
+    "titleLabel": "Titel",
+    "descriptionLabel": "Beschreibung",
+    "amountLabel": "Betrag",
+    "currencyLabel": "Währung",
+    "currency": {
+      "try": "TRY — Türkische Lira",
+      "usd": "USD — US-Dollar",
+      "eur": "EUR — Euro",
+      "gbp": "GBP — Britisches Pfund"
+    },
+    "probabilityLabel": "Wahrscheinlichkeit (%)",
+    "probabilityHint": "Standardwert dieser Phase: {{value}} %. Wenn leer gelassen, wird dieser Wert verwendet.",
+    "expectedCloseDateLabel": "Voraussichtliches Abschlussdatum",
+    "stageLabel": "Phase",
+    "stageReadonlyHint": "Phasenänderungen erfolgen per Drag & Drop auf dem Board.",
+    "stageHint": "Wenn nicht angegeben, ordnet der Server den Deal der ersten aktiven Phase zu.",
+    "statusLabel": "Status",
+    "companyLabel": "Unternehmen",
+    "contactLabel": "Kontakt",
+    "contactHint": "Wenn ein Unternehmen ausgewählt ist, wird die Kontaktliste auf dieses Unternehmen gefiltert.",
+    "contactLoading": "Wird geladen…",
+    "contactNone": "Keine Kontakte",
+    "ownerLabel": "Inhaber",
+    "ownerPlaceholder": "Inhaber auswählen",
+    "validation": {
+      "titleRequired": "Titel ist erforderlich.",
+      "amountRequired": "Betrag ist erforderlich.",
+      "amountInvalid": "Betrag muss eine gültige Zahl sein.",
+      "probabilityRange": "Wahrscheinlichkeit muss zwischen 0 und 100 liegen."
+    }
+  },
+  "customFields": {
+    "sectionTitle": "Benutzerdefinierte Felder",
+    "selectPlaceholder": "Auswählen…",
+    "noOptions": "Keine Optionen definiert."
+  },
+  "tagSelect": {
+    "label": "Tags",
+    "placeholder": "Tags auswählen...",
+    "loading": "Wird geladen…",
+    "empty": "Keine Tags gefunden",
+    "removeAria": "Tag {{name}} entfernen"
+  },
+  "companyCombobox": {
+    "label": "Unternehmen",
+    "placeholder": "Unternehmen suchen...",
+    "clearAria": "Unternehmensauswahl löschen",
+    "clearOption": "Kein Unternehmen / löschen",
+    "loading": "Wird geladen…",
+    "empty": "Keine Ergebnisse gefunden"
+  },
+  "assignOwner": {
+    "title": "Inhaber zuweisen",
+    "description": "Wählen Sie einen Inhaber für {{title}}.",
+    "cancel": "Abbrechen",
+    "submit": "Zuweisen",
+    "ownerLabel": "Inhaber",
+    "ownerPlaceholder": "Inhaber auswählen",
+    "forbidden": "Sie haben keine Berechtigung, auf die Benutzerliste zuzugreifen."
+  },
+  "list": {
+    "breadcrumbHome": "Startseite",
+    "breadcrumbCurrent": "Deals",
+    "title": "Deals",
+    "subtitle_one": "{{count}} Deal",
+    "subtitle_other": "{{count}} Deals",
+    "viewSwitcher": {
+      "aria": "Ansicht",
+      "board": "Board",
+      "list": "Liste"
+    },
+    "newDeal": "Neuer Deal",
+    "searchPlaceholder": "Deal-Titel suchen...",
+    "searchAria": "Deals durchsuchen",
+    "stageFilterAria": "Phasenfilter",
+    "statusFilterAria": "Statusfilter",
+    "ownerFilterAria": "Inhaberfilter",
+    "companyFilterAria": "Unternehmensfilter",
+    "tagFilterAria": "Tag-Filter",
+    "allStages": "Alle Phasen",
+    "allStatuses": "Alle Status",
+    "allOwners": "Alle Inhaber",
+    "allCompanies": "Alle Unternehmen",
+    "allTags": "Alle Tags",
+    "minAmountPlaceholder": "Min. Betrag",
+    "minAmountAria": "Mindestbetrag",
+    "maxAmountPlaceholder": "Max. Betrag",
+    "maxAmountAria": "Höchstbetrag",
+    "fromDateAria": "Startdatum (voraussichtlicher Abschluss)",
+    "toDateAria": "Enddatum (voraussichtlicher Abschluss)",
+    "totals": {
+      "count_one": "{{count}} Eintrag (gefiltert gesamt)",
+      "count_other": "{{count}} Einträge (gefiltert gesamt)",
+      "tooltip": "Gesamt: {{total}} · Gewonnen: {{won}} · Verloren: {{lost}}",
+      "open": "Offener Wert: {{amount}}",
+      "wonLost": "Gewonnen {{won}} · Verloren {{lost}}"
+    },
+    "loadError": "Beim Laden der Deals ist ein Fehler aufgetreten.",
+    "retry": "Erneut versuchen",
+    "empty": {
+      "title": "Keine Deals gefunden",
+      "description": "Kein Deal entspricht Ihren Such- oder Filterkriterien."
+    },
+    "columns": {
+      "title": "Titel",
+      "company": "Unternehmen",
+      "contact": "Kontakt",
+      "stage": "Phase",
+      "status": "Status",
+      "amount": "Betrag",
+      "probability": "Wahrscheinlichkeit",
+      "expectedClose": "Voraussichtlicher Abschluss",
+      "owner": "Inhaber",
+      "tags": "Tags",
+      "actions": "Aktionen"
+    },
+    "actions": {
+      "detail": "Details",
+      "edit": "Bearbeiten",
+      "editLockedTooltip": "Sie sind nicht Inhaber dieses Datensatzes und können ihn daher nicht bearbeiten.",
+      "assign": "Inhaber zuweisen",
+      "delete": "Löschen"
+    },
+    "deleteModal": {
+      "title": "Deal löschen",
+      "description": "Diese Aktion kann nicht rückgängig gemacht werden. Der Deal wird dauerhaft gelöscht.",
+      "cancel": "Abbrechen",
+      "confirm": "Löschen",
+      "confirmText": "Sind Sie sicher, dass Sie den Deal „{{title}}“ löschen möchten?"
+    }
+  },
+  "detail": {
+    "backToList": "Deals",
+    "loadError": "Beim Laden des Deals ist ein Fehler aufgetreten.",
+    "retry": "Erneut versuchen",
+    "wonBanner": "Dieser Deal wurde am {{date}} gewonnen.",
+    "lostBanner": "Dieser Deal wurde am {{date}} verloren.",
+    "noReason": "Kein Grund angegeben.",
+    "showOnBoard": "Im Board anzeigen",
+    "assignOwner": "Inhaber zuweisen",
+    "edit": "Bearbeiten",
+    "editLockedTooltip": "Sie sind nicht Inhaber dieses Datensatzes und können ihn daher nicht bearbeiten.",
+    "delete": "Löschen",
+    "probabilityBadge": "Wahrscheinlichkeit: {{value}} %",
+    "fields": {
+      "company": "Unternehmen",
+      "contact": "Kontakt",
+      "owner": "Inhaber",
+      "expectedClose": "Voraussichtlicher Abschluss"
+    },
+    "unassignedOwner": "Nicht zugewiesen",
+    "overdueSuffix": " (überfällig)",
+    "descriptionLabel": "Beschreibung",
+    "tagsLabel": "Tags",
+    "noTags": "Keine Tags.",
+    "customFieldsTitle": "Benutzerdefinierte Felder",
+    "timeline": {
+      "title": "Kommunikationsverlauf",
+      "notice": "Für Deals gibt es noch keinen eigenen Verlaufs-Endpunkt. Stattdessen können Sie den Verlauf des verknüpften Kontakts oder Unternehmens dieses Deals ansehen.",
+      "viewContact": "Kommunikationsverlauf des Kontakts dieses Deals ansehen",
+      "viewCompany": "Kommunikationsverlauf des Unternehmens dieses Deals ansehen",
+      "none": "Dieser Deal hat keinen verknüpften Kontakt oder Unternehmen."
+    },
+    "deleteModal": {
+      "title": "Deal löschen",
+      "description": "Diese Aktion kann nicht rückgängig gemacht werden. Der Deal wird dauerhaft gelöscht.",
+      "cancel": "Abbrechen",
+      "confirm": "Löschen",
+      "confirmText": "Sind Sie sicher, dass Sie den Deal „{{title}}“ löschen möchten?"
+    }
+  },
+  "toast": {
+    "created": "Deal erstellt.",
+    "updated": "Deal aktualisiert.",
+    "deleted": "Deal gelöscht.",
+    "ownerAssigned": "Inhaberzuweisung aktualisiert."
+  }
+}

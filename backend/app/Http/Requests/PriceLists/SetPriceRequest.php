@@ -24,16 +24,4 @@ class SetPriceRequest extends FormRequest
             'unit_price' => ['required', 'numeric', 'min:0'],
         ];
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'unit_price.required' => 'Birim fiyat zorunludur.',
-            'unit_price.numeric' => 'Birim fiyat sayısal olmalıdır.',
-            'unit_price.min' => 'Birim fiyat negatif olamaz.',
-        ];
-    }
 }

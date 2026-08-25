@@ -8,6 +8,9 @@
 // ÖNEMLİ (`version`): iyimser kilit sayacı. Kart taşınırken sunucuya EKRANDA GÖRÜLEN
 // sürüm gönderilir; sunucudaki farklıysa istek 409 ile reddedilir.
 
+// Faz 14 / İz F — C3 ilişkili-kayıtlar paneli (docs/PHASE-INTL.md §3).
+import type { QuoteRelatedItem, RelatedGroupData } from '../related/types'
+
 export type DealStatus = 'open' | 'won' | 'lost'
 
 /** Backend'in gönderdiği semantik renk adı (`tokenBadgeVariant` ile Badge varyantına çevrilir). */
@@ -91,6 +94,11 @@ export type Deal = {
   tags: DealTag[]
   custom_fields: Record<string, string>
   is_overdue: boolean
+  // Faz 14 / İz F — C3 ilişkili-kayıtlar paneli. `company`/`contact` burada YOK: yukarıdaki
+  // alanlar zaten bu yönleri karşılıyor (bkz. `DealController::loadRelatedRecords()`).
+  related?: {
+    quotes?: RelatedGroupData<QuoteRelatedItem>
+  }
   created_at: string | null
   updated_at: string | null
   can: DealAbilities

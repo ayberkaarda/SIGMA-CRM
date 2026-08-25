@@ -2,6 +2,7 @@
 // Teklif formunun üst bölümündeki "Fırsat" alanı (opsiyonel).
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Briefcase, X } from 'lucide-react'
 import { Input } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
@@ -16,7 +17,9 @@ export type DealComboboxProps = {
   error?: string
 }
 
-export function DealCombobox({ value, onChange, label = 'Fırsat', error }: DealComboboxProps) {
+export function DealCombobox({ value, onChange, label, error }: DealComboboxProps) {
+  const { t } = useTranslation()
+  const resolvedLabel = label ?? t('quotes:dealCombobox.label')
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState('')
   const debouncedDraft = useDebouncedValue(draft, 300)
@@ -51,7 +54,7 @@ export function DealCombobox({ value, onChange, label = 'Fırsat', error }: Deal
   return (
     <div ref={containerRef} className="relative">
       <Input
-        label={label}
+        label={resolvedLabel}
         value={displayValue}
         onChange={(e) => setDraft(e.target.value)}
         onFocus={() => {
@@ -59,7 +62,7 @@ export function DealCombobox({ value, onChange, label = 'Fırsat', error }: Deal
           setOpen(true)
         }}
         onKeyDown={handleKeyDown}
-        placeholder="Fırsat ara..."
+        placeholder={t('quotes:dealCombobox.placeholder')}
         leftIcon={<Briefcase className="size-4" aria-hidden="true" />}
         rightIcon={
           value && !open ? (
@@ -70,7 +73,7 @@ export function DealCombobox({ value, onChange, label = 'Fırsat', error }: Deal
                 e.stopPropagation()
                 handleSelect(null)
               }}
-              aria-label="Fırsat seçimini temizle"
+              aria-label={t('quotes:dealCombobox.clearAria')}
               className="pointer-events-auto text-fg-muted hover:text-fg"
             >
               <X className="size-4" aria-hidden="true" />
@@ -92,12 +95,12 @@ export function DealCombobox({ value, onChange, label = 'Fırsat', error }: Deal
               !value && 'text-fg',
             )}
           >
-            Fırsat yok / temizle
+            {t('quotes:dealCombobox.clearOption')}
           </button>
           {isLoading ? (
-            <p className="px-3 py-2 text-sm text-fg-muted">Yükleniyor…</p>
+            <p className="px-3 py-2 text-sm text-fg-muted">{t('quotes:dealCombobox.loading')}</p>
           ) : (options ?? []).length === 0 ? (
-            <p className="px-3 py-2 text-sm text-fg-muted">Sonuç bulunamadı</p>
+            <p className="px-3 py-2 text-sm text-fg-muted">{t('quotes:dealCombobox.empty')}</p>
           ) : (
             (options ?? []).map((option) => (
               <button

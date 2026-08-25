@@ -1,6 +1,7 @@
 // Firma detay sayfası — özet kart, bağlı kişiler mini tablosu ve zaman çizelgesi.
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import {
   Globe,
   Mail,
@@ -33,11 +34,14 @@ import type { TimelineItem } from '../../../components/shared/Timeline'
 import { usePermission } from '../../auth/hooks/usePermission'
 import { useCompany, useCompanyContacts, useCompanyTimeline, useCustomFields, useDeleteCompany } from '../api/companiesApi'
 import { CompanyFormModal } from '../components/CompanyFormModal'
+import { dealsGroupConfig, quotesGroupConfig, ticketsGroupConfig } from '../../related/adapters'
+import { RelatedRecordsPanel } from '../../related/RelatedRecordsPanel'
 
 const formatCurrency = formatMoney
 const formatNumber = formatNumberShared
 
 export function CompanyDetailPage() {
+  const { t } = useTranslation(['companies', 'common'])
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const companyId = id ? Number(id) : undefined
@@ -84,9 +88,9 @@ export function CompanyDetailPage() {
   if (isError || !company) {
     return (
       <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
-        <p className="text-sm text-fg-muted">Firma yüklenirken bir hata oluştu.</p>
+        <p className="text-sm text-fg-muted">{t('companies:detail.loadError')}</p>
         <Button variant="secondary" onClick={() => refetch()}>
-          Tekrar dene
+          {t('companies:detail.retry')}
         </Button>
       </div>
     )
@@ -97,10 +101,10 @@ export function CompanyDetailPage() {
   return (
     <div className="flex flex-col gap-4">
       <nav aria-label="breadcrumb" className="text-xs text-fg-muted">
-        <span>Anasayfa</span>
+        <span>{t('companies:breadcrumb.home')}</span>
         <span className="mx-1.5">/</span>
         <Link to="/companies" className="hover:text-fg hover:underline">
-          Firmalar
+          {t('companies:breadcrumb.companies')}
         </Link>
         <span className="mx-1.5">/</span>
         <span className="text-primary">{company.name}</span>
@@ -114,20 +118,20 @@ export function CompanyDetailPage() {
             <div className="flex items-center gap-2">
               {can('companies.update') && (
                 <Button variant="secondary" leftIcon={<Pencil className="size-4" aria-hidden="true" />} onClick={() => setEditOpen(true)}>
-                  Düzenle
+                  {t('companies:actions.edit')}
                 </Button>
               )}
               {can('companies.delete') && (
                 <Button variant="danger" leftIcon={<Trash2 className="size-4" aria-hidden="true" />} onClick={() => setConfirmDeleteOpen(true)}>
-                  Sil
+                  {t('companies:actions.delete')}
                 </Button>
               )}
             </div>
           }
         >
           <div className="flex flex-wrap gap-1.5 pt-1">
-            <Badge variant="neutral">{`${company.contacts_count} kişi`}</Badge>
-            <Badge variant="neutral">{`${company.deals_count} fırsat`}</Badge>
+            <Badge variant="neutral">{t('companies:detail.contactsBadge', { count: company.contacts_count })}</Badge>
+            <Badge variant="neutral">{t('companies:detail.dealsBadge', { count: company.deals_count })}</Badge>
           </div>
         </CardHeader>
         <CardBody className="flex flex-col gap-6">
@@ -163,21 +167,28 @@ export function CompanyDetailPage() {
             </div>
             <div className="flex items-center gap-2 text-sm">
               <UsersIcon className="size-4 text-fg-muted" aria-hidden="true" />
-              <span className="text-fg">{formatNumber(company.employee_count)} çalışan</span>
+              <span className="text-fg">
+                {company.employee_count != null
+                  ? t('companies:detail.employeeCount', {
+                      count: company.employee_count,
+                      value: formatNumber(company.employee_count),
+                    })
+                  : formatNumber(company.employee_count)}
+              </span>
             </div>
             <div className="flex flex-col gap-1 text-sm">
-              <span className="text-xs font-medium text-fg-muted">Yıllık Ciro</span>
+              <span className="text-xs font-medium text-fg-muted">{t('companies:detail.annualRevenue')}</span>
               <span className="text-fg">{formatCurrency(company.annual_revenue)}</span>
             </div>
             <div className="flex flex-col gap-1 text-sm">
-              <span className="text-xs font-medium text-fg-muted">Sahip</span>
+              <span className="text-xs font-medium text-fg-muted">{t('companies:detail.owner')}</span>
               <span className="text-fg">{company.owner?.name ?? '—'}</span>
             </div>
           </div>
 
           {company.tags.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-fg-muted">Etiketler</span>
+              <span className="text-xs font-medium text-fg-muted">{t('companies:detail.tags')}</span>
               <div className="flex flex-wrap gap-1.5">
                 {company.tags.map((tag) => (
                   <Badge key={tag.id} variant={tokenBadgeVariant(tag.color)}>
@@ -190,7 +201,7 @@ export function CompanyDetailPage() {
 
           {customFieldEntries.length > 0 && (
             <div className="flex flex-col gap-2">
-              <span className="text-xs font-medium text-fg-muted">Özel Alanlar</span>
+              <span className="text-xs font-medium text-fg-muted">{t('companies:detail.customFields')}</span>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {customFieldEntries.map((field) => (
                   <div key={field.key} className="flex flex-col gap-0.5">
@@ -204,7 +215,7 @@ export function CompanyDetailPage() {
 
           {company.notes && (
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-fg-muted">Notlar</span>
+              <span className="text-xs font-medium text-fg-muted">{t('companies:detail.notes')}</span>
               <p className="whitespace-pre-wrap text-sm text-fg-secondary">{company.notes}</p>
             </div>
           )}
@@ -212,29 +223,32 @@ export function CompanyDetailPage() {
       </Card>
 
       <Card>
-        <CardHeader title="Bağlı Kişiler" subtitle={`${linkedContacts?.length ?? 0} kişi`} />
+        <CardHeader
+          title={t('companies:detail.linkedContactsTitle')}
+          subtitle={t('companies:detail.linkedContactsSubtitle', { count: linkedContacts?.length ?? 0 })}
+        />
         <CardBody noPadding>
           {isContactsError ? (
             <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
-              <p className="text-sm text-fg-muted">Bağlı kişiler yüklenirken bir hata oluştu.</p>
+              <p className="text-sm text-fg-muted">{t('companies:detail.linkedContactsError')}</p>
               <Button variant="secondary" onClick={() => refetchContacts()}>
-                Tekrar dene
+                {t('companies:detail.retry')}
               </Button>
             </div>
           ) : !isContactsLoading && (linkedContacts ?? []).length === 0 ? (
             <EmptyState
               icon={<UsersIcon className="size-6" aria-hidden="true" />}
-              title="Bağlı kişi yok"
-              description="Bu firmaya bağlı kişi yok."
+              title={t('companies:detail.linkedContactsEmptyTitle')}
+              description={t('companies:detail.linkedContactsEmptyDescription')}
             />
           ) : (
             <Table>
               <THead>
                 <Tr>
-                  <Th>Ad Soyad</Th>
-                  <Th>Pozisyon</Th>
-                  <Th>E-posta</Th>
-                  <Th>Telefon</Th>
+                  <Th>{t('companies:detail.columns.fullName')}</Th>
+                  <Th>{t('companies:detail.columns.position')}</Th>
+                  <Th>{t('companies:detail.columns.email')}</Th>
+                  <Th>{t('companies:detail.columns.phone')}</Th>
                 </Tr>
               </THead>
               <TBody aria-busy={isContactsLoading}>
@@ -254,7 +268,7 @@ export function CompanyDetailPage() {
                             <Link to={`/contacts/${contact.id}`} className="text-primary hover:underline">
                               {contact.full_name}
                             </Link>
-                            {contact.is_primary && <Badge variant="primary">Birincil</Badge>}
+                            {contact.is_primary && <Badge variant="primary">{t('companies:detail.primaryBadge')}</Badge>}
                           </div>
                         </Td>
                         <Td>{contact.position ?? '—'}</Td>
@@ -268,11 +282,19 @@ export function CompanyDetailPage() {
         </CardBody>
       </Card>
 
+      <RelatedRecordsPanel
+        groups={[
+          dealsGroupConfig(t, company.related?.deals),
+          quotesGroupConfig(t, company.related?.quotes),
+          ticketsGroupConfig(t, company.related?.tickets),
+        ]}
+      />
+
       <Card>
-        <CardHeader title="Zaman Çizelgesi" />
+        <CardHeader title={t('companies:detail.timelineTitle')} />
         <CardBody className="flex flex-col gap-3">
           <p className="text-xs text-fg-muted">
-            Bu zaman çizelgesi, firmaya bağlı kişilerin etkileşimlerini de içerir.
+            {t('companies:detail.timelineDescription')}
           </p>
           <Timeline
             items={timelineItems}
@@ -282,7 +304,7 @@ export function CompanyDetailPage() {
             hasMore={!!hasNextPage}
             onLoadMore={() => fetchNextPage()}
             isLoadingMore={isFetchingNextPage}
-            emptyDescription="Bu firma için henüz görüntülenecek bir etkileşim yok."
+            emptyDescription={t('companies:detail.timelineEmptyDescription')}
           />
         </CardBody>
       </Card>
@@ -292,12 +314,12 @@ export function CompanyDetailPage() {
       <Modal
         open={confirmDeleteOpen}
         onClose={() => setConfirmDeleteOpen(false)}
-        title="Firmayı sil"
-        description="Bu işlem geri alınamaz. Firma kalıcı olarak silinecek."
+        title={t('companies:deleteModal.title')}
+        description={t('companies:deleteModal.description')}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setConfirmDeleteOpen(false)}>
-              Vazgeç
+              {t('common:actions.cancel')}
             </Button>
             <Button
               variant="danger"
@@ -312,13 +334,17 @@ export function CompanyDetailPage() {
                 navigate('/companies')
               }}
             >
-              Sil
+              {t('companies:actions.delete')}
             </Button>
           </div>
         }
       >
         <p className="text-sm text-fg-secondary">
-          <strong className="text-fg">{company.name}</strong> firmasını silmek istediğinize emin misiniz?
+          <Trans
+            i18nKey="companies:deleteModal.confirmText"
+            values={{ name: company.name }}
+            components={{ bold: <strong className="text-fg" /> }}
+          />
         </p>
       </Modal>
     </div>

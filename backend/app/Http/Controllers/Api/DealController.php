@@ -10,6 +10,7 @@ use App\Http\Requests\Deals\StoreDealRequest;
 use App\Http\Requests\Deals\UpdateDealRequest;
 use App\Http\Resources\DealResource;
 use App\Models\Deal;
+use App\Models\Quote;
 use App\Services\Deals\DealService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
@@ -86,6 +87,8 @@ class DealController extends Controller
 
         $deal = $this->deals->find($deal->id);
 
+        $this->loadRelatedRecords($deal);
+
         return (new DealResource($deal))->response();
     }
 
@@ -118,5 +121,45 @@ class DealController extends Controller
         $deal = $this->deals->assign($deal, (int) $request->validated()['owner_id']);
 
         return (new DealResource($deal))->response();
+    }
+
+    /**
+     * Faz 14 / İz F — C3 çift-yönlü "ilişkili kayıtlar" paneli (docs/PHASE-INTL.md
+     * §3). `fırsat ↔ firma` ve `fırsat ↔ kişi` burada TEKRARLANMADI: `company`/
+     * `contact` alanları zaten var (bkz. DealResource) ve ters yön
+     * (`firma → fırsatlar`, `kişi → fırsatlar`) sırasıyla
+     * CompanyController/ContactController::loadRelatedRecords()'ta ekleniyor.
+     * Burada YENİ eklenen tek şey `fırsat → teklifler`: Deal modelinde
+     * `quotes()` ilişkisi YOK (Models dosya sahipliği dışında), bunun yerine
+     * `Quote::where('deal_id', ...)` ile tek ek sorgu. Ters yön
+     * (`Quote → deal`) BASILMAZ — `QuoteDetailPage` `Bağlanacak sayfalar`
+     * listesinde yok, `QuoteController`/`QuoteResource` bu şeridin dosya
+     * sahipliğinde değil.
+     *
+     * Yetki: `quotes.view` (`Gate::allows('viewAny', Quote::class)`) yoksa
+     * anahtar hiç eklenmez.
+     */
+    private function loadRelatedRecords(Deal $deal): void
+    {
+        if (Gate::allows('viewAny', Quote::class)) {
+            $quotesQuery = Quote::query()->where('deal_id', $deal->id);
+
+            $deal->setRelation('relatedQuotes', [
+                'total' => (clone $quotesQuery)->count(),
+                'items' => $quotesQuery
+                    ->select(['id', 'quote_number', 'title', 'status', 'total', 'currency'])
+                    ->latest('id')
+                    ->limit(5)
+                    ->get()
+                    ->map(fn (Quote $quote) => [
+                        'id' => $quote->id,
+                        'quote_number' => $quote->quote_number,
+                        'title' => $quote->title,
+                        'status' => $quote->status,
+                        'total' => (float) $quote->total,
+                        'currency' => $quote->currency,
+                    ])->all(),
+            ]);
+        }
     }
 }

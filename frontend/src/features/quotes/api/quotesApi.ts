@@ -8,6 +8,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import axios, { type AxiosRequestConfig } from 'axios'
 import { api, getErrorMessage } from '../../../lib/axios'
 import { toast } from '../../../components/ui'
+import i18n from '../../../i18n'
 import type {
   DiscountType,
   Quote,
@@ -213,7 +214,7 @@ export function useCreateQuote() {
     mutationFn: createQuoteRequest,
     onSuccess: (quote) => {
       invalidateQuoteCaches(queryClient, quote.id)
-      toast.success('Teklif oluşturuldu.')
+      toast.success(i18n.t('quotes:toast.created'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -225,7 +226,7 @@ export function useUpdateQuote() {
     mutationFn: ({ id, payload }: { id: number; payload: Partial<QuotePayload> }) => updateQuoteRequest(id, payload),
     onSuccess: (quote) => {
       invalidateQuoteCaches(queryClient, quote.id)
-      toast.success('Teklif güncellendi.')
+      toast.success(i18n.t('quotes:toast.updated'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -237,7 +238,7 @@ export function useDeleteQuote() {
     mutationFn: (id: number) => deleteQuoteRequest(id),
     onSuccess: () => {
       invalidateQuoteCaches(queryClient)
-      toast.success('Teklif silindi.')
+      toast.success(i18n.t('quotes:toast.deleted'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -249,7 +250,7 @@ export function useSendQuote() {
     mutationFn: (id: number) => sendQuoteRequest(id),
     onSuccess: (quote) => {
       invalidateQuoteCaches(queryClient, quote.id)
-      toast.success('Teklif gönderildi.')
+      toast.success(i18n.t('quotes:toast.sent'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -262,7 +263,7 @@ export function useChangeQuoteStatus() {
       changeQuoteStatusRequest(id, status, reason),
     onSuccess: (quote) => {
       invalidateQuoteCaches(queryClient, quote.id)
-      toast.success('Teklif durumu güncellendi.')
+      toast.success(i18n.t('quotes:toast.statusChanged'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -275,7 +276,7 @@ export function useReviseQuote() {
     onSuccess: (revised, originalId) => {
       invalidateQuoteCaches(queryClient, revised.id)
       invalidateQuoteCaches(queryClient, originalId)
-      toast.success(`Revizyon oluşturuldu: ${revised.quote_number}`)
+      toast.success(i18n.t('quotes:toast.revised', { number: revised.quote_number }))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })

@@ -212,3 +212,133 @@ export type RoleUpdateResult = {
   name: string
   permissions: string[]
 }
+
+// ---------------------------------------------------------------------------
+// Kur (döviz) — Faz 14 / İz E (docs/PHASE-INTL.md §2.1, §2.6)
+// ---------------------------------------------------------------------------
+
+/** Desteklenen üç yabancı para birimi. TRY temel para birimidir, burada hiç yer almaz
+ *  (backend'de de satırı yok — bkz. `ExchangeRateResource`). */
+export type SupportedCurrency = 'USD' | 'EUR' | 'GBP'
+
+/** `ExchangeRateResource` — bir para biriminin EN GÜNCEL kur satırı. `is_stale`/`days_stale`
+ *  SUNUCUDA hesaplanır (bkz. backend docblock); istemci eşiği kendi başına tekrarlamaz. */
+export type ExchangeRate = {
+  currency: SupportedCurrency
+  rate: string
+  unit: number
+  rate_date: string
+  source: 'tcmb' | 'manual'
+  entered_by: number | null
+  is_stale: boolean
+  days_stale: number
+}
+
+/** `GET /api/settings/exchange-rates` bir satırı — henüz hiç kur girilmemiş bir para birimi
+ *  için `rate: null` gelir (satır sessizce ATLANMAZ, bkz. backend docblock). */
+export type ExchangeRateRow = {
+  currency: SupportedCurrency
+  rate: ExchangeRate | null
+}
+
+export type ExchangeRatesResponse = {
+  data: ExchangeRateRow[]
+  meta: {
+    base_currency: string
+    supported_currencies: SupportedCurrency[]
+    stale_threshold_days: number
+  }
+}
+
+/** `POST /api/settings/exchange-rates` gövdesi — manuel giriş/düzeltme. `rate` metin olarak
+ *  gönderilir (backend `numeric` bekler, sunucu tarafında decimal string'e çevrilir). */
+export type ManualExchangeRatePayload = {
+  currency: SupportedCurrency
+  rate: string
+  rate_date: string
+}
+
+// ---------------------------------------------------------------------------
+// Otomasyon kuralları — Faz 14 / İz F, Attio C4 (docs/PHASE-INTL.md §3)
+// ---------------------------------------------------------------------------
+
+/** SABİT katalog — backend `App\Services\Automation\AutomationCatalog`'un birebir
+ *  aynası. Keyfi kod/ifade dili YOK; yeni bir değer eklemek her iki tarafta da
+ *  bilinçli bir değişiklik gerektirir. */
+export type AutomationTriggerType = 'deal.stage_changed' | 'deal.status_changed' | 'ticket.created'
+export type AutomationActionType = 'task.create' | 'notification.send' | 'deal.assign_owner'
+
+export type AutomationAssigneeType = 'record_owner' | 'fixed_user'
+
+export type DealStageChangedTriggerConfig = { pipeline_stage_id: number | null }
+export type DealStatusChangedTriggerConfig = { status: 'won' | 'lost' | null }
+export type TicketCreatedTriggerConfig = { priority: 'low' | 'normal' | 'high' | 'urgent' | null }
+
+/** Tetikleyiciye göre değişen `trigger_config` şekli — form tarafı `trigger_type`'a göre
+ *  hangi alanları gösterip gönderdiğine kendi karar verir, burada yalnızca birleşim tipi var. */
+export type AutomationTriggerConfig =
+  | DealStageChangedTriggerConfig
+  | DealStatusChangedTriggerConfig
+  | TicketCreatedTriggerConfig
+  | Record<string, unknown>
+
+export type TaskCreateActionConfig = {
+  title_template: string
+  assignee_type: AutomationAssigneeType
+  assignee_user_id: number | null
+  due_in_days: number
+}
+export type NotificationSendActionConfig = {
+  message_template: string
+  recipient_type: AutomationAssigneeType
+  recipient_user_id: number | null
+}
+export type DealAssignOwnerActionConfig = { user_id: number | null }
+
+export type AutomationActionConfig =
+  | TaskCreateActionConfig
+  | NotificationSendActionConfig
+  | DealAssignOwnerActionConfig
+  | Record<string, unknown>
+
+export type AutomationRule = {
+  id: number
+  name: string
+  is_active: boolean
+  trigger_type: AutomationTriggerType
+  trigger_config: Record<string, unknown>
+  action_type: AutomationActionType
+  action_config: Record<string, unknown>
+  created_by: number
+  creator_name: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type AutomationRulesMeta = {
+  triggers: AutomationTriggerType[]
+  actions: AutomationActionType[]
+  /** Başlık/mesaj şablonlarında izin verilen TEK placeholder kümesi (sunucu otorite) —
+   *  serbest metin alanı YOK, yalnızca bu adlar `{ad}` biçiminde kullanılabilir. */
+  title_placeholders: string[]
+}
+
+export type AutomationRulesResponse = {
+  data: AutomationRule[]
+  meta: AutomationRulesMeta
+}
+
+/** `POST /api/settings/automation-rules` gövdesi. */
+export type AutomationRuleCreatePayload = {
+  name: string
+  is_active?: boolean
+  trigger_type: AutomationTriggerType
+  trigger_config: Record<string, unknown>
+  action_type: AutomationActionType
+  action_config: Record<string, unknown>
+}
+
+/** `PATCH /api/settings/automation-rules/{id}` gövdesi — `trigger_type`/`trigger_config`/
+ *  `action_type`/`action_config`'ten BİRİ gönderiliyorsa (config değişikliği) sunucu HEPSİNİ
+ *  ister; yalnız `is_active`/`name` bağımsız güncellenebilir (bkz. backend docblock). */
+export type AutomationRuleUpdatePayload = Partial<AutomationRuleCreatePayload>

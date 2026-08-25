@@ -9,25 +9,20 @@
 // uzun sütunlarda bırakma hedefi kaymış rect'lere göre hesaplanır.
 import { DndContext, DragOverlay, MeasuringStrategy, closestCorners } from '@dnd-kit/core'
 import type { Announcements, ScreenReaderInstructions } from '@dnd-kit/core'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { parseColumnId } from '../../hooks/useDealBoard'
 import { BoardStageColumn } from './BoardStageColumn'
 import { DealCardPreview } from './DealBoardCard'
 import type { UseDealBoardResult } from '../../hooks/useDealBoard'
 import type { BoardResponse } from '../../types'
 
-const screenReaderInstructions: ScreenReaderInstructions = {
-  draggable:
-    'Bir fırsat kartını klavyeyle taşımak için boşluk veya enter tuşuna basarak kartı alın. ' +
-    'Ok tuşlarıyla kartı aşamalar arasında ve aşama içinde taşıyın. ' +
-    'Bırakmak için tekrar boşluk veya enter tuşuna, iptal etmek için escape tuşuna basın.',
-}
-
-function cardTitle(board: BoardResponse, id: string | number): string {
+function cardTitle(board: BoardResponse, id: string | number, t: TFunction): string {
   for (const column of board.data) {
     const deal = column.deals.find((entry) => String(entry.id) === String(id))
     if (deal) return deal.title
   }
-  return 'Kart'
+  return t('board.announcements.defaultCardName')
 }
 
 function stageName(board: BoardResponse, overId: string | number | undefined): string | null {
@@ -58,23 +53,29 @@ export function DealBoard({
   onCreate,
   recentlyMoved,
 }: DealBoardProps) {
+  const { t } = useTranslation('deals')
+
+  const screenReaderInstructions: ScreenReaderInstructions = {
+    draggable: t('board.announcements.keyboardInstructions'),
+  }
+
   const announcements: Announcements = {
     onDragStart: ({ active }) =>
-      `${cardTitle(board, active.id)} kartı alındı. Ok tuşlarıyla taşıyın.`,
+      t('board.announcements.pickedUp', { title: cardTitle(board, active.id, t) }),
     onDragOver: ({ active, over }) => {
       const stage = stageName(board, over?.id)
       return stage
-        ? `${cardTitle(board, active.id)} kartı ${stage} aşamasının üzerinde.`
-        : `${cardTitle(board, active.id)} kartı bırakılabilir bir alanın dışında.`
+        ? t('board.announcements.overStage', { title: cardTitle(board, active.id, t), stage })
+        : t('board.announcements.overNone', { title: cardTitle(board, active.id, t) })
     },
     onDragEnd: ({ active, over }) => {
       const stage = stageName(board, over?.id)
       return stage
-        ? `${cardTitle(board, active.id)} kartı ${stage} aşamasına bırakıldı.`
-        : `${cardTitle(board, active.id)} kartı eski konumuna geri alındı.`
+        ? t('board.announcements.droppedOnStage', { title: cardTitle(board, active.id, t), stage })
+        : t('board.announcements.droppedBack', { title: cardTitle(board, active.id, t) })
     },
     onDragCancel: ({ active }) =>
-      `${cardTitle(board, active.id)} kartının taşınması iptal edildi.`,
+      t('board.announcements.cancelled', { title: cardTitle(board, active.id, t) }),
   }
 
   return (

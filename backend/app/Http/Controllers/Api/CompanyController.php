@@ -9,6 +9,9 @@ use App\Http\Requests\Companies\UpdateCompanyRequest;
 use App\Http\Resources\CompanyResource;
 use App\Http\Resources\TimelineItemResource;
 use App\Models\Company;
+use App\Models\Deal;
+use App\Models\Quote;
+use App\Models\Ticket;
 use App\Services\Companies\CompanyService;
 use App\Services\Shared\TimelineBuilder;
 use Illuminate\Http\JsonResponse;
@@ -57,11 +60,15 @@ class CompanyController extends Controller
             ->setStatusCode(Response::HTTP_CREATED);
     }
 
-    public function show(Company $company): JsonResponse
+    public function show(Request $request, Company $company): JsonResponse
     {
         Gate::authorize('view', $company);
 
-        return (new CompanyResource($this->companies->find($company->id)))->response();
+        $company = $this->companies->find($company->id);
+
+        $this->loadRelatedRecords($company);
+
+        return (new CompanyResource($company))->response();
     }
 
     public function update(UpdateCompanyRequest $request, Company $company): JsonResponse
@@ -102,5 +109,105 @@ class CompanyController extends Controller
                 ],
             ],
         ]);
+    }
+
+    /**
+     * =========================================================================
+     * Faz 14 / İz F — C3 çift-yönlü "ilişkili kayıtlar" paneli (docs/PHASE-INTL.md
+     * §3, docs/PHASE-AUDIT.md §5.1 C3 satırı)
+     * =========================================================================
+     *
+     * `firma ↔ kişiler` BURADA TEKRAR AÇILMADI: `CompanyDetailPage` zaten
+     * `useCompanyContacts` ile `GET /api/contacts?filter[company_id]=` üstünden
+     * tam bir bağlı-kişiler tablosu çiziyor (mevcut `ContactController::index`
+     * + `ContactPolicy::viewAny` ile zaten yetki filtreli). Aynı veriyi ikinci
+     * kez, daha zayıf bir "ilk N" özetiyle burada tekrarlamak yalnızca
+     * tutarsızlık riski katardı — bu yön ZATEN kapalı.
+     *
+     * `firma → fırsatlar` / `firma → destek talepleri`: Company modelinde
+     * gerçek `deals()`/`tickets()` HasMany ilişkileri var, doğrudan onlar
+     * kullanılıyor.
+     *
+     * `firma → teklifler`: Company modelinde `quotes()` ilişkisi YOK (bu
+     * şeridin dosya listesi `app/Models/**`'i kapsamıyor, eklenemedi) — bunun
+     * yerine `Quote::where('company_id', ...)` ile TEK ek sorgu. Teklifin
+     * KENDİ tarafından (`Quote → company`) ters yön BASILMAZ: `QuoteResource`/
+     * `QuoteController` bu şeridin dosya sahipliğinde değil ve
+     * `Bağlanacak sayfalar` listesinde `QuoteDetailPage` yok.
+     *
+     * Yetki: her grup yalnızca ilgili modülün `viewAny` Policy'si (=`*.view`
+     * izni) `true` dönerse yüklenir; aksi halde `relationLoaded()` false
+     * kalır ve `CompanyResource` o anahtarı yanıta HİÇ KOYMAZ (bkz.
+     * `ContactPolicy`/`TicketPolicy`/`QuotePolicy` — hepsi düz `*.view`,
+     * kayıt bazlı ek kısıt yok, bu yüzden viewAny yeterli).
+     *
+     * N+1: kayıt başına DEĞİL, grup başına sabit 2 sorgu (count + limitli
+     * get) — bu tek bir `show()` çağrısı olduğu için zaten sabit, ama Faz 13
+     * H-serisi disipliniyle aynı desen izlendi.
+     *
+     * `setRelation()` gerçek bir Eloquent ilişkisi olmayan `quotes` için de
+     * KASITLI kullanıldı: `CompanyResource`'un tüm alanları taklit ettiği
+     * `relationLoaded()`/`whenLoaded()` deseniyle birebir aynı okunsun diye
+     * (gerçek ilişkilerle sahte "ilişki" arasında Resource katmanında görünür
+     * bir fark YOK).
+     */
+    private function loadRelatedRecords(Company $company): void
+    {
+        if (Gate::allows('viewAny', Deal::class)) {
+            $company->setRelation('relatedDeals', [
+                'total' => $company->deals()->count(),
+                'items' => $company->deals()
+                    ->select(['id', 'title', 'amount', 'currency', 'status'])
+                    ->latest('id')
+                    ->limit(5)
+                    ->get()
+                    ->map(fn (Deal $deal) => [
+                        'id' => $deal->id,
+                        'title' => $deal->title,
+                        'amount' => (float) $deal->amount,
+                        'currency' => $deal->currency,
+                        'status' => $deal->status,
+                    ])->all(),
+            ]);
+        }
+
+        if (Gate::allows('viewAny', Quote::class)) {
+            $quotesQuery = Quote::query()->where('company_id', $company->id);
+
+            $company->setRelation('relatedQuotes', [
+                'total' => (clone $quotesQuery)->count(),
+                'items' => $quotesQuery
+                    ->select(['id', 'quote_number', 'title', 'status', 'total', 'currency'])
+                    ->latest('id')
+                    ->limit(5)
+                    ->get()
+                    ->map(fn (Quote $quote) => [
+                        'id' => $quote->id,
+                        'quote_number' => $quote->quote_number,
+                        'title' => $quote->title,
+                        'status' => $quote->status,
+                        'total' => (float) $quote->total,
+                        'currency' => $quote->currency,
+                    ])->all(),
+            ]);
+        }
+
+        if (Gate::allows('viewAny', Ticket::class)) {
+            $company->setRelation('relatedTickets', [
+                'total' => $company->tickets()->count(),
+                'items' => $company->tickets()
+                    ->select(['id', 'ticket_number', 'subject', 'status', 'priority'])
+                    ->latest('id')
+                    ->limit(5)
+                    ->get()
+                    ->map(fn (Ticket $ticket) => [
+                        'id' => $ticket->id,
+                        'ticket_number' => $ticket->ticket_number,
+                        'subject' => $ticket->subject,
+                        'status' => $ticket->status,
+                        'priority' => $ticket->priority,
+                    ])->all(),
+            ]);
+        }
     }
 }

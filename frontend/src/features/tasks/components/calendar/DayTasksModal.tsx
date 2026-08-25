@@ -3,8 +3,11 @@
 // `TaskFormModal`'ı o tarihle önceden doldurulmuş açar (bkz. görev tanımı).
 import { Link } from 'react-router-dom'
 import { CalendarPlus, Pencil, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Avatar, Button, Checkbox, Modal } from '../../../../components/ui'
 import { cn } from '../../../../lib/cn'
+import { formatTime } from '../../../../lib/datetime'
+import { getIntlLocale } from '../../../../i18n'
 import { usePermission } from '../../../auth/hooks/usePermission'
 import { PriorityBadge } from '../PriorityBadge'
 import { relatedRecordMeta } from '../relatedRecordMeta'
@@ -22,15 +25,6 @@ export type DayTasksModalProps = {
   completingIds: Set<number>
 }
 
-function formatTime(iso: string | null): string {
-  if (!iso) return '—'
-  try {
-    return new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
-  } catch {
-    return '—'
-  }
-}
-
 export function DayTasksModal({
   open,
   onClose,
@@ -42,9 +36,10 @@ export function DayTasksModal({
   onToggleComplete,
   completingIds,
 }: DayTasksModalProps) {
+  const { t } = useTranslation('tasks')
   const { can } = usePermission()
   const title = date
-    ? new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' }).format(date)
+    ? new Intl.DateTimeFormat(getIntlLocale(), { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' }).format(date)
     : ''
 
   return (
@@ -52,24 +47,24 @@ export function DayTasksModal({
       open={open}
       onClose={onClose}
       title={title}
-      description={`${tasks.length} görev`}
+      description={t('dayModal.taskCount', { count: tasks.length })}
       size="md"
       footer={
         can('tasks.create') ? (
           <div className="flex justify-end">
             <Button leftIcon={<CalendarPlus className="size-4" aria-hidden="true" />} onClick={onAddNew}>
-              Görev Ekle
+              {t('dayModal.addTask')}
             </Button>
           </div>
         ) : undefined
       }
     >
       {tasks.length === 0 ? (
-        <p className="py-6 text-center text-sm text-fg-muted">Bu gün için görev yok.</p>
+        <p className="py-6 text-center text-sm text-fg-muted">{t('dayModal.empty')}</p>
       ) : (
         <ul className="flex flex-col divide-y divide-border-subtle">
           {tasks.map((task) => {
-            const meta = task.taskable ? relatedRecordMeta(task.taskable.type) : null
+            const meta = task.taskable ? relatedRecordMeta(task.taskable.type, t) : null
             const Icon = meta?.icon
             const isCompleting = completingIds.has(task.id)
             return (
@@ -82,8 +77,8 @@ export function DayTasksModal({
                       checked={task.status === 'completed'}
                       disabled={task.status === 'cancelled' || isCompleting || !task.can.complete}
                       onChange={(e) => onToggleComplete(task, e.target.checked)}
-                      aria-label={`${task.title} tamamlandı`}
-                      title={task.can.complete ? undefined : 'Bu görevin sahibi değilsiniz, tamamlayamazsınız.'}
+                      aria-label={t('row.completeAria', { title: task.title })}
+                      title={task.can.complete ? undefined : t('row.completeDisabledTitle')}
                     />
                   </div>
                 )}
@@ -119,8 +114,8 @@ export function DayTasksModal({
                       type="button"
                       onClick={() => onEdit(task)}
                       disabled={!task.can.update}
-                      aria-label="Düzenle"
-                      title={task.can.update ? 'Düzenle' : 'Bu görevin sahibi değilsiniz, düzenleyemezsiniz.'}
+                      aria-label={t('row.edit')}
+                      title={task.can.update ? t('row.edit') : t('row.editDisabledTitle')}
                       className={cn(
                         'inline-flex size-7 items-center justify-center rounded-md text-fg-muted hover:bg-surface-2 hover:text-fg',
                         'disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-fg-muted'
@@ -134,8 +129,8 @@ export function DayTasksModal({
                     <button
                       type="button"
                       onClick={() => onDelete(task)}
-                      aria-label="Sil"
-                      title="Sil"
+                      aria-label={t('row.delete')}
+                      title={t('row.delete')}
                       className="inline-flex size-7 items-center justify-center rounded-md text-fg-muted hover:bg-surface-2 hover:text-danger"
                     >
                       <Trash2 className="size-3.5" aria-hidden="true" />

@@ -4,6 +4,8 @@
 // sekme değişince o sekmeye özel filtreler (`group_by`, `user_id`) sıfırlanır ama ortak tarih
 // aralığı korunur.
 import { useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { Card, CardBody, CardHeader, Tab, TabList, TabPanel, Tabs } from '../../../components/ui'
 import { usePermission } from '../../auth/hooks/usePermission'
 import { DateRangeFilter } from '../components/DateRangeFilter'
@@ -17,14 +19,17 @@ import type { ReportSlug, SalesPerformanceGroupBy } from '../types'
 
 const VALID_TABS: ReportSlug[] = ['sales-performance', 'user-performance', 'source-analysis', 'conversion']
 
-const TAB_LABELS: Record<ReportSlug, string> = {
-  'sales-performance': 'Satış Performansı',
-  'user-performance': 'Kullanıcı Performansı',
-  'source-analysis': 'Kaynak Analizi',
-  conversion: 'Dönüşüm',
+function tabLabels(t: TFunction): Record<ReportSlug, string> {
+  return {
+    'sales-performance': t('reports:tabs.salesPerformance'),
+    'user-performance': t('reports:tabs.userPerformance'),
+    'source-analysis': t('reports:tabs.sourceAnalysis'),
+    conversion: t('reports:tabs.conversion'),
+  }
 }
 
 export function ReportsPage() {
+  const { t } = useTranslation('reports')
   const [searchParams, setSearchParams] = useSearchParams()
   const { can } = usePermission()
   const fallback = defaultDateRange()
@@ -70,12 +75,14 @@ export function ReportsPage() {
       ? { ...dateRange, group_by: groupBy, user_id: userId ? Number(userId) : undefined }
       : dateRange
 
+  const TAB_LABELS = tabLabels(t)
+
   return (
     <div className="flex flex-col gap-4">
       <nav aria-label="breadcrumb" className="text-xs text-fg-muted">
-        <span>Anasayfa</span>
+        <span>{t('reports:breadcrumb.home')}</span>
         <span className="mx-1.5">/</span>
-        <span className="text-primary">Raporlar</span>
+        <span className="text-primary">{t('reports:breadcrumb.reports')}</span>
       </nav>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -84,7 +91,7 @@ export function ReportsPage() {
       </div>
 
       <Card>
-        <CardHeader title="Raporlar" subtitle="Satış performansını, kullanıcı ve kaynak dağılımını inceleyin" />
+        <CardHeader title={t('reports:page.title')} subtitle={t('reports:page.subtitle')} />
 
         <Tabs value={tab} onValueChange={switchTab}>
           <TabList className="px-5 pt-3">

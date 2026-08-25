@@ -39,21 +39,6 @@ class IndexProductRequest extends FormRequest
     }
 
     /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'per_page.max' => 'Sayfa başına kayıt sayısı en fazla :max olabilir.',
-            'filter.tag_id.exists' => 'Seçilen etiket filtresi geçerli değil.',
-            'filter.is_active.boolean' => 'Aktiflik filtresi yalnızca 0 veya 1 olabilir.',
-            'filter.price_min.numeric' => 'Minimum fiyat sayısal olmalıdır.',
-            'filter.price_max.numeric' => 'Maksimum fiyat sayısal olmalıdır.',
-            'filter.in_stock.boolean' => 'Stok filtresi yalnızca 0 veya 1 olabilir.',
-        ];
-    }
-
-    /**
      * Repository/Service katmanının beklediği düz filtre dizisini üretir.
      *
      * @return array<string, mixed>

@@ -18,6 +18,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { getEcho, onConnectionStateChange } from '../../../lib/echo'
 import type { EchoConnectionState } from '../../../lib/echo'
 import { toast } from '../../../components/ui'
+import i18n from '../../../i18n'
 import { useAuthStore } from '../../auth/store'
 import { notificationsKeys } from './useNotifications'
 import { useNotificationStore } from '../store'
@@ -74,7 +75,7 @@ export function useNotificationSocket(): UseNotificationSocketResult {
         toast(payload.title, {
           description: payload.body,
           action: {
-            label: 'Görüntüle',
+            label: i18n.t('common:actions.view'),
             onClick: () => navigate(payload.link),
           },
         })

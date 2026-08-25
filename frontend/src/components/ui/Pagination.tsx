@@ -3,6 +3,7 @@
 import { forwardRef } from 'react'
 import type { HTMLAttributes } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '../../lib/cn'
 
 export type PaginationProps = {
@@ -38,6 +39,7 @@ function buildPageList(currentPage: number, totalPages: number): Array<number | 
 
 export const Pagination = forwardRef<HTMLElement, PaginationProps>(
   ({ className, currentPage, totalItems, pageSize, onPageChange, showSummary = true, ...props }, ref) => {
+    const { t } = useTranslation('common')
     const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
     const clampedPage = Math.min(Math.max(currentPage, 1), totalPages)
     const rangeStart = totalItems === 0 ? 0 : (clampedPage - 1) * pageSize + 1
@@ -52,13 +54,13 @@ export const Pagination = forwardRef<HTMLElement, PaginationProps>(
     return (
       <nav
         ref={ref}
-        aria-label="Sayfalama"
+        aria-label={t('pagination.aria')}
         className={cn('flex flex-wrap items-center justify-between gap-3', className)}
         {...props}
       >
         {showSummary && (
           <p className="text-sm text-fg-muted">
-            {rangeStart} - {rangeEnd} arası, toplam {totalItems} kayıt
+            {t('pagination.summary', { from: rangeStart, to: rangeEnd, total: totalItems })}
           </p>
         )}
         <div className="flex items-center gap-1">
@@ -66,7 +68,7 @@ export const Pagination = forwardRef<HTMLElement, PaginationProps>(
             type="button"
             onClick={() => goTo(clampedPage - 1)}
             disabled={clampedPage === 1}
-            aria-label="Önceki sayfa"
+            aria-label={t('pagination.previous')}
             className={cn(
               'inline-flex size-8 items-center justify-center rounded-md text-fg-muted',
               'hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent',
@@ -104,7 +106,7 @@ export const Pagination = forwardRef<HTMLElement, PaginationProps>(
             type="button"
             onClick={() => goTo(clampedPage + 1)}
             disabled={clampedPage === totalPages}
-            aria-label="Sonraki sayfa"
+            aria-label={t('pagination.next')}
             className={cn(
               'inline-flex size-8 items-center justify-center rounded-md text-fg-muted',
               'hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent',

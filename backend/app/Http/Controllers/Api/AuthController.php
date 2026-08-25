@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ChangePasswordRequest;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\UpdatePreferencesRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\Auth\AuthService;
@@ -73,6 +74,35 @@ class AuthController extends Controller
         );
 
         return UserResource::make($user)->response()->setStatusCode(200);
+    }
+
+    /**
+     * PATCH /api/me/preferences
+     *
+     * Kişisel arayüz tercihleri (`locale`, `preferred_currency`) — Faz 14 / İz D.
+     *
+     * NEDEN BURADA, `SettingController` ya da `UserController` DEĞİL: `/settings` uygulama
+     * geneli ayardır ve `settings.manage` izni ister; `/users/{user}` yönetici işlemidir ve
+     * `users.update` ister. Kendi dilini seçmek İZİN GEREKTİRMEZ — bu uç, kimlik ucuyla
+     * (`/me`) aynı ailedendir: özne her zaman `$request->user()`'dır, gövdeden gelen bir
+     * kullanıcı kimliği YOKTUR, dolayısıyla başkasının tercihini yazma yüzeyi de yoktur.
+     *
+     * Rota `password.changed` grubunun İÇİNDEDİR (muafiyet beyaz listesine EKLENMEDİ):
+     * zorunlu şifre değişimi ekranında dil değiştirmek yine mümkündür — seçim localStorage'da
+     * anında etkilidir, sunucuya yazma o adımın bitmesini bekler. Muafiyet listesi bilinçli
+     * olarak dar tutulur (bkz. routes/api.php).
+     *
+     * Servis katmanı YOK (bilinçli): iş kuralı, doğrulanmış iki alanı yazmaktan ibarettir;
+     * `AuthService`'e bir metod eklemek burada yalnızca dolaylılık üretirdi.
+     */
+    public function updatePreferences(UpdatePreferencesRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $user->fill($request->validated())->save();
+
+        return UserResource::make($user->loadMissing('roles'))->response();
     }
 
     /**

@@ -1,9 +1,10 @@
 // Aylık takvim ızgarası — kendi düzenimiz (harici takvim kütüphanesi YOK, bkz. görev tanımı).
 // Tasarım deseni `docs/DESIGN-SYSTEM.md` §7 "Takvim": ay navigasyonu, hafta günü başlıkları, gün
 // hücreleri (hafta sonu hafifçe ayrışır), bugünün hücresi belirgin.
+import { useTranslation } from 'react-i18next'
 import { cn } from '../../../../lib/cn'
 import { PRIORITY_DOT_CLASS } from '../priorityMeta'
-import { WEEKDAY_LABELS } from './calendarUtils'
+import { WEEKDAY_KEYS } from './calendarUtils'
 import type { CalendarDay } from './calendarUtils'
 import type { Task } from '../../types'
 
@@ -16,18 +17,19 @@ export type CalendarGridProps = {
 }
 
 export function CalendarGrid({ days, tasksByDay, onDayClick }: CalendarGridProps) {
+  const { t } = useTranslation('tasks')
   return (
     <div className="flex flex-col gap-px overflow-hidden rounded-lg border border-border-subtle bg-border-subtle">
       <div className="grid grid-cols-7 gap-px">
-        {WEEKDAY_LABELS.map((label, index) => (
+        {WEEKDAY_KEYS.map((key, index) => (
           <div
-            key={label}
+            key={key}
             className={cn(
               'bg-surface-1 px-2 py-2 text-center text-xs font-medium text-fg-muted',
               index >= 5 && 'text-fg-secondary'
             )}
           >
-            {label}
+            {t(`calendar.weekday.${key}`)}
           </div>
         ))}
       </div>
@@ -78,7 +80,9 @@ export function CalendarGrid({ days, tasksByDay, onDayClick }: CalendarGridProps
                     <span className="truncate">{task.title}</span>
                   </span>
                 ))}
-                {overflow > 0 && <span className="px-1 text-xs text-fg-muted">+{overflow} daha</span>}
+                {overflow > 0 && (
+                  <span className="px-1 text-xs text-fg-muted">{t('calendar.overflowMore', { count: overflow })}</span>
+                )}
               </div>
             </button>
           )

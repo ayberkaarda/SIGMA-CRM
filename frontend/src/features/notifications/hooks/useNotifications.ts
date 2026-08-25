@@ -4,6 +4,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getErrorMessage } from '../../../lib/axios'
 import { toast } from '../../../components/ui'
+import i18n from '../../../i18n'
 import {
   deleteNotificationRequest,
   fetchNotifications,
@@ -62,7 +63,7 @@ export function useMarkAllRead() {
     mutationFn: markAllNotificationsReadRequest,
     onSuccess: () => {
       invalidateNotificationCaches(queryClient)
-      toast.success('Tüm bildirimler okundu olarak işaretlendi.')
+      toast.success(i18n.t('notifications:toast.markAllReadSuccess'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -74,7 +75,7 @@ export function useDeleteNotification() {
     mutationFn: (id: string) => deleteNotificationRequest(id),
     onSuccess: () => {
       invalidateNotificationCaches(queryClient)
-      toast.success('Bildirim silindi.')
+      toast.success(i18n.t('notifications:toast.deleteSuccess'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })

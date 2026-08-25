@@ -1,6 +1,7 @@
 // Ortak filtre çubuğu — dört sekmede de aynı: kullanıcı, tarih aralığı, serbest arama.
 // Sekmeye özel ek filtreler (olay tipi, varlık tipi) `children` ile enjekte edilir.
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Search } from 'lucide-react'
 import { Input, Select } from '../../../components/ui'
 import type { LogUserOption } from '../types'
@@ -32,8 +33,10 @@ export function LogsFilterBar({
   onToChange,
   children,
 }: LogsFilterBarProps) {
+  const { t } = useTranslation('logs')
+
   const userSelectOptions = [
-    { value: '', label: 'Tüm kullanıcılar' },
+    { value: '', label: t('logs:filterBar.allUsers') },
     ...userOptions.map((user) => ({
       value: String(user.id),
       label: `${user.name} (${user.email})`,
@@ -46,9 +49,9 @@ export function LogsFilterBar({
         <Input
           value={searchDraft}
           onChange={(e) => onSearchDraftChange(e.target.value)}
-          placeholder="Ara..."
+          placeholder={t('logs:filterBar.searchPlaceholder')}
           leftIcon={<Search className="size-4" aria-hidden="true" />}
-          aria-label="Loglarda ara"
+          aria-label={t('logs:filterBar.searchAria')}
         />
       </div>
 
@@ -58,7 +61,7 @@ export function LogsFilterBar({
             value={userId}
             onChange={(e) => onUserIdChange(e.target.value)}
             options={userSelectOptions}
-            aria-label="Kullanıcı filtresi"
+            aria-label={t('logs:filterBar.userFilterAria')}
           />
         </div>
       )}
@@ -69,7 +72,7 @@ export function LogsFilterBar({
             type="date"
             value={from}
             onChange={(e) => onFromChange(e.target.value)}
-            aria-label="Başlangıç tarihi"
+            aria-label={t('logs:filterBar.fromDateAria')}
             max={to || undefined}
           />
         </div>
@@ -79,7 +82,7 @@ export function LogsFilterBar({
             type="date"
             value={to}
             onChange={(e) => onToChange(e.target.value)}
-            aria-label="Bitiş tarihi"
+            aria-label={t('logs:filterBar.toDateAria')}
             min={from || undefined}
           />
         </div>

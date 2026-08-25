@@ -6,6 +6,7 @@
 // `useConversations` standart bir `useQuery` sonucu döndürür (`data: Conversation[]`, sunucu +
 // istemci sıralı — bkz. `hooks/useConversations.ts` → `select: sortConversations`).
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { BellOff, MessageSquarePlus, Search } from 'lucide-react'
 import { Avatar, Badge, EmptyState, Input, Skeleton } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
@@ -19,14 +20,16 @@ export type ConversationListProps = {
   onNewConversation: () => void
 }
 
-const FILTERS: Array<{ value: ConversationType | 'all'; label: string }> = [
-  { value: 'all', label: 'Tümü' },
-  { value: 'dm', label: 'DM' },
-  { value: 'group', label: 'Grup' },
-  { value: 'record', label: 'Kayıt' },
+/** Etiketler ANAHTAR olarak durur — dil değişince donmasın diye (bkz. `Sidebar.tsx` NAV_SECTIONS gerekçesi). */
+const FILTERS: Array<{ value: ConversationType | 'all'; labelKey: string }> = [
+  { value: 'all', labelKey: 'chat:conversationList.filters.all' },
+  { value: 'dm', labelKey: 'chat:conversationList.filters.dm' },
+  { value: 'group', labelKey: 'chat:conversationList.filters.group' },
+  { value: 'record', labelKey: 'chat:conversationList.filters.record' },
 ]
 
 export function ConversationList({ selectedId, onSelect, onNewConversation }: ConversationListProps) {
+  const { t } = useTranslation('chat')
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [filter, setFilter] = useState<ConversationType | 'all'>('all')
@@ -48,11 +51,11 @@ export function ConversationList({ selectedId, onSelect, onNewConversation }: Co
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between gap-2 border-b border-border-subtle p-4">
-        <h2 className="text-md font-medium text-fg">Sohbetler</h2>
+        <h2 className="text-md font-medium text-fg">{t('conversationList.title')}</h2>
         <button
           type="button"
           onClick={onNewConversation}
-          aria-label="Yeni sohbet başlat"
+          aria-label={t('conversationList.newConversationAria')}
           className={cn(
             'inline-flex size-8 items-center justify-center rounded-md text-fg-muted hover:bg-surface-2 hover:text-fg',
             'transition-colors duration-150 motion-reduce:transition-none',
@@ -66,16 +69,16 @@ export function ConversationList({ selectedId, onSelect, onNewConversation }: Co
       <div className="flex flex-col gap-3 border-b border-border-subtle p-3">
         <Input
           inputSize="sm"
-          placeholder="Sohbetlerde ara…"
+          placeholder={t('conversationList.searchPlaceholder')}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           leftIcon={<Search className="size-4" aria-hidden="true" />}
-          aria-label="Sohbetlerde ara"
+          aria-label={t('conversationList.searchAria')}
         />
         <div
           className="flex items-center gap-1 rounded-md bg-surface-2 p-1"
           role="tablist"
-          aria-label="Konuşma tipi filtresi"
+          aria-label={t('conversationList.filterAria')}
         >
           {FILTERS.map((item) => (
             <button
@@ -91,7 +94,7 @@ export function ConversationList({ selectedId, onSelect, onNewConversation }: Co
                 filter === item.value ? 'bg-primary text-primary-fg' : 'text-fg-muted hover:text-fg'
               )}
             >
-              {item.label}
+              {t(item.labelKey)}
             </button>
           ))}
         </div>
@@ -112,8 +115,12 @@ export function ConversationList({ selectedId, onSelect, onNewConversation }: Co
         ) : conversations.length === 0 ? (
           <EmptyState
             icon={<Search className="size-6" aria-hidden="true" />}
-            title="Konuşma bulunamadı"
-            description={debouncedSearch ? 'Arama kriterlerinize uyan bir konuşma yok.' : 'Henüz bir konuşmanız yok.'}
+            title={t('conversationList.emptyTitle')}
+            description={
+              debouncedSearch
+                ? t('conversationList.emptySearchDescription')
+                : t('conversationList.emptyDescription')
+            }
             className="px-4 py-10"
           />
         ) : (
@@ -140,6 +147,7 @@ type ConversationRowProps = {
 }
 
 function ConversationRow({ conversation, selected, onSelect }: ConversationRowProps) {
+  const { t } = useTranslation('chat')
   return (
     <li>
       <button
@@ -171,12 +179,16 @@ function ConversationRow({ conversation, selected, onSelect }: ConversationRowPr
           <div className="flex items-center justify-between gap-2">
             <p className="min-w-0 flex-1 truncate text-xs text-fg-muted">
               {conversation.type === 'record' && conversation.conversable
-                ? `${conversation.conversable.label} — ${conversation.last_message_preview || 'Henüz mesaj yok'}`
-                : conversation.last_message_preview || 'Henüz mesaj yok'}
+                ? `${conversation.conversable.label} — ${conversation.last_message_preview || t('conversationList.noMessagesYet')}`
+                : conversation.last_message_preview || t('conversationList.noMessagesYet')}
             </p>
             <div className="flex shrink-0 items-center gap-1.5">
               {conversation.is_muted && (
-                <BellOff className="size-3.5 text-fg-disabled" aria-hidden="true" aria-label="Sessize alındı" />
+                <BellOff
+                  className="size-3.5 text-fg-disabled"
+                  aria-hidden="true"
+                  aria-label={t('conversationList.mutedAria')}
+                />
               )}
               {conversation.unread_count > 0 && (
                 <Badge variant="primary" size="sm">

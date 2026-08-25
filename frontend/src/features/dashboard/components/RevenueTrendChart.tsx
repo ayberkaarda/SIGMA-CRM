@@ -3,6 +3,8 @@
 // series needs no legend box"); kimlik kart başlığından okunur. Renk `--app-primary`den okunur,
 // alan dolgusu ~%10 opaklıkta bir yıkama (asla doygun blok).
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { TooltipContentProps } from 'recharts'
 import { EmptyState, Skeleton } from '../../../components/ui'
@@ -12,10 +14,12 @@ import type { RevenueTrendGroupBy, RevenueTrendPoint } from '../types'
 
 const CHART_HEIGHT = 280
 
-const GROUP_LABEL: Record<RevenueTrendGroupBy, string> = {
-  day: 'Gün',
-  week: 'Hafta',
-  month: 'Ay',
+function groupLabel(t: TFunction): Record<RevenueTrendGroupBy, string> {
+  return {
+    day: t('dashboard:revenueTrend.group.day'),
+    week: t('dashboard:revenueTrend.group.week'),
+    month: t('dashboard:revenueTrend.group.month'),
+  }
 }
 
 /** Recharts'ın eksen/alan hesaplaması sayısal bir alan gerektirir; `revenue` API sözleşmesinde
@@ -31,6 +35,10 @@ export type RevenueTrendChartProps = {
   points: RevenueTrendPoint[] | undefined
   isLoading: boolean
   groupBy: RevenueTrendGroupBy
+  /** Görüntü para birimi (`rate_info.display_currency`) — Faz 14 / İz E. Backend zaten bu
+   *  birimde döner, burada yeniden dönüştürme yapılmaz. `rate_info` yoksa (ilk yükleme) temel
+   *  para birimine (TRY) düşülür. */
+  currency?: string
 }
 
 // Recharts 3.x'te `content={<RevenueTooltip .../>}` (element) artık `TooltipContentProps`e karşı
@@ -42,9 +50,12 @@ export type RevenueTrendChartProps = {
 // yalnızca kendi eklediğimiz `groupBy` ZORUNLU kalır.
 type RevenueTooltipProps = Partial<TooltipContentProps> & {
   groupBy: RevenueTrendGroupBy
+  /** Görüntü para birimi (`rate_info.display_currency`) — Faz 14 / İz E. */
+  currency: string
 }
 
-function RevenueTooltip({ active, payload, label, groupBy }: RevenueTooltipProps) {
+function RevenueTooltip({ active, payload, label, groupBy, currency }: RevenueTooltipProps) {
+  const { t } = useTranslation('dashboard')
   const theme = useChartTheme()
   if (!active || !payload?.length) return null
   const point = payload[0]?.payload as RevenueTrendPoint | undefined
@@ -56,15 +67,18 @@ function RevenueTooltip({ active, payload, label, groupBy }: RevenueTooltipProps
       style={{ background: theme.surface, borderColor: theme.border, color: theme.fg }}
     >
       <p className="mb-1" style={{ color: theme.fgMuted }}>
-        {GROUP_LABEL[groupBy]}: {String(label)}
+        {groupLabel(t)[groupBy]}: {String(label)}
       </p>
-      <p className="font-semibold">{formatMoney(point.revenue)}</p>
-      <p style={{ color: theme.fgMuted }}>{formatNumber(point.won_count)} kazanılan anlaşma</p>
+      <p className="font-semibold">{formatMoney(point.revenue, currency)}</p>
+      <p style={{ color: theme.fgMuted }}>
+        {t('dashboard:revenueTrend.tooltipWonDeals', { value: formatNumber(point.won_count) })}
+      </p>
     </div>
   )
 }
 
-export function RevenueTrendChart({ points, isLoading, groupBy }: RevenueTrendChartProps) {
+export function RevenueTrendChart({ points, isLoading, groupBy, currency = 'TRY' }: RevenueTrendChartProps) {
+  const { t } = useTranslation('dashboard')
   const theme = useChartTheme()
   const chartData = useMemo(() => toChartData(points ?? []), [points])
 
@@ -81,8 +95,8 @@ export function RevenueTrendChart({ points, isLoading, groupBy }: RevenueTrendCh
     return (
       <div style={{ height: CHART_HEIGHT }} className="flex items-center justify-center">
         <EmptyState
-          title="Bu aralıkta gelir verisi yok"
-          description="Seçili tarih aralığında kazanılan bir anlaşma bulunamadı."
+          title={t('dashboard:revenueTrend.emptyTitle')}
+          description={t('dashboard:revenueTrend.emptyDescription')}
         />
       </div>
     )
@@ -110,12 +124,12 @@ export function RevenueTrendChart({ points, isLoading, groupBy }: RevenueTrendCh
               tickLine={false}
               axisLine={false}
               tick={{ fill: theme.axisText, fontSize: 12 }}
-              tickFormatter={(value: number) => formatMoneyCompact(value)}
+              tickFormatter={(value: number) => formatMoneyCompact(value, currency)}
               width={72}
             />
             <Tooltip
               cursor={{ stroke: theme.border, strokeWidth: 1 }}
-              content={(props) => <RevenueTooltip {...props} groupBy={groupBy} />}
+              content={(props) => <RevenueTooltip {...props} groupBy={groupBy} currency={currency} />}
             />
             <Area
               type="monotone"

@@ -13,6 +13,9 @@ use App\Events\TicketSlaWarning;
  *
  * Zamanlanmış bir tarayıcıdan geldiği için actor YOKTUR.
  *
+ * FAZ 14 / İz D — anahtar moduna dönüştürüldü (bkz.
+ * TicketSlaBreachedNotification aynı desen).
+ *
  * @see TicketSlaWarning::payload() Payload alanları için.
  */
 class TicketSlaWarningNotification extends CrmNotification
@@ -22,13 +25,13 @@ class TicketSlaWarningNotification extends CrmNotification
         return new self(
             recipientId: $assignedTo,
             notificationType: 'ticket.sla_warning',
-            notificationTitle: 'SLA süresi azalıyor',
-            notificationBody: sprintf(
-                '%s — %s (kalan ~%d dk)',
-                $ticketNumber,
-                $subject,
-                (int) round($remainingSeconds / 60),
-            ),
+            titleKey: 'notifications.ticket_sla_warning.title',
+            bodyKey: 'notifications.ticket_sla_warning.body',
+            params: [
+                'ticket_number' => $ticketNumber,
+                'subject' => $subject,
+                'minutes' => (string) (int) round($remainingSeconds / 60),
+            ],
             notificationLink: '/tickets/'.$ticketId,
             meta: [
                 'ticket_id' => $ticketId,

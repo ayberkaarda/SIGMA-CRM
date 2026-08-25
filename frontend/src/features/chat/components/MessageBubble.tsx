@@ -14,6 +14,7 @@
 // (sırasıyla `useSendMessage().retry`/`.discard`).
 import { useState } from 'react'
 import type { KeyboardEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Check, CheckCheck, Download, FileText, Pencil, RotateCcw, Trash2, TriangleAlert } from 'lucide-react'
 import { Avatar, Button, Textarea } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
@@ -29,6 +30,7 @@ export type MessageBubbleProps = {
 }
 
 export function MessageBubble({ message, isOwn, showMeta }: MessageBubbleProps) {
+  const { t } = useTranslation(['chat', 'common'])
   const editMessage = useEditMessage(message.conversation_id)
   const deleteMessage = useDeleteMessage(message.conversation_id)
   const sendMessage = useSendMessage(message.conversation_id)
@@ -79,7 +81,7 @@ export function MessageBubble({ message, isOwn, showMeta }: MessageBubbleProps) 
   }
 
   function handleDelete() {
-    if (!window.confirm('Bu mesajı silmek istediğinize emin misiniz?')) return
+    if (!window.confirm(t('chat:confirm.deleteMessage'))) return
     deleteMessage.mutate(message.id)
   }
 
@@ -101,7 +103,9 @@ export function MessageBubble({ message, isOwn, showMeta }: MessageBubbleProps) 
       </div>
 
       <div className={cn('flex max-w-[70%] min-w-0 flex-col gap-1', isOwn ? 'items-end' : 'items-start')}>
-        {!isOwn && showMeta && <p className="px-1 text-xs font-medium text-fg-muted">{message.user?.name ?? 'Bilinmeyen'}</p>}
+        {!isOwn && showMeta && (
+          <p className="px-1 text-xs font-medium text-fg-muted">{message.user?.name ?? t('chat:message.unknownUser')}</p>
+        )}
 
         <div className={cn('relative flex items-center gap-1.5', isOwn ? 'flex-row-reverse' : 'flex-row')}>
           <div
@@ -114,7 +118,7 @@ export function MessageBubble({ message, isOwn, showMeta }: MessageBubbleProps) 
             )}
           >
             {isDeleted ? (
-              <p>Bu mesaj silindi</p>
+              <p>{t('chat:message.deletedPreview')}</p>
             ) : isEditing ? (
               <div className="flex min-w-64 flex-col gap-2">
                 <Textarea
@@ -123,15 +127,15 @@ export function MessageBubble({ message, isOwn, showMeta }: MessageBubbleProps) 
                   onKeyDown={handleEditKeyDown}
                   rows={2}
                   autoFocus
-                  aria-label="Mesajı düzenle"
+                  aria-label={t('chat:message.editAria')}
                   className="bg-surface-1 text-fg"
                 />
                 <div className="flex justify-end gap-1.5">
                   <Button type="button" size="sm" variant="ghost" onClick={cancelEdit}>
-                    Vazgeç
+                    {t('common:actions.cancel')}
                   </Button>
                   <Button type="button" size="sm" loading={editMessage.isPending} onClick={submitEdit}>
-                    Kaydet
+                    {t('common:actions.save')}
                   </Button>
                 </div>
               </div>
@@ -160,12 +164,12 @@ export function MessageBubble({ message, isOwn, showMeta }: MessageBubbleProps) 
                 <div className={cn('mt-1 flex items-center gap-1', isOwn ? 'justify-end' : 'justify-start')}>
                   {isPendingOptimistic ? (
                     <span className={cn('text-[11px] italic', isOwn ? 'text-primary-fg/70' : 'text-fg-muted')}>
-                      Gönderiliyor…
+                      {t('chat:message.sending')}
                     </span>
                   ) : isFailedOptimistic ? (
                     <span className="inline-flex items-center gap-1 text-[11px] text-danger">
                       <TriangleAlert className="size-3" aria-hidden="true" />
-                      Gönderilemedi
+                      {t('chat:message.failed')}
                     </span>
                   ) : (
                     <>
@@ -174,7 +178,7 @@ export function MessageBubble({ message, isOwn, showMeta }: MessageBubbleProps) 
                       </span>
                       {message.edited_at && (
                         <span className={cn('text-[11px] italic', isOwn ? 'text-primary-fg/70' : 'text-fg-muted')}>
-                          düzenlendi
+                          {t('chat:message.editedLabel')}
                         </span>
                       )}
                       {isOwn && <TickIndicator tick={message.tick} />}
@@ -192,7 +196,7 @@ export function MessageBubble({ message, isOwn, showMeta }: MessageBubbleProps) 
                       )}
                     >
                       <RotateCcw className="size-3" aria-hidden="true" />
-                      Tekrar dene
+                      {t('common:actions.retry')}
                     </button>
                     <button
                       type="button"
@@ -202,7 +206,7 @@ export function MessageBubble({ message, isOwn, showMeta }: MessageBubbleProps) 
                         isOwn ? 'text-primary-fg/80' : 'text-fg-muted'
                       )}
                     >
-                      Sil
+                      {t('common:actions.delete')}
                     </button>
                   </div>
                 )}
@@ -216,7 +220,7 @@ export function MessageBubble({ message, isOwn, showMeta }: MessageBubbleProps) 
                 <button
                   type="button"
                   onClick={startEdit}
-                  aria-label="Mesajı düzenle"
+                  aria-label={t('chat:message.editAria')}
                   className="inline-flex size-6 items-center justify-center rounded text-fg-muted hover:bg-surface-2 hover:text-fg"
                 >
                   <Pencil className="size-3.5" aria-hidden="true" />
@@ -226,7 +230,7 @@ export function MessageBubble({ message, isOwn, showMeta }: MessageBubbleProps) 
                 <button
                   type="button"
                   onClick={handleDelete}
-                  aria-label="Mesajı sil"
+                  aria-label={t('chat:message.deleteAria')}
                   className="inline-flex size-6 items-center justify-center rounded text-fg-muted hover:bg-danger-tint hover:text-danger"
                 >
                   <Trash2 className="size-3.5" aria-hidden="true" />
@@ -241,13 +245,14 @@ export function MessageBubble({ message, isOwn, showMeta }: MessageBubbleProps) 
 }
 
 function TickIndicator({ tick }: { tick: TickState }) {
+  const { t } = useTranslation('chat')
   if (tick === 'sent') {
-    return <Check className="size-3.5 text-primary-fg/70" aria-label="Gönderildi" />
+    return <Check className="size-3.5 text-primary-fg/70" aria-label={t('message.tickSent')} />
   }
   if (tick === 'delivered') {
-    return <CheckCheck className="size-3.5 text-primary-fg/70" aria-label="İletildi" />
+    return <CheckCheck className="size-3.5 text-primary-fg/70" aria-label={t('message.tickDelivered')} />
   }
-  return <CheckCheck className="size-3.5 text-primary-fg" aria-label="Görüldü" />
+  return <CheckCheck className="size-3.5 text-primary-fg" aria-label={t('message.tickRead')} />
 }
 
 function AttachmentPreview({ attachment, isOwn }: { attachment: NonNullable<ChatMessage['attachment']>; isOwn: boolean }) {

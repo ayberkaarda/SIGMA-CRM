@@ -12,6 +12,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import { AlertTriangle, ArrowLeft, ListChecks, Pencil, Plus, Search, Settings2, Trash2 } from 'lucide-react'
 import {
   Badge,
@@ -54,6 +55,7 @@ function isOutsideValidity(priceList: PriceList): boolean {
 }
 
 export function PriceListsPage() {
+  const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
   const { can } = usePermission()
 
@@ -113,14 +115,14 @@ export function PriceListsPage() {
   }
 
   const statusFilterOptions = [
-    { value: '', label: 'Tüm durumlar' },
-    { value: '1', label: 'Aktif' },
-    { value: '0', label: 'Pasif' },
+    { value: '', label: t('priceLists:list.allStatuses') },
+    { value: '1', label: t('priceLists:status.active') },
+    { value: '0', label: t('priceLists:status.inactive') },
   ]
   const defaultFilterOptions = [
-    { value: '', label: 'Tümü' },
-    { value: '1', label: 'Yalnızca varsayılan' },
-    { value: '0', label: 'Varsayılan olmayan' },
+    { value: '', label: t('priceLists:list.allDefault') },
+    { value: '1', label: t('priceLists:list.onlyDefault') },
+    { value: '0', label: t('priceLists:list.notDefault') },
   ]
 
   const priceLists = data?.data ?? []
@@ -132,20 +134,20 @@ export function PriceListsPage() {
       <nav aria-label="breadcrumb" className="flex items-center gap-1.5 text-xs text-fg-muted">
         <Link to="/products" className="inline-flex items-center gap-1 hover:text-fg">
           <ArrowLeft className="size-3.5" aria-hidden="true" />
-          Ürünler
+          {t('priceLists:breadcrumb.products')}
         </Link>
         <span className="mx-1">/</span>
-        <span className="text-primary">Fiyat Listeleri</span>
+        <span className="text-primary">{t('priceLists:breadcrumb.priceLists')}</span>
       </nav>
 
       <Card>
         <CardHeader
-          title="Fiyat Listeleri"
-          subtitle={`${total} liste`}
+          title={t('priceLists:list.title')}
+          subtitle={t('priceLists:list.subtitle', { count: total })}
           action={
             can('products.create') && (
               <Button leftIcon={<Plus className="size-4" aria-hidden="true" />} onClick={() => setFormModal({ mode: 'create' })}>
-                Yeni Liste
+                {t('priceLists:list.createButton')}
               </Button>
             )
           }
@@ -156,9 +158,9 @@ export function PriceListsPage() {
               <Input
                 value={searchDraft}
                 onChange={(e) => setSearchDraft(e.target.value)}
-                placeholder="Liste adı veya kodu ara..."
+                placeholder={t('priceLists:list.searchPlaceholder')}
                 leftIcon={<Search className="size-4" aria-hidden="true" />}
-                aria-label="Fiyat listesi ara"
+                aria-label={t('priceLists:list.searchAria')}
               />
             </div>
             <div className="w-full lg:w-40">
@@ -166,7 +168,7 @@ export function PriceListsPage() {
                 value={searchParams.get('is_active') ?? ''}
                 onChange={(e) => updateParams({ is_active: e.target.value || null, page: '1' })}
                 options={statusFilterOptions}
-                aria-label="Durum filtresi"
+                aria-label={t('priceLists:list.statusAria')}
               />
             </div>
             <div className="w-full lg:w-52">
@@ -174,36 +176,36 @@ export function PriceListsPage() {
                 value={searchParams.get('is_default') ?? ''}
                 onChange={(e) => updateParams({ is_default: e.target.value || null, page: '1' })}
                 options={defaultFilterOptions}
-                aria-label="Varsayılan filtresi"
+                aria-label={t('priceLists:list.defaultAria')}
               />
             </div>
           </div>
 
           {isError ? (
             <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
-              <p className="text-sm text-fg-muted">Fiyat listeleri yüklenirken bir hata oluştu.</p>
+              <p className="text-sm text-fg-muted">{t('priceLists:list.loadError')}</p>
               <Button variant="secondary" onClick={() => refetch()}>
-                Tekrar dene
+                {t('priceLists:retry')}
               </Button>
             </div>
           ) : isEmpty ? (
             <EmptyState
               icon={<ListChecks className="size-6" aria-hidden="true" />}
-              title="Fiyat listesi bulunamadı"
-              description="Arama veya filtre kriterlerinizle eşleşen fiyat listesi yok."
+              title={t('priceLists:list.emptyTitle')}
+              description={t('priceLists:list.emptyDescription')}
             />
           ) : (
             <Table>
               <THead>
                 <Tr>
                   <Th sortable sortDirection={sortDirectionFor('name')} onSort={() => toggleSort('name')}>
-                    Liste
+                    {t('priceLists:list.columns.list')}
                   </Th>
-                  <Th align="right">Ürün Sayısı</Th>
-                  <Th>Geçerlilik</Th>
-                  <Th>Varsayılan</Th>
-                  <Th>Durum</Th>
-                  <Th align="right">İşlemler</Th>
+                  <Th align="right">{t('priceLists:list.columns.itemCount')}</Th>
+                  <Th>{t('priceLists:list.columns.validity')}</Th>
+                  <Th>{t('priceLists:list.columns.default')}</Th>
+                  <Th>{t('priceLists:list.columns.status')}</Th>
+                  <Th align="right">{t('priceLists:list.columns.actions')}</Th>
                 </Tr>
               </THead>
               <TBody aria-busy={isLoading}>
@@ -240,35 +242,35 @@ export function PriceListsPage() {
                               <span>
                                 {priceList.valid_from || priceList.valid_until
                                   ? `${formatDate(priceList.valid_from)} – ${formatDate(priceList.valid_until)}`
-                                  : 'Süresiz'}
+                                  : t('priceLists:unlimited')}
                               </span>
                             </div>
                           </Td>
                           <Td>
                             {priceList.is_default ? (
-                              <Badge variant="primary">Varsayılan</Badge>
+                              <Badge variant="primary">{t('priceLists:defaultBadge')}</Badge>
                             ) : (
                               <span className="text-fg-muted">—</span>
                             )}
                           </Td>
                           <Td>
                             <Badge variant={priceList.is_active ? 'success' : 'neutral'}>
-                              {priceList.is_active ? 'Aktif' : 'Pasif'}
+                              {priceList.is_active ? t('priceLists:status.active') : t('priceLists:status.inactive')}
                             </Badge>
                           </Td>
                           <Td align="right">
                             <div className="flex items-center justify-end gap-1">
-                              <IconLinkButton label="Fiyatları Yönet" to={`/price-lists/${priceList.id}`}>
+                              <IconLinkButton label={t('priceLists:list.manageAction')} to={`/price-lists/${priceList.id}`}>
                                 <Settings2 className="size-4" aria-hidden="true" />
                               </IconLinkButton>
                               {can('products.update') && (
-                                <IconButton label="Düzenle" onClick={() => setFormModal({ mode: 'edit', priceList })}>
+                                <IconButton label={t('priceLists:actions.edit')} onClick={() => setFormModal({ mode: 'edit', priceList })}>
                                   <Pencil className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
                               {can('products.delete') && (
                                 <IconButton
-                                  label={priceList.is_default ? 'Varsayılan liste silinemez' : 'Sil'}
+                                  label={priceList.is_default ? t('priceLists:list.deleteDisabledAction') : t('priceLists:actions.delete')}
                                   onClick={() => setDeleteState(priceList)}
                                   danger
                                   disabled={priceList.is_default}
@@ -307,16 +309,16 @@ export function PriceListsPage() {
       <Modal
         open={!!deleteState}
         onClose={() => setDeleteState(null)}
-        title="Fiyat listesini sil"
+        title={t('priceLists:deleteModal.title')}
         description={
           deleteState?.is_default
-            ? 'Varsayılan fiyat listesi silinemez. Önce başka bir listeyi varsayılan yapın ya da bu listeyi devre dışı bırakın.'
-            : 'Bu işlem geri alınamaz. Fiyat listesi ve içindeki tüm ürün fiyatları kalıcı olarak silinecek.'
+            ? t('priceLists:deleteModal.descriptionDefault')
+            : t('priceLists:deleteModal.descriptionNormal')
         }
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setDeleteState(null)}>
-              {deleteState?.is_default ? 'Kapat' : 'Vazgeç'}
+              {deleteState?.is_default ? t('common:actions.close') : t('common:actions.cancel')}
             </Button>
             {!deleteState?.is_default && (
               <Button
@@ -328,7 +330,7 @@ export function PriceListsPage() {
                   setDeleteState(null)
                 }}
               >
-                Sil
+                {t('priceLists:actions.delete')}
               </Button>
             )}
           </div>
@@ -336,7 +338,11 @@ export function PriceListsPage() {
       >
         {deleteState && !deleteState.is_default && (
           <p className="text-sm text-fg-secondary">
-            <strong className="text-fg">{deleteState.name}</strong> adlı listeyi silmek istediğinize emin misiniz?
+            <Trans
+              i18nKey="priceLists:deleteModal.confirmText"
+              values={{ name: deleteState.name }}
+              components={{ bold: <strong className="text-fg" /> }}
+            />
           </p>
         )}
       </Modal>

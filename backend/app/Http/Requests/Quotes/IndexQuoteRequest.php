@@ -42,23 +42,6 @@ class IndexQuoteRequest extends FormRequest
     }
 
     /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'per_page.max' => 'Sayfa başına kayıt sayısı en fazla :max olabilir.',
-            'filter.status.in' => 'Seçilen durum filtresi geçerli değil.',
-            'filter.deal_id.exists' => 'Seçilen fırsat filtresi geçerli değil.',
-            'filter.company_id.exists' => 'Seçilen firma filtresi geçerli değil.',
-            'filter.contact_id.exists' => 'Seçilen kişi filtresi geçerli değil.',
-            'filter.from.date' => 'Başlangıç tarihi geçerli bir tarih olmalıdır.',
-            'filter.to.date' => 'Bitiş tarihi geçerli bir tarih olmalıdır.',
-            'filter.expired.boolean' => 'Süresi dolmuş filtresi yalnızca 0 veya 1 olabilir.',
-        ];
-    }
-
-    /**
      * Repository/Service katmanının beklediği düz filtre dizisini üretir.
      *
      * `expired` ÜÇ DURUMLUDUR: `null` (filtre yok), `true` (yalnızca süresi

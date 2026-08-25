@@ -1,6 +1,14 @@
 // Dashboard modülü tipleri — Faz 11 backend sözleşmesiyle birebir eşleşir (bkz. görev tanımı
 // §BACKEND SÖZLEŞMESİ). Para alanları HER ZAMAN string (2 ondalık, nokta ayraçlı) — aritmetik
 // için `Number()`e çevrilmez, yalnızca `lib/money.ts` ile biçimlendirilir.
+//
+// `RateInfo` reports modülünde TANIMLI (Faz 14 / İz E — docs/PHASE-INTL.md §2.4): backend
+// sözleşmesi `kpis`/`funnel`/`revenue-trend` ile `sales-performance`/`user-performance`/
+// `source-analysis` için BİREBİR aynı şekli taşır (tek kaynak `ReportCurrencyContext::rateInfo()`).
+// Burada YENİDEN TANIMLANMAZ — tip sürüklenmesini önlemek için reports'tan import edilir.
+import type { RateInfo } from '../reports/types'
+
+export type { RateInfo }
 
 /** `?from=Y-m-d&to=Y-m-d` — varsayılan son 30 gün, `to` gün sonu dahil. */
 export type DateRangeParams = {
@@ -41,6 +49,7 @@ export type DashboardKpis = {
 
 export type DashboardKpisResponse = {
   data: DashboardKpis
+  rate_info: RateInfo
 }
 
 /** Aşama sırasına göre dizilir — backend sırası korunur, istemci yeniden SIRALAMAZ. `color`
@@ -56,6 +65,7 @@ export type FunnelStage = {
 
 export type DashboardFunnelResponse = {
   data: FunnelStage[]
+  rate_info: RateInfo
 }
 
 export type RevenueTrendPoint = {
@@ -67,6 +77,7 @@ export type RevenueTrendPoint = {
 
 export type DashboardRevenueTrendResponse = {
   data: RevenueTrendPoint[]
+  rate_info: RateInfo
 }
 
 /** `App\Http\Resources\Reports\RecentActivityResource` ile birebir — Loglar modülündeki

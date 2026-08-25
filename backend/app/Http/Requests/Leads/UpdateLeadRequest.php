@@ -53,22 +53,8 @@ class UpdateLeadRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'first_name.max' => 'Ad en fazla :max karakter olabilir.',
-            'last_name.max' => 'Soyad en fazla :max karakter olabilir.',
-            'email.email' => 'Geçerli bir e-posta adresi girin.',
-            'email.max' => 'E-posta en fazla :max karakter olabilir.',
-            'phone.max' => 'Telefon en fazla :max karakter olabilir.',
-            'company_name.max' => 'Şirket adı en fazla :max karakter olabilir.',
-            'position.max' => 'Pozisyon en fazla :max karakter olabilir.',
-            'source.in' => 'Seçilen kaynak geçerli değil.',
-            'status.in' => 'Seçilen durum geçerli değil. Lead\'i dönüştürmek için /convert ucunu kullanın.',
-            'score.integer' => 'Skor tam sayı olmalıdır.',
-            'score.between' => 'Skor :min ile :max arasında olmalıdır.',
-            'owner_id.missing' => 'Sahip bu uçtan değiştirilemez. '.
-                'PATCH /api/leads/{lead}/assign ucunu kullanın.',
-            'tag_ids.array' => 'Etiketler bir liste olmalıdır.',
-            'tag_ids.*.exists' => 'Seçilen etiketlerden biri geçerli değil.',
-            'custom_fields.array' => 'Özel alanlar bir liste olmalıdır.',
+            'status.in' => __('validation.custom.leads.status_transition'),
+            'owner_id.missing' => __('validation.custom.leads.owner_locked'),
         ];
     }
 }

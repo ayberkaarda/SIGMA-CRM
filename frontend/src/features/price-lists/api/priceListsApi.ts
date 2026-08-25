@@ -12,6 +12,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, getErrorMessage } from '../../../lib/axios'
 import { toast } from '../../../components/ui'
+import i18n from '../../../i18n'
 import type { PriceList, PriceListItem } from '../types'
 
 export const priceListsKeys = {
@@ -147,7 +148,7 @@ export function useCreatePriceList() {
     mutationFn: createPriceListRequest,
     onSuccess: (priceList) => {
       invalidatePriceListCaches(queryClient, priceList.id)
-      toast.success('Fiyat listesi oluşturuldu.')
+      toast.success(i18n.t('priceLists:toast.created'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -159,7 +160,7 @@ export function useUpdatePriceList() {
     mutationFn: ({ id, payload }: { id: number; payload: Partial<PriceListPayload> }) => updatePriceListRequest(id, payload),
     onSuccess: (priceList) => {
       invalidatePriceListCaches(queryClient, priceList.id)
-      toast.success('Fiyat listesi güncellendi.')
+      toast.success(i18n.t('priceLists:toast.updated'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -171,7 +172,7 @@ export function useDeletePriceList() {
     mutationFn: (id: number) => deletePriceListRequest(id),
     onSuccess: () => {
       invalidatePriceListCaches(queryClient)
-      toast.success('Fiyat listesi silindi.')
+      toast.success(i18n.t('priceLists:toast.deleted'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -184,7 +185,7 @@ export function useSetPrice(priceListId: number) {
       setPriceRequest(priceListId, productId, unitPrice),
     onSuccess: () => {
       invalidatePriceListCaches(queryClient, priceListId)
-      toast.success('Ürün fiyatı kaydedildi.')
+      toast.success(i18n.t('priceLists:toast.priceSaved'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -196,7 +197,7 @@ export function useRemovePrice(priceListId: number) {
     mutationFn: (productId: number) => removePriceRequest(priceListId, productId),
     onSuccess: () => {
       invalidatePriceListCaches(queryClient, priceListId)
-      toast.success('Ürün fiyat listesinden kaldırıldı. Bu ürün için artık katalog fiyatı geçerli olacak.')
+      toast.success(i18n.t('priceLists:toast.priceRemoved'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })

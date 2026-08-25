@@ -4,6 +4,7 @@
 //
 // Hata gövdesi tüm uçlarda `{ errors: { message, code, fields? } }` (bkz. `lib/axios.ts`).
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { api, getErrorMessage } from '../../../lib/axios'
 import { toast } from '../../../components/ui'
 import { boardKeys } from './boardApi'
@@ -132,11 +133,12 @@ function invalidateDealCaches(queryClient: ReturnType<typeof useQueryClient>, id
 
 export function useCreateDeal() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation('deals')
   return useMutation({
     mutationFn: createDealRequest,
     onSuccess: (deal) => {
       invalidateDealCaches(queryClient, deal.id)
-      toast.success('Fırsat oluşturuldu.')
+      toast.success(t('toast.created'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -144,12 +146,13 @@ export function useCreateDeal() {
 
 export function useUpdateDeal() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation('deals')
   return useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: Partial<DealPayload> }) =>
       updateDealRequest(id, payload),
     onSuccess: (deal) => {
       invalidateDealCaches(queryClient, deal.id)
-      toast.success('Fırsat güncellendi.')
+      toast.success(t('toast.updated'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -157,11 +160,12 @@ export function useUpdateDeal() {
 
 export function useDeleteDeal() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation('deals')
   return useMutation({
     mutationFn: (id: number) => deleteDealRequest(id),
     onSuccess: () => {
       invalidateDealCaches(queryClient)
-      toast.success('Fırsat silindi.')
+      toast.success(t('toast.deleted'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -169,12 +173,13 @@ export function useDeleteDeal() {
 
 export function useAssignDeal() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation('deals')
   return useMutation({
     mutationFn: ({ id, ownerId }: { id: number; ownerId: number | null }) =>
       assignDealRequest(id, ownerId),
     onSuccess: (deal) => {
       invalidateDealCaches(queryClient, deal.id)
-      toast.success('Sahip ataması güncellendi.')
+      toast.success(t('toast.ownerAssigned'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })

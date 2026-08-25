@@ -11,6 +11,7 @@
 // bunu açıkça uyarıyoruz ki kullanıcı "neden birden ihlale düştü" diye şaşırmasın.
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AlertTriangle } from 'lucide-react'
 import { Button, Input, Modal, Select, Textarea } from '../../../components/ui'
 import { getFieldErrors } from '../../../lib/axios'
@@ -18,7 +19,8 @@ import { TicketCompanyCombobox } from './TicketCompanyCombobox'
 import { TicketCustomFieldsSection } from './TicketCustomFieldsSection'
 import { TicketTagMultiSelect } from './TicketTagMultiSelect'
 import { TICKET_CATEGORY_OPTIONS } from './ticketCategoryOptions'
-import { PRIORITY_OPTIONS } from './ticketPriorityMeta'
+import { priorityOptions } from './ticketPriorityMeta'
+import { statusLabel } from './ticketStatusMeta'
 import { useTicketContactOptions, useTicketCustomFields, useTicketTags, useTicketUserOptions } from './ticketsShared'
 import type { ContactOption } from '../types'
 import { useCreateTicket, useUpdateTicket } from '../api/ticketsApi'
@@ -32,6 +34,7 @@ export type TicketFormModalProps = {
 }
 
 export function TicketFormModal({ open, onClose, ticket }: TicketFormModalProps) {
+  const { t } = useTranslation(['tickets', 'enums'])
   const isEdit = !!ticket
 
   const { data: tagOptions, isLoading: tagsLoading } = useTicketTags()
@@ -98,8 +101,8 @@ export function TicketFormModal({ open, onClose, ticket }: TicketFormModalProps)
 
   function validate(): boolean {
     const errors: Record<string, string[]> = {}
-    if (!subject.trim()) errors.subject = ['Konu zorunludur.']
-    if (!description.trim()) errors.description = ['Açıklama zorunludur.']
+    if (!subject.trim()) errors.subject = [t('tickets:form.validation.subjectRequired')]
+    if (!description.trim()) errors.description = [t('tickets:form.validation.descriptionRequired')]
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -134,12 +137,12 @@ export function TicketFormModal({ open, onClose, ticket }: TicketFormModalProps)
   }
 
   const assigneeOptions = [
-    { value: '', label: 'Atanmamış' },
+    { value: '', label: t('tickets:form.unassignedOption') },
     ...(userOptions ?? []).map((u) => ({ value: String(u.id), label: u.name })),
   ]
 
   const contactSelectOptions = [
-    { value: '', label: contactOptions === undefined ? 'Yükleniyor…' : 'Kişi yok' },
+    { value: '', label: contactOptions === undefined ? t('tickets:form.contactLoading') : t('tickets:form.contactNone') },
     ...(contactOptions ?? []).map((c) => ({ value: String(c.id), label: c.full_name })),
   ]
 
@@ -147,15 +150,15 @@ export function TicketFormModal({ open, onClose, ticket }: TicketFormModalProps)
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? 'Talebi Düzenle' : 'Yeni Talep'}
+      title={isEdit ? t('tickets:form.titleEdit') : t('tickets:form.titleCreate')}
       size="lg"
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Vazgeç
+            {t('tickets:form.cancel')}
           </Button>
           <Button type="submit" form="ticket-form" loading={isPending}>
-            {isEdit ? 'Kaydet' : 'Oluştur'}
+            {isEdit ? t('tickets:form.submitEdit') : t('tickets:form.submitCreate')}
           </Button>
         </div>
       }
@@ -163,14 +166,20 @@ export function TicketFormModal({ open, onClose, ticket }: TicketFormModalProps)
       <form id="ticket-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
         {!isEdit && (
           <p className="rounded-md bg-surface-2 px-3 py-2 text-xs text-fg-muted">
-            Talep numarası ve durum sunucu tarafından belirlenir; yeni talepler her zaman "Açık" durumunda oluşturulur.
+            {t('tickets:form.newTicketHint', { status: statusLabel('open', t) })}
           </p>
         )}
 
-        <Input label="Konu" value={subject} onChange={(e) => setSubject(e.target.value)} error={fieldError('subject')} required />
+        <Input
+          label={t('tickets:form.subjectLabel')}
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+          error={fieldError('subject')}
+          required
+        />
 
         <Textarea
-          label="Açıklama"
+          label={t('tickets:form.descriptionLabel')}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           error={fieldError('description')}
@@ -180,28 +189,28 @@ export function TicketFormModal({ open, onClose, ticket }: TicketFormModalProps)
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
             <Select
-              label="Öncelik"
+              label={t('tickets:form.priorityLabel')}
               value={priority}
               onChange={(e) => setPriority(e.target.value)}
-              options={PRIORITY_OPTIONS}
+              options={priorityOptions(t)}
               error={fieldError('priority')}
             />
             {priorityChanged && (
               <p className="flex items-start gap-1.5 text-xs text-warning">
                 <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-                SLA hedefi yeniden hesaplanacak; talep anında ihlale düşebilir (öncelik yükseltmesi hedefi kısaltır).
+                {t('tickets:form.priorityChangedWarning')}
               </p>
             )}
           </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="ticket-category" className="text-xs font-medium text-fg-muted">
-              Kategori
+              {t('tickets:form.categoryLabel')}
             </label>
             <Input
               id="ticket-category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              placeholder="Kategori seçin veya yazın"
+              placeholder={t('tickets:form.categoryPlaceholder')}
               list="ticket-category-options"
               error={fieldError('category')}
             />
@@ -216,7 +225,7 @@ export function TicketFormModal({ open, onClose, ticket }: TicketFormModalProps)
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <TicketCompanyCombobox value={company} onChange={setCompany} error={fieldError('company_id')} />
           <Select
-            label="Kişi"
+            label={t('tickets:form.contactLabel')}
             value={contact ? String(contact.id) : ''}
             onChange={(e) => {
               const id = e.target.value ? Number(e.target.value) : null
@@ -224,7 +233,7 @@ export function TicketFormModal({ open, onClose, ticket }: TicketFormModalProps)
               setContact(found)
             }}
             options={contactSelectOptions}
-            hint={!company ? 'Firma seçilirse kişi listesi o firmaya göre filtrelenir.' : undefined}
+            hint={!company ? t('tickets:form.contactHint') : undefined}
             disabled={contactsLoading}
             error={fieldError('contact_id')}
           />
@@ -232,7 +241,7 @@ export function TicketFormModal({ open, onClose, ticket }: TicketFormModalProps)
 
         {!usersForbidden && (
           <Select
-            label="Atanan"
+            label={t('tickets:form.assigneeLabel')}
             value={assignedTo}
             onChange={(e) => setAssignedTo(e.target.value)}
             options={assigneeOptions}

@@ -5,6 +5,7 @@
 // düzenleme modunda aşama ve durum salt okunur gösterilir, hiçbir zaman gövdeye eklenmez.
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button, Input, Modal, Select, Textarea } from '../../../components/ui'
 import { getFieldErrors } from '../../../lib/axios'
 import { DealCompanyCombobox } from './DealCompanyCombobox'
@@ -18,13 +19,6 @@ import { useCreateDeal, useUpdateDeal } from '../api/dealsApi'
 import { useDealOwnerOptions, usePipelineStages } from '../api/boardApi'
 import type { CompanyOption, Deal, DealTag } from '../types'
 
-const CURRENCY_OPTIONS = [
-  { value: 'TRY', label: 'TRY — Türk Lirası' },
-  { value: 'USD', label: 'USD — Amerikan Doları' },
-  { value: 'EUR', label: 'EUR — Euro' },
-  { value: 'GBP', label: 'GBP — İngiliz Sterlini' },
-]
-
 export type DealFormModalProps = {
   open: boolean
   onClose: () => void
@@ -35,7 +29,15 @@ export type DealFormModalProps = {
 }
 
 export function DealFormModal({ open, onClose, deal, defaultStageId }: DealFormModalProps) {
+  const { t } = useTranslation('deals')
   const isEdit = !!deal
+
+  const CURRENCY_OPTIONS = [
+    { value: 'TRY', label: t('form.currency.try') },
+    { value: 'USD', label: t('form.currency.usd') },
+    { value: 'EUR', label: t('form.currency.eur') },
+    { value: 'GBP', label: t('form.currency.gbp') },
+  ]
 
   const { data: pipelineStages } = usePipelineStages()
   const { data: tagOptions, isLoading: tagsLoading } = useDealTags()
@@ -116,11 +118,11 @@ export function DealFormModal({ open, onClose, deal, defaultStageId }: DealFormM
 
   function validate(): boolean {
     const errors: Record<string, string[]> = {}
-    if (!title.trim()) errors.title = ['Başlık zorunludur.']
-    if (amount === '') errors.amount = ['Tutar zorunludur.']
-    else if (Number.isNaN(Number(amount)) || Number(amount) < 0) errors.amount = ['Tutar geçerli bir sayı olmalıdır.']
+    if (!title.trim()) errors.title = [t('form.validation.titleRequired')]
+    if (amount === '') errors.amount = [t('form.validation.amountRequired')]
+    else if (Number.isNaN(Number(amount)) || Number(amount) < 0) errors.amount = [t('form.validation.amountInvalid')]
     if (probability !== '' && (Number(probability) < 0 || Number(probability) > 100)) {
-      errors.probability = ['Olasılık 0 ile 100 arasında olmalıdır.']
+      errors.probability = [t('form.validation.probabilityRange')]
     }
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
@@ -161,12 +163,12 @@ export function DealFormModal({ open, onClose, deal, defaultStageId }: DealFormM
   }
 
   const ownerSelectOptions = [
-    { value: '', label: 'Sahip seçin' },
+    { value: '', label: t('form.ownerPlaceholder') },
     ...(ownerOptions ?? []).map((u) => ({ value: String(u.id), label: u.name })),
   ]
 
   const contactSelectOptions = [
-    { value: '', label: contactOptions === undefined ? 'Yükleniyor…' : 'Kişi yok' },
+    { value: '', label: contactOptions === undefined ? t('form.contactLoading') : t('form.contactNone') },
     ...(contactOptions ?? []).map((c) => ({ value: String(c.id), label: c.full_name })),
   ]
 
@@ -180,24 +182,24 @@ export function DealFormModal({ open, onClose, deal, defaultStageId }: DealFormM
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? 'Fırsatı Düzenle' : 'Yeni Fırsat'}
+      title={isEdit ? t('form.titleEdit') : t('form.titleCreate')}
       size="lg"
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Vazgeç
+            {t('form.cancel')}
           </Button>
           <Button type="submit" form="deal-form" loading={isPending}>
-            {isEdit ? 'Kaydet' : 'Oluştur'}
+            {isEdit ? t('form.submitEdit') : t('form.submitCreate')}
           </Button>
         </div>
       }
     >
       <form id="deal-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <Input label="Başlık" value={title} onChange={(e) => setTitle(e.target.value)} error={fieldError('title')} required />
+        <Input label={t('form.titleLabel')} value={title} onChange={(e) => setTitle(e.target.value)} error={fieldError('title')} required />
 
         <Textarea
-          label="Açıklama"
+          label={t('form.descriptionLabel')}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           error={fieldError('description')}
@@ -205,7 +207,7 @@ export function DealFormModal({ open, onClose, deal, defaultStageId }: DealFormM
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Input
-            label="Tutar"
+            label={t('form.amountLabel')}
             type="number"
             min={0}
             step="0.01"
@@ -215,14 +217,14 @@ export function DealFormModal({ open, onClose, deal, defaultStageId }: DealFormM
             required
           />
           <Select
-            label="Para Birimi"
+            label={t('form.currencyLabel')}
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
             options={CURRENCY_OPTIONS}
             error={fieldError('currency')}
           />
           <Input
-            label="Olasılık (%)"
+            label={t('form.probabilityLabel')}
             type="number"
             min={0}
             max={100}
@@ -231,7 +233,7 @@ export function DealFormModal({ open, onClose, deal, defaultStageId }: DealFormM
             placeholder={selectedStageForHint ? String(selectedStageForHint.probability) : undefined}
             hint={
               selectedStageForHint
-                ? `Bu aşamanın varsayılanı: %${selectedStageForHint.probability}. Boş bırakılırsa bu değer kullanılır.`
+                ? t('form.probabilityHint', { value: selectedStageForHint.probability })
                 : undefined
             }
             error={fieldError('probability')}
@@ -240,7 +242,7 @@ export function DealFormModal({ open, onClose, deal, defaultStageId }: DealFormM
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
-            label="Tahmini Kapanış Tarihi"
+            label={t('form.expectedCloseDateLabel')}
             type="date"
             value={expectedCloseDate}
             onChange={(e) => setExpectedCloseDate(e.target.value)}
@@ -248,19 +250,19 @@ export function DealFormModal({ open, onClose, deal, defaultStageId }: DealFormM
           />
           {isEdit ? (
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-fg-muted">Aşama</span>
+              <span className="text-xs font-medium text-fg-muted">{t('form.stageLabel')}</span>
               <div className="flex h-10 items-center gap-2 rounded-md border border-border-subtle bg-surface-2 px-3">
                 <DealStageBadge stage={deal?.pipeline_stage ?? null} />
               </div>
-              <p className="text-xs text-fg-muted">Aşama değişikliği pano üzerinden sürükle-bırak ile yapılır.</p>
+              <p className="text-xs text-fg-muted">{t('form.stageReadonlyHint')}</p>
             </div>
           ) : (
             <Select
-              label="Aşama"
+              label={t('form.stageLabel')}
               value={effectiveStageId}
               onChange={(e) => setStageId(e.target.value)}
               options={stageSelectOptions}
-              hint="Belirtilmezse sunucu en baştaki aktif aşamaya koyar."
+              hint={t('form.stageHint')}
               error={fieldError('pipeline_stage_id')}
             />
           )}
@@ -268,7 +270,7 @@ export function DealFormModal({ open, onClose, deal, defaultStageId }: DealFormM
 
         {isEdit && (
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-fg-muted">Durum</span>
+            <span className="text-xs font-medium text-fg-muted">{t('form.statusLabel')}</span>
             <div className="flex h-10 items-center gap-2 rounded-md border border-border-subtle bg-surface-2 px-3">
               {deal && <DealStatusBadge status={deal.status} />}
             </div>
@@ -278,7 +280,7 @@ export function DealFormModal({ open, onClose, deal, defaultStageId }: DealFormM
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <DealCompanyCombobox value={company} onChange={setCompany} error={fieldError('company_id')} />
           <Select
-            label="Kişi"
+            label={t('form.contactLabel')}
             value={contact ? String(contact.id) : ''}
             onChange={(e) => {
               const id = e.target.value ? Number(e.target.value) : null
@@ -286,7 +288,7 @@ export function DealFormModal({ open, onClose, deal, defaultStageId }: DealFormM
               setContact(found)
             }}
             options={contactSelectOptions}
-            hint={!company ? 'Firma seçilirse kişi listesi o firmaya göre filtrelenir.' : undefined}
+            hint={!company ? t('form.contactHint') : undefined}
             disabled={contactsLoading}
             error={fieldError('contact_id')}
           />
@@ -294,7 +296,7 @@ export function DealFormModal({ open, onClose, deal, defaultStageId }: DealFormM
 
         {!ownersForbidden && (
           <Select
-            label="Sahip"
+            label={t('form.ownerLabel')}
             value={ownerId}
             onChange={(e) => setOwnerId(e.target.value)}
             options={ownerSelectOptions}

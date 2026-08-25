@@ -3,8 +3,11 @@
 namespace App\Services\Quotes;
 
 use App\Models\Quote;
+use App\Services\Exchange\ExchangeRateService;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -50,6 +53,8 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class QuoteStatusMachine
 {
+    public function __construct(private readonly ExchangeRateService $rates) {}
+
     /**
      * Anahtar = KAYNAK durum, değer = izin verilen HEDEF durumlar.
      * Listelenmeyen her hedef geçersizdir; aynı duruma geçiş de geçersizdir.
@@ -124,6 +129,7 @@ class QuoteStatusMachine
             }
 
             $this->applyTimestamps($locked, $to);
+            $this->freezeExchangeRate($locked, $to);
 
             $locked->status = $to;
             $locked->save();
@@ -153,7 +159,72 @@ class QuoteStatusMachine
     }
 
     /**
+     * ---------------------------------------------------------------------
+     * `sent` ANINDA KUR DONAR (Faz 14 / İz E, PHASE-INTL §2.3)
+     * ---------------------------------------------------------------------
+     * NEDEN BURADA, `QuoteService::send()` İÇİNDE VEYA BİR OBSERVER'DA DEĞİL:
+     * `sent`'e geçişin TEK yolu bu metottur — `transition()` kilitli satır
+     * üzerinde, `sent_at` damgasıyla AYNI transaction'da çalışır. Kur ile
+     * `sent_at`'i aynı yerde yazmak ikisinin sapmasını imkânsız kılar;
+     * `QuoteService::send()` ise geçişten ÖNCE (kalem kontrolü) ve SONRA
+     * (yeniden okuma) duran, kilit dışındaki bir kabuktur — kuru orada
+     * yazmak ikinci bir `save()` ve kilit dışı bir yazma penceresi demekti.
+     *
+     * Observer da uygun değil: `saving` her `save()`'de tetiklenir ve
+     * gönderilmiş bir teklifin kurunu ilgisiz bir güncellemede tazeleme
+     * riski taşır — belge kilidinin (Faz 9 `QUOTE_LOCKED`) tam tersi.
+     *
+     * REVİZYON DEVRALMAZ (§2.3): revizyon `draft` doğar ve kendi `sent`
+     * anında buraya gelip TAZE kur alır; ebeveynin donmuş kuru ebeveynde
+     * kalır. `QuoteService::REVISION_COPIED_FIELDS` beyaz listesi bu iki
+     * kolonu zaten kopyalamaz.
+     *
+     * TRY teklifte kur tanım gereği 1.000000, tarih gönderim günüdür.
+     * Kur bulunamazsa (yabancı para birimi + hiç kur satırı yok) iki alan da
+     * null KALIR + `warning` loglanır — uydurma bir kur PDF'e basılan bir
+     * yalana dönüşürdü (fırsat tarafındaki kararla aynı, bkz.
+     * DealMoveService::freezeBaseAmount).
+     */
+    protected function freezeExchangeRate(Quote $quote, string $to): void
+    {
+        if ($to !== 'sent') {
+            return;
+        }
+
+        $currency = strtoupper((string) ($quote->currency ?: $this->rates->baseCurrency()));
+        $sentOn = CarbonImmutable::parse($quote->sent_at ?? now())->startOfDay();
+
+        if ($this->rates->isBaseCurrency($currency)) {
+            $quote->exchange_rate = '1.000000';
+            $quote->exchange_rate_date = $sentOn->toDateString();
+
+            return;
+        }
+
+        $rate = $this->rates->resolveForFreeze($currency, $sentOn);
+
+        if ($rate === null) {
+            Log::warning('Teklif gönderiminde kur bulunamadı; donmuş kur yazılmadı.', [
+                'quote_id' => $quote->getKey(),
+                'currency' => $currency,
+                'sent_on' => $sentOn->toDateString(),
+            ]);
+
+            return;
+        }
+
+        $quote->exchange_rate = (string) $rate->rate;
+        $quote->exchange_rate_date = $rate->rate_date->toDateString();
+    }
+
+    /**
      * ROADMAP standardındaki hata zarfı.
+     *
+     * FAZ 14 / İz D: sabit Türkçe cümleler `lang/{tr,en,de,fr}/errors.php`'ye taşındı
+     * (`errors.quote_status.*` + paylaşılan `errors.status_transition.invalid`); dil
+     * `SetLocale` middleware'inden gelen istek locale'idir. `:from`/`:to`/`:allowed`
+     * durum makinesi ADLARIdır (draft/sent/...) — sabit değer, kullanıcı verisi değil,
+     * ama yine de parametre olarak taşınır ki cümlenin kendisi çevrilebilsin.
      *
      * @throws HttpResponseException
      */
@@ -162,17 +233,19 @@ class QuoteStatusMachine
         $allowed = self::TRANSITIONS[$from] ?? [];
 
         if ($from === 'draft' && $to === 'sent') {
-            $detail = 'Teklif yalnızca POST /api/quotes/{quote}/send ucundan gönderilebilir.';
+            $detail = __('errors.quote_status.send_endpoint_required');
         } elseif ($allowed === []) {
-            $detail = "\"{$from}\" durumu terminaldir; bu teklifin durumu artık değiştirilemez. ".
-                'Değişiklik gerekiyorsa yeni bir teklif oluşturun.';
+            $detail = __('errors.quote_status.terminal', ['from' => $from]);
         } else {
-            $detail = "\"{$from}\" durumundan yalnızca şunlara geçilebilir: ".implode(', ', $allowed).'.';
+            $detail = __('errors.quote_status.allowed_transitions', [
+                'from' => $from,
+                'allowed' => implode(', ', $allowed),
+            ]);
         }
 
         throw new HttpResponseException(response()->json([
             'errors' => [
-                'message' => "Bu durum geçişine izin verilmiyor: {$from} → {$to}.",
+                'message' => __('errors.status_transition.invalid', ['from' => $from, 'to' => $to]),
                 'code' => 'INVALID_STATUS_TRANSITION',
                 'fields' => [
                     'status' => [$detail],

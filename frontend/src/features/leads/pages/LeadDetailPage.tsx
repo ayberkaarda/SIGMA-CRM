@@ -2,17 +2,22 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import { ArrowLeft, Building2, CheckCircle2, Mail, Pencil, Phone, Repeat, Trash2, Users } from 'lucide-react'
 import { Avatar, Badge, Button, Card, CardBody, CardHeader, Modal, Skeleton } from '../../../components/ui'
+import { formatDateTime } from '../../../lib/datetime'
 import { usePermission } from '../../auth/hooks/usePermission'
 import { useDeleteLead, useLead } from '../api/leadsApi'
 import { LeadFormModal } from '../components/LeadFormModal'
 import { ConvertLeadModal } from '../components/ConvertLeadModal'
 import { AssignOwnerModal } from '../components/AssignOwnerModal'
 import { ScoreIndicator } from '../components/ScoreIndicator'
-import { SOURCE_LABELS, STATUS_BADGE_VARIANT, STATUS_LABELS, formatDateTime } from '../utils'
+import { SOURCE_LABEL_KEY, STATUS_BADGE_VARIANT, STATUS_LABEL_KEY } from '../utils'
+import { companyGroupConfig, contactGroupConfig, dealGroupConfig } from '../../related/adapters'
+import { RelatedRecordsPanel } from '../../related/RelatedRecordsPanel'
 
 export function LeadDetailPage() {
+  const { t } = useTranslation(['leads', 'common', 'enums'])
   const params = useParams<{ id: string }>()
   const leadId = Number(params.id)
   const navigate = useNavigate()
@@ -46,9 +51,9 @@ export function LeadDetailPage() {
   if (isError || !lead) {
     return (
       <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-fg-muted">Müşteri adayı yüklenirken bir hata oluştu.</p>
+        <p className="text-sm text-fg-muted">{t('leads:detail.loadError')}</p>
         <Button variant="secondary" onClick={() => refetch()}>
-          Tekrar dene
+          {t('leads:detail.retry')}
         </Button>
       </div>
     )
@@ -61,7 +66,7 @@ export function LeadDetailPage() {
       <nav aria-label="breadcrumb" className="flex items-center gap-1.5 text-xs text-fg-muted">
         <Link to="/leads" className="inline-flex items-center gap-1 hover:text-fg">
           <ArrowLeft className="size-3.5" aria-hidden="true" />
-          Müşteri Adayları
+          {t('leads:breadcrumb.leads')}
         </Link>
         <span className="mx-1">/</span>
         <span className="text-primary">{lead.full_name}</span>
@@ -72,25 +77,25 @@ export function LeadDetailPage() {
           <div className="flex items-center gap-2">
             <CheckCircle2 className="size-5 shrink-0" aria-hidden="true" />
             <p className="text-sm font-medium">
-              Bu aday {formatDateTime(lead.converted_at)} tarihinde müşteriye dönüştürüldü.
+              {t('leads:detail.convertedMessage', { date: formatDateTime(lead.converted_at) })}
             </p>
           </div>
           <div className="flex flex-wrap gap-3 text-xs font-medium">
             {lead.converted_contact_id && (
               <Link to={`/contacts/${lead.converted_contact_id}`} className="underline hover:no-underline">
-                Kişi kaydına git
+                {t('leads:detail.goToContact')}
               </Link>
             )}
             {lead.converted_company_id && (
               <Link to={`/companies/${lead.converted_company_id}`} className="underline hover:no-underline">
-                Firma kaydına git
+                {t('leads:detail.goToCompany')}
               </Link>
             )}
             {lead.converted_deal_id && (
               // Fırsat (Deal) route'u henüz yok — Faz 7'de eklenecek. Bağlantı bilerek
               // burada duruyor; tıklanırsa NotFoundPage'e düşer, bu normal/beklenen.
               <Link to={`/deals/${lead.converted_deal_id}`} className="underline hover:no-underline">
-                Fırsat kaydına git
+                {t('leads:detail.goToDeal')}
               </Link>
             )}
           </div>
@@ -106,7 +111,7 @@ export function LeadDetailPage() {
               {/* `leads.assign` saf izin kontrolüdür — `can.assign` her zaman modül izniyle aynıdır. */}
               {can('leads.assign') && lead.can.assign && (
                 <Button variant="secondary" leftIcon={<Users className="size-4" aria-hidden="true" />} onClick={() => setAssignOpen(true)}>
-                  Sahip Ata
+                  {t('leads:detail.assignOwner')}
                 </Button>
               )}
               {/* Faz 13: `!isConverted` durum kuralı korunur; kalan tek engel sahiplikse (can.convert
@@ -117,9 +122,9 @@ export function LeadDetailPage() {
                   leftIcon={<Repeat className="size-4" aria-hidden="true" />}
                   onClick={() => setConvertOpen(true)}
                   disabled={!lead.can.convert}
-                  title={lead.can.convert ? undefined : 'Bu kaydın sahibi değilsiniz, dönüştüremezsiniz.'}
+                  title={lead.can.convert ? undefined : t('leads:actions.convertDisabledTitle')}
                 >
-                  Dönüştür
+                  {t('leads:detail.convert')}
                 </Button>
               )}
               {!isConverted && can('leads.update') && (
@@ -128,16 +133,16 @@ export function LeadDetailPage() {
                   leftIcon={<Pencil className="size-4" aria-hidden="true" />}
                   onClick={() => setEditOpen(true)}
                   disabled={!lead.can.update}
-                  title={lead.can.update ? undefined : 'Bu kaydın sahibi değilsiniz, düzenleyemezsiniz.'}
+                  title={lead.can.update ? undefined : t('leads:actions.editDisabledTitle')}
                 >
-                  Düzenle
+                  {t('leads:detail.edit')}
                 </Button>
               )}
               {/* Dönüştürülmüş lead silinemez — sahiplikten bağımsız durum kuralı, GİZLEME ile ele
                   alınır (bkz. `LeadPolicy::delete`). */}
               {can('leads.delete') && lead.can.delete && (
                 <Button variant="danger" leftIcon={<Trash2 className="size-4" aria-hidden="true" />} onClick={() => setDeleteOpen(true)}>
-                  Sil
+                  {t('leads:detail.delete')}
                 </Button>
               )}
             </div>
@@ -145,52 +150,52 @@ export function LeadDetailPage() {
         />
         <CardBody>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <DetailField label="Durum">
-              <Badge variant={STATUS_BADGE_VARIANT[lead.status]}>{STATUS_LABELS[lead.status]}</Badge>
+            <DetailField label={t('leads:detail.fields.status')}>
+              <Badge variant={STATUS_BADGE_VARIANT[lead.status]}>{t(STATUS_LABEL_KEY[lead.status], { ns: 'enums' })}</Badge>
             </DetailField>
-            <DetailField label="Kaynak">
-              <Badge variant="neutral">{SOURCE_LABELS[lead.source]}</Badge>
+            <DetailField label={t('leads:detail.fields.source')}>
+              <Badge variant="neutral">{t(SOURCE_LABEL_KEY[lead.source], { ns: 'enums' })}</Badge>
             </DetailField>
-            <DetailField label="Skor">
+            <DetailField label={t('leads:detail.fields.score')}>
               <ScoreIndicator score={lead.score} />
             </DetailField>
-            <DetailField label="Sahip">
+            <DetailField label={t('leads:detail.fields.owner')}>
               {lead.owner ? (
                 <div className="flex items-center gap-2">
                   <Avatar name={lead.owner.name} size="xs" />
                   <span className="text-sm text-fg">{lead.owner.name}</span>
                 </div>
               ) : (
-                <span className="text-sm text-fg-muted">Atanmamış</span>
+                <span className="text-sm text-fg-muted">{t('leads:detail.fields.unassigned')}</span>
               )}
             </DetailField>
-            <DetailField label="E-posta">
+            <DetailField label={t('leads:detail.fields.email')}>
               <span className="flex items-center gap-1.5 text-sm text-fg">
                 <Mail className="size-3.5 text-fg-muted" aria-hidden="true" />
                 {lead.email ?? '—'}
               </span>
             </DetailField>
-            <DetailField label="Telefon">
+            <DetailField label={t('leads:detail.fields.phone')}>
               <span className="flex items-center gap-1.5 text-sm text-fg">
                 <Phone className="size-3.5 text-fg-muted" aria-hidden="true" />
                 {lead.phone ?? '—'}
               </span>
             </DetailField>
-            <DetailField label="Firma">
+            <DetailField label={t('leads:detail.fields.company')}>
               <span className="flex items-center gap-1.5 text-sm text-fg">
                 <Building2 className="size-3.5 text-fg-muted" aria-hidden="true" />
                 {lead.company_name ?? '—'}
               </span>
             </DetailField>
-            <DetailField label="Oluşturulma">
+            <DetailField label={t('leads:detail.fields.createdAt')}>
               <span className="text-sm text-fg">{formatDateTime(lead.created_at)}</span>
             </DetailField>
           </div>
 
           <div className="mt-6 flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">Etiketler</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">{t('leads:detail.tagsTitle')}</p>
             <div className="flex flex-wrap gap-1.5">
-              {lead.tags.length === 0 && <span className="text-sm text-fg-muted">Etiket yok.</span>}
+              {lead.tags.length === 0 && <span className="text-sm text-fg-muted">{t('leads:detail.noTags')}</span>}
               {lead.tags.map((tag) => (
                 <Badge key={tag.id} variant="neutral">
                   {tag.name}
@@ -203,7 +208,7 @@ export function LeadDetailPage() {
 
       {Object.keys(lead.custom_fields).length > 0 && (
         <Card>
-          <CardHeader title="Özel Alanlar" />
+          <CardHeader title={t('leads:detail.customFieldsTitle')} />
           <CardBody>
             <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {Object.entries(lead.custom_fields).map(([key, value]) => (
@@ -218,11 +223,37 @@ export function LeadDetailPage() {
       )}
 
       <Card>
-        <CardHeader title="Notlar" />
+        <CardHeader title={t('leads:detail.notesTitle')} />
         <CardBody>
-          <p className="whitespace-pre-wrap text-sm text-fg-secondary">{lead.notes || 'Not eklenmemiş.'}</p>
+          <p className="whitespace-pre-wrap text-sm text-fg-secondary">{lead.notes || t('leads:detail.notesEmpty')}</p>
         </CardBody>
       </Card>
+
+      {/* Faz 14 / İz F — C3: ters yön (bir kişi/firma/fırsatın hangi lead'den geldiği)
+          şemada yok (bkz. LeadController::loadRelatedRecords() dokümanı) — yalnızca
+          dönüşümün GERÇEK, şemadaki tek yönü: Lead → dönüştürüldüğü kayıtlar. */}
+      <RelatedRecordsPanel
+        groups={[
+          contactGroupConfig(
+            'converted_contact',
+            t('related:groups.convertedContact'),
+            t('related:empty.convertedContact'),
+            lead.related?.converted_contact
+          ),
+          companyGroupConfig(
+            'converted_company',
+            t('related:groups.convertedCompany'),
+            t('related:empty.convertedCompany'),
+            lead.related?.converted_company
+          ),
+          dealGroupConfig(
+            'converted_deal',
+            t('related:groups.convertedDeal'),
+            t('related:empty.convertedDeal'),
+            lead.related?.converted_deal
+          ),
+        ]}
+      />
 
       <LeadFormModal open={editOpen} onClose={() => setEditOpen(false)} lead={lead} />
       <ConvertLeadModal open={convertOpen} onClose={() => setConvertOpen(false)} lead={lead} />
@@ -231,12 +262,12 @@ export function LeadDetailPage() {
       <Modal
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
-        title="Müşteri adayını sil"
-        description="Bu işlem geri alınamaz. Aday kalıcı olarak silinecek."
+        title={t('leads:deleteModal.title')}
+        description={t('leads:deleteModal.description')}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setDeleteOpen(false)}>
-              Vazgeç
+              {t('leads:deleteModal.cancel')}
             </Button>
             <Button
               variant="danger"
@@ -247,14 +278,17 @@ export function LeadDetailPage() {
                 navigate('/leads')
               }}
             >
-              Sil
+              {t('leads:deleteModal.confirm')}
             </Button>
           </div>
         }
       >
         <p className="text-sm text-fg-secondary">
-          <strong className="text-fg">{lead.full_name}</strong> adlı müşteri adayını silmek istediğinize emin
-          misiniz?
+          <Trans
+            i18nKey="leads:deleteModal.confirmText"
+            values={{ name: lead.full_name }}
+            components={{ bold: <strong className="text-fg" /> }}
+          />
         </p>
       </Modal>
     </div>

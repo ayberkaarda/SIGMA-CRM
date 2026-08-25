@@ -1,6 +1,7 @@
 // Kişiler modülü API katmanı — backend sözleşmesi görev tanımında belirtildi.
 // Hata gövdesi tüm uçlarda: `{ errors: { message, code, fields? } }` (bkz. `lib/axios.ts`).
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { api, getErrorMessage } from '../../../lib/axios'
 import { toast } from '../../../components/ui'
 import type { TimelineItem } from '../../../components/shared/Timeline'
@@ -215,11 +216,12 @@ export function useUserOptions(options?: { enabled?: boolean }) {
 
 export function useCreateContact() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation('contacts')
   return useMutation({
     mutationFn: createContactRequest,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: contactsKeys.all })
-      toast.success('Kişi oluşturuldu.')
+      toast.success(t('toast.created'))
     },
     onError: (error) => {
       toast.error(getErrorMessage(error))
@@ -229,12 +231,13 @@ export function useCreateContact() {
 
 export function useUpdateContact() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation('contacts')
   return useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: Partial<ContactPayload> }) => updateContactRequest(id, payload),
     onSuccess: (updatedContact) => {
       void queryClient.invalidateQueries({ queryKey: contactsKeys.all })
       void queryClient.invalidateQueries({ queryKey: contactsKeys.detail(updatedContact.id) })
-      toast.success('Kişi güncellendi.')
+      toast.success(t('toast.updated'))
     },
     onError: (error) => {
       toast.error(getErrorMessage(error))
@@ -244,11 +247,12 @@ export function useUpdateContact() {
 
 export function useDeleteContact() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation('contacts')
   return useMutation({
     mutationFn: (id: number) => deleteContactRequest(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: contactsKeys.all })
-      toast.success('Kişi silindi.')
+      toast.success(t('toast.deleted'))
     },
     onError: (error) => {
       // Açık deal'ı olan kişi silinemez (422) — gerçek backend mesajı burada yüzeye çıkar.

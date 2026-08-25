@@ -13,6 +13,9 @@ use App\Http\Resources\CompanyResource;
 use App\Http\Resources\ContactResource;
 use App\Http\Resources\DuplicateCandidateResource;
 use App\Http\Resources\LeadResource;
+use App\Models\Company;
+use App\Models\Contact;
+use App\Models\Deal;
 use App\Models\Lead;
 use App\Services\Leads\DuplicateDetector;
 use App\Services\Leads\LeadService;
@@ -89,6 +92,8 @@ class LeadController extends Controller
 
         $lead = $this->leads->find($lead->id);
 
+        $this->loadRelatedRecords($lead);
+
         return (new LeadResource($lead))->response();
     }
 
@@ -161,5 +166,48 @@ class LeadController extends Controller
         }
 
         return $model->toArray();
+    }
+
+    /**
+     * =========================================================================
+     * Faz 14 / İz F — C3 çift-yönlü "ilişkili kayıtlar" paneli (docs/PHASE-INTL.md
+     * §3, docs/PHASE-AUDIT.md §5.1 C3 satırı)
+     * =========================================================================
+     *
+     * DİKKAT — bu, PHASE-AUDIT §5.1'in "en az şu çiftler" listesinde YOK:
+     * bulk listede hiçbir `lead ↔ X` çifti tarif edilmiyor. Yine de
+     * `LeadDetailPage` `Bağlanacak sayfalar`da adı geçen bir sayfa ve şemada
+     * GERÇEKTEN VAR OLAN tek yön bu: `Lead belongsTo convertedContact/
+     * convertedCompany/convertedDeal` (dönüşüm sonrası doğan FK'ler).
+     * `LeadResource` bugün bu alanları yalnız çıplak ID olarak döndürüyor
+     * (`converted_contact_id` vb.) ve `LeadDetailPage` bağlantı metnini
+     * jenerik bir etiketle ("Kişiye git") basıyor — hedefin adını/başlığını
+     * hiç göstermiyor. Bu yüzden ismi taşıyan tam nesneyi de ekliyoruz.
+     *
+     * TERS YÖN YOK: `contacts`/`companies`/`deals` tablolarında bir
+     * `lead_id`/`converted_from_lead_id` kolonu YOK (bkz. migration taraması)
+     * — yani "bu kişi hangi lead'den geldi" sorusu şemada cevaplanamıyor.
+     * UYDURULMADI, atlandı.
+     *
+     * Yetki: her alt-alan yalnızca ilgili modülün `view` Policy'si `true`
+     * dönerse (ve lead gerçekten o alana dönüştürüldüyse) yüklenir.
+     */
+    private function loadRelatedRecords(Lead $lead): void
+    {
+        // Lead::convertedContact()/convertedCompany()/convertedDeal() GERÇEK
+        // BelongsTo ilişkileridir (Models dosyasına dokunulmadı) — `load()` ile
+        // eager-load edilir, `Contact`/`Company`/`Deal` import'ları yalnızca
+        // `Gate::allows('viewAny', ...)` çağrısı için gerekli.
+        if ($lead->converted_contact_id !== null && Gate::allows('viewAny', Contact::class)) {
+            $lead->load(['convertedContact' => fn ($q) => $q->select(['id', 'first_name', 'last_name'])]);
+        }
+
+        if ($lead->converted_company_id !== null && Gate::allows('viewAny', Company::class)) {
+            $lead->load(['convertedCompany' => fn ($q) => $q->select(['id', 'name'])]);
+        }
+
+        if ($lead->converted_deal_id !== null && Gate::allows('viewAny', Deal::class)) {
+            $lead->load(['convertedDeal' => fn ($q) => $q->select(['id', 'title'])]);
+        }
     }
 }

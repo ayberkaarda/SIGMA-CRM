@@ -7,20 +7,20 @@
 // `/api/presence/online` `password.changed` kapısının arkasında — geçici şifreli bir kullanıcı
 // 403 alır. `useOnlineUsers` bu durumda `isError` döner; panel bu durumda KIRILMAZ, yerine
 // kısa bir açıklama notuyla kendini gizler.
+import { useTranslation } from 'react-i18next'
 import { Users } from 'lucide-react'
 import { Avatar, Badge, Card, CardHeader, EmptyState, Skeleton } from '../../../components/ui'
 import { useOnlineUsers } from '../../presence/hooks/useOnlineUsers'
 
 export function OnlineUsersPanel() {
+  const { t } = useTranslation('logs')
   const { users, meta, isLoading, isError } = useOnlineUsers()
 
   if (isError) {
     return (
       <Card className="h-fit">
-        <CardHeader title="Çevrimiçi Kullanıcılar" />
-        <p className="px-5 pb-5 text-sm text-fg-muted">
-          Çevrimiçi kullanıcı listesi şu anda görüntülenemiyor.
-        </p>
+        <CardHeader title={t('logs:onlineUsers.title')} />
+        <p className="px-5 pb-5 text-sm text-fg-muted">{t('logs:onlineUsers.loadError')}</p>
       </Card>
     )
   }
@@ -28,13 +28,13 @@ export function OnlineUsersPanel() {
   return (
     <Card className="h-fit">
       <CardHeader
-        title="Çevrimiçi Kullanıcılar"
-        subtitle={isLoading ? undefined : `${users.length} kişi`}
+        title={t('logs:onlineUsers.title')}
+        subtitle={isLoading ? undefined : t('logs:onlineUsers.count', { count: users.length })}
       />
       <div className="flex flex-col gap-1 p-3">
         {meta?.stale && (
           <div className="mx-1 mb-1 rounded-md bg-warning-tint px-2.5 py-1.5 text-xs text-warning">
-            Liste güncel olmayabilir.
+            {t('logs:onlineUsers.staleWarning')}
           </div>
         )}
 
@@ -50,8 +50,8 @@ export function OnlineUsersPanel() {
         ) : users.length === 0 ? (
           <EmptyState
             icon={<Users className="size-6" aria-hidden="true" />}
-            title="Çevrimiçi kullanıcı yok"
-            description="Şu anda başka kimse bağlı değil."
+            title={t('logs:onlineUsers.emptyTitle')}
+            description={t('logs:onlineUsers.emptyDescription')}
             className="px-3 py-6"
           />
         ) : (

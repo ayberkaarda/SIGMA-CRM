@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import { Download, Eye, FileText, GitBranch, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import {
   Button,
@@ -25,8 +26,10 @@ import {
 } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
 import { usePermission } from '../../auth/hooks/usePermission'
+import { SavedViewsBar } from '../../saved-views/components/SavedViewsBar'
 import { QuoteStatusBadge } from '../components/QuoteStatusBadge'
-import { formatDate, formatTRY } from '../utils/money'
+import { formatDate } from '../../../lib/datetime'
+import { formatMoney } from '../../../lib/money'
 import { useCompanyFilterOptions, useDealFilterOptions } from '../api/catalogApi'
 import { buildQuotePdfUrl, useDeleteQuote, useQuotes, useReviseQuote } from '../api/quotesApi'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
@@ -36,15 +39,10 @@ const DEFAULT_PER_PAGE = 10
 const SEARCH_DEBOUNCE_MS = 300
 const DEFAULT_SORT = '-created_at'
 
-const STATUS_OPTIONS: Array<{ value: QuoteStatus; label: string }> = [
-  { value: 'draft', label: 'Taslak' },
-  { value: 'sent', label: 'Gönderildi' },
-  { value: 'accepted', label: 'Kabul Edildi' },
-  { value: 'rejected', label: 'Reddedildi' },
-  { value: 'expired', label: 'Süresi Doldu' },
-]
+const QUOTE_STATUSES: QuoteStatus[] = ['draft', 'sent', 'accepted', 'rejected', 'expired']
 
 export function QuotesListPage() {
+  const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
   const { can } = usePermission()
 
@@ -117,13 +115,16 @@ export function QuotesListPage() {
     }
   }
 
-  const statusFilterOptions = [{ value: '', label: 'Tüm durumlar' }, ...STATUS_OPTIONS]
+  const statusFilterOptions = [
+    { value: '', label: t('quotes:list.allStatuses') },
+    ...QUOTE_STATUSES.map((status) => ({ value: status, label: t(`enums:quote.status.${status}`) })),
+  ]
   const companyFilterOptions = [
-    { value: '', label: 'Tüm firmalar' },
+    { value: '', label: t('quotes:list.allCompanies') },
     ...(companyOptions ?? []).map((c) => ({ value: String(c.id), label: c.name })),
   ]
   const dealFilterOptions = [
-    { value: '', label: 'Tüm fırsatlar' },
+    { value: '', label: t('quotes:list.allDeals') },
     ...(dealOptions ?? []).map((d) => ({ value: String(d.id), label: d.title })),
   ]
 
@@ -134,21 +135,24 @@ export function QuotesListPage() {
   return (
     <div className="flex flex-col gap-4">
       <nav aria-label="breadcrumb" className="text-xs text-fg-muted">
-        <span>Anasayfa</span>
+        <span>{t('quotes:breadcrumb.home')}</span>
         <span className="mx-1.5">/</span>
-        <span className="text-primary">Teklifler</span>
+        <span className="text-primary">{t('quotes:breadcrumb.quotes')}</span>
       </nav>
 
       <Card>
         <CardHeader
-          title="Teklifler"
-          subtitle={`${total} teklif (filtrelenmiş)`}
+          title={t('quotes:list.title')}
+          subtitle={t('quotes:list.subtitle', { count: total })}
           action={
-            can('quotes.create') && (
-              <Link to="/quotes/new">
-                <Button leftIcon={<Plus className="size-4" aria-hidden="true" />}>Yeni Teklif</Button>
-              </Link>
-            )
+            <div className="flex items-center gap-2">
+              <SavedViewsBar module="quotes" filterKeys={['status', 'deal_id', 'company_id', 'from', 'to', 'expired']} />
+              {can('quotes.create') && (
+                <Link to="/quotes/new">
+                  <Button leftIcon={<Plus className="size-4" aria-hidden="true" />}>{t('quotes:list.createButton')}</Button>
+                </Link>
+              )}
+            </div>
           }
         />
         <CardBody noPadding>
@@ -158,9 +162,9 @@ export function QuotesListPage() {
                 <Input
                   value={searchDraft}
                   onChange={(e) => setSearchDraft(e.target.value)}
-                  placeholder="Teklif no, başlık ara..."
+                  placeholder={t('quotes:list.searchPlaceholder')}
                   leftIcon={<Search className="size-4" aria-hidden="true" />}
-                  aria-label="Teklif ara"
+                  aria-label={t('quotes:list.searchAria')}
                 />
               </div>
               <div className="w-full lg:w-44">
@@ -168,7 +172,7 @@ export function QuotesListPage() {
                   value={query.status ?? ''}
                   onChange={(e) => updateParams({ status: e.target.value || null, page: '1' })}
                   options={statusFilterOptions}
-                  aria-label="Durum filtresi"
+                  aria-label={t('quotes:list.statusAria')}
                 />
               </div>
               <div className="w-full lg:w-48">
@@ -176,7 +180,7 @@ export function QuotesListPage() {
                   value={query.company_id ? String(query.company_id) : ''}
                   onChange={(e) => updateParams({ company_id: e.target.value || null, page: '1' })}
                   options={companyFilterOptions}
-                  aria-label="Firma filtresi"
+                  aria-label={t('quotes:list.companyAria')}
                 />
               </div>
               <div className="w-full lg:w-48">
@@ -184,13 +188,13 @@ export function QuotesListPage() {
                   value={query.deal_id ? String(query.deal_id) : ''}
                   onChange={(e) => updateParams({ deal_id: e.target.value || null, page: '1' })}
                   options={dealFilterOptions}
-                  aria-label="Fırsat filtresi"
+                  aria-label={t('quotes:list.dealAria')}
                 />
               </div>
             </div>
             <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
               <Checkbox
-                label="Sadece süresi dolmuşlar"
+                label={t('quotes:list.expiredOnly')}
                 checked={!!query.expired}
                 onChange={(e) => updateParams({ expired: e.target.checked ? '1' : null, page: '1' })}
               />
@@ -200,7 +204,7 @@ export function QuotesListPage() {
                     type="date"
                     value={query.from ?? ''}
                     onChange={(e) => updateParams({ from: e.target.value || null, page: '1' })}
-                    aria-label="Başlangıç tarihi"
+                    aria-label={t('quotes:list.fromDateAria')}
                     max={query.to || undefined}
                   />
                 </div>
@@ -210,7 +214,7 @@ export function QuotesListPage() {
                     type="date"
                     value={query.to ?? ''}
                     onChange={(e) => updateParams({ to: e.target.value || null, page: '1' })}
-                    aria-label="Bitiş tarihi"
+                    aria-label={t('quotes:list.toDateAria')}
                     min={query.from || undefined}
                   />
                 </div>
@@ -220,40 +224,40 @@ export function QuotesListPage() {
 
           {isError ? (
             <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
-              <p className="text-sm text-fg-muted">Teklifler yüklenirken bir hata oluştu.</p>
+              <p className="text-sm text-fg-muted">{t('quotes:list.loadError')}</p>
               <Button variant="secondary" onClick={() => refetch()}>
-                Tekrar dene
+                {t('quotes:retry')}
               </Button>
             </div>
           ) : isEmpty ? (
             <EmptyState
               icon={<FileText className="size-6" aria-hidden="true" />}
-              title="Teklif bulunamadı"
-              description="Arama veya filtre kriterlerinizle eşleşen teklif yok."
+              title={t('quotes:list.emptyTitle')}
+              description={t('quotes:list.emptyDescription')}
             />
           ) : (
             <Table>
               <THead>
                 <Tr>
                   <Th sortable sortDirection={sortDirectionFor('quote_number')} onSort={() => toggleSort('quote_number')}>
-                    Teklif No
+                    {t('quotes:list.columns.quoteNumber')}
                   </Th>
                   <Th sortable sortDirection={sortDirectionFor('title')} onSort={() => toggleSort('title')}>
-                    Başlık
+                    {t('quotes:list.columns.title')}
                   </Th>
-                  <Th>Firma / Kişi</Th>
-                  <Th>Fırsat</Th>
+                  <Th>{t('quotes:list.columns.companyContact')}</Th>
+                  <Th>{t('quotes:list.columns.deal')}</Th>
                   <Th sortable sortDirection={sortDirectionFor('status')} onSort={() => toggleSort('status')}>
-                    Durum
+                    {t('quotes:list.columns.status')}
                   </Th>
                   <Th align="right" sortable sortDirection={sortDirectionFor('total')} onSort={() => toggleSort('total')}>
-                    Toplam
+                    {t('quotes:list.columns.total')}
                   </Th>
                   <Th sortable sortDirection={sortDirectionFor('valid_until')} onSort={() => toggleSort('valid_until')}>
-                    Geçerlilik
+                    {t('quotes:list.columns.validUntil')}
                   </Th>
-                  <Th align="right">Kalem</Th>
-                  <Th align="right">İşlemler</Th>
+                  <Th align="right">{t('quotes:list.columns.items')}</Th>
+                  <Th align="right">{t('quotes:list.columns.actions')}</Th>
                 </Tr>
               </THead>
               <TBody aria-busy={isLoading}>
@@ -320,7 +324,7 @@ export function QuotesListPage() {
                             <QuoteStatusBadge status={quote.status} />
                           </Td>
                           <Td align="right" className="whitespace-nowrap font-medium text-fg">
-                            {formatTRY(quote.total)}
+                            {formatMoney(quote.total, quote.currency)}
                           </Td>
                           <Td className={cn('whitespace-nowrap', quote.is_expired && 'font-medium text-warning')}>
                             {formatDate(quote.valid_until)}
@@ -328,26 +332,32 @@ export function QuotesListPage() {
                           <Td align="right">{quote.items_count}</Td>
                           <Td align="right">
                             <div className="flex items-center justify-end gap-1">
-                              <IconLinkButton label="Detay" to={`/quotes/${quote.id}`}>
+                              <IconLinkButton label={t('quotes:actions.detail')} to={`/quotes/${quote.id}`}>
                                 <Eye className="size-4" aria-hidden="true" />
                               </IconLinkButton>
                               {canEditRow && (
-                                <IconLinkButton label="Düzenle" to={`/quotes/${quote.id}/edit`}>
+                                <IconLinkButton label={t('quotes:actions.edit')} to={`/quotes/${quote.id}/edit`}>
                                   <Pencil className="size-4" aria-hidden="true" />
                                 </IconLinkButton>
                               )}
-                              <a href={buildQuotePdfUrl(quote.id)} target="_blank" rel="noreferrer" aria-label="PDF" title="PDF">
+                              <a
+                                href={buildQuotePdfUrl(quote.id)}
+                                target="_blank"
+                                rel="noreferrer"
+                                aria-label={t('quotes:actions.pdf')}
+                                title={t('quotes:actions.pdf')}
+                              >
                                 <IconButtonLike>
                                   <Download className="size-4" aria-hidden="true" />
                                 </IconButtonLike>
                               </a>
                               {canReviseRow && (
-                                <IconButton label="Revize Et" onClick={() => handleRevise(quote)} loading={revisingId === quote.id}>
+                                <IconButton label={t('quotes:actions.revise')} onClick={() => handleRevise(quote)} loading={revisingId === quote.id}>
                                   <GitBranch className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
                               {canDeleteRow && (
-                                <IconButton label="Sil" danger onClick={() => setDeleteQuoteState(quote)}>
+                                <IconButton label={t('quotes:actions.delete')} danger onClick={() => setDeleteQuoteState(quote)}>
                                   <Trash2 className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
@@ -376,12 +386,12 @@ export function QuotesListPage() {
       <Modal
         open={!!deleteQuoteState}
         onClose={() => setDeleteQuoteState(null)}
-        title="Teklifi sil"
-        description="Bu işlem geri alınamaz. Teklif kalıcı olarak silinecek."
+        title={t('quotes:deleteModal.title')}
+        description={t('quotes:deleteModal.description')}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setDeleteQuoteState(null)}>
-              Vazgeç
+              {t('common:actions.cancel')}
             </Button>
             <Button
               variant="danger"
@@ -392,17 +402,18 @@ export function QuotesListPage() {
                 setDeleteQuoteState(null)
               }}
             >
-              Sil
+              {t('quotes:actions.delete')}
             </Button>
           </div>
         }
       >
         {deleteQuoteState && (
           <p className="text-sm text-fg-secondary">
-            <strong className="text-fg">
-              {deleteQuoteState.quote_number} — {deleteQuoteState.title}
-            </strong>{' '}
-            adlı teklifi silmek istediğinize emin misiniz?
+            <Trans
+              i18nKey="quotes:deleteModal.confirmText"
+              values={{ number: deleteQuoteState.quote_number, title: deleteQuoteState.title }}
+              components={{ bold: <strong className="text-fg" /> }}
+            />
           </p>
         )}
       </Modal>

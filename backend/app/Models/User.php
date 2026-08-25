@@ -25,8 +25,41 @@ class User extends Authenticatable
         'email',
         'password',
         'department',
+        // Kişisel arayüz tercihleri (Faz 14). Mass-assignment'a AÇIK ama serbest DEĞİL:
+        // her iki alan da `config('syncra.i18n.supported_locales')` / `syncra.currency.supported`
+        // beyaz listesine karşı doğrulanır (UpdatePreferencesRequest). Fillable olmaları,
+        // tercihi yazan servisin `forceFill` gibi kaçamaklara sapmasını engeller.
+        'locale',
+        'preferred_currency',
         'is_active',
         'must_change_password',
+    ];
+
+    /**
+     * MODEL VARSAYILANLARI — GÖÇTEKİ DB VARSAYILANLARIYLA BİREBİR AYNI OLMAK ZORUNDA
+     * (`2026_08_25_700001_add_locale_and_preferred_currency_to_users_table`).
+     *
+     * NEDEN GEREKLİ (Faz 14, ölçülmüş hata): iki kolon `fillable` ve DB tarafında DEFAULT'lu.
+     * Bu blok olmadan `User::create()` onları INSERT'e hiç katmıyor, satır DB varsayılanını
+     * alıyor ama BELLEKTEKİ model örneği o nitelikleri HİÇ taşımıyordu. `LogsCrmActivity`
+     * `logFillable()` kullandığı için spatie, "fillable ama modelde yok" olan alanları her
+     * kayıtta DEĞİŞMİŞ sayıyor ve `logOnlyDirty()` filtresini boşa çıkarıyordu:
+     * `remember_token` tazelenmesi gibi HİÇBİR ŞEYİN değişmediği bir kaydın bile
+     * `["locale","preferred_currency"]` içeren bir audit satırı yazmasına yol açıyordu.
+     * Faz 5'te bilinçle gürültüden arındırılan denetim izini bu, üretimde de kirletirdi.
+     *
+     * ÇÖZÜM YÖNÜ OLARAK `logExcept` REDDEDİLDİ: dil/para birimi tercihi DEĞİŞTİĞİNDE
+     * denetlenmeye değer meşru bir olaydır. Sorun alanların loglanması değil, DEĞİŞMEDİKLERİ
+     * HÂLDE loglanmalarıydı — düzeltme de tam oraya, modelin bilgi eksiğine yapılır.
+     *
+     * Değerler config'ten OKUNAMAZ (property initializer sabit olmak zorunda); göçle aynı
+     * literal tutulur ve ikisi birlikte değişir.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'locale' => 'tr',
+        'preferred_currency' => 'TRY',
     ];
 
     /**

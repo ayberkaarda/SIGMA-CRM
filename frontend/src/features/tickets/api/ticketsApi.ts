@@ -6,6 +6,7 @@
 // `updateTicketRequest` (`PATCH /api/tickets/{id}`) gövdesinde `status` GÖNDERİLMEZ, backend
 // 422 ile reddeder (bkz. `docs/SLA-DESIGN.md` §4, `types.ts` başındaki not).
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { api, getErrorMessage } from '../../../lib/axios'
 import { toast } from '../../../components/ui'
 import type {
@@ -130,11 +131,12 @@ function invalidateTicketCaches(queryClient: ReturnType<typeof useQueryClient>, 
 
 export function useCreateTicket() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation('tickets')
   return useMutation({
     mutationFn: createTicketRequest,
     onSuccess: (ticket) => {
       invalidateTicketCaches(queryClient, ticket.id)
-      toast.success('Talep oluşturuldu.')
+      toast.success(t('toast.created'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -142,11 +144,12 @@ export function useCreateTicket() {
 
 export function useUpdateTicket() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation('tickets')
   return useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: Partial<TicketPayload> }) => updateTicketRequest(id, payload),
     onSuccess: (ticket) => {
       invalidateTicketCaches(queryClient, ticket.id)
-      toast.success('Talep güncellendi.')
+      toast.success(t('toast.updated'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -154,11 +157,12 @@ export function useUpdateTicket() {
 
 export function useDeleteTicket() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation('tickets')
   return useMutation({
     mutationFn: (id: number) => deleteTicketRequest(id),
     onSuccess: () => {
       invalidateTicketCaches(queryClient)
-      toast.success('Talep silindi.')
+      toast.success(t('toast.deleted'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -166,11 +170,12 @@ export function useDeleteTicket() {
 
 export function useChangeTicketStatus() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation('tickets')
   return useMutation({
     mutationFn: ({ id, status }: { id: number; status: TicketStatus }) => changeTicketStatusRequest(id, status),
     onSuccess: (ticket) => {
       invalidateTicketCaches(queryClient, ticket.id)
-      toast.success('Durum güncellendi.')
+      toast.success(t('toast.statusUpdated'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -178,11 +183,12 @@ export function useChangeTicketStatus() {
 
 export function useAssignTicket() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation('tickets')
   return useMutation({
     mutationFn: ({ id, assignedTo }: { id: number; assignedTo: number | null }) => assignTicketRequest(id, assignedTo),
     onSuccess: (ticket) => {
       invalidateTicketCaches(queryClient, ticket.id)
-      toast.success('Talep ataması güncellendi.')
+      toast.success(t('toast.assignUpdated'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })

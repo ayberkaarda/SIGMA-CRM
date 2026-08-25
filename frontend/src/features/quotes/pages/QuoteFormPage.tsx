@@ -14,6 +14,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import { ArrowLeft, GitBranch, Info, Lock, Save } from 'lucide-react'
 import { Button, Card, CardBody, CardHeader, Input, Modal, Select, Skeleton, Textarea, toast } from '../../../components/ui'
 import { getErrorMessage, getFieldErrors } from '../../../lib/axios'
@@ -29,28 +30,29 @@ import { resolveProductPrice, useContactOptionsSearch } from '../api/catalogApi'
 import type { CompanyOption, ContactOption, DealOption } from '../api/catalogApi'
 import { usePriceLists } from '../../price-lists/api/priceListsApi'
 import { useCreateQuote, useQuote, useReviseQuote, useUpdateQuote } from '../api/quotesApi'
-import type { DiscountType, QuotePayload, QuoteStatus } from '../types'
+import type { DiscountType, QuotePayload } from '../types'
 
-const STATUS_LABELS: Record<QuoteStatus, string> = {
-  draft: 'Taslak',
-  sent: 'Gönderildi',
-  accepted: 'Kabul Edildi',
-  rejected: 'Reddedildi',
-  expired: 'Süresi Doldu',
-}
+// Form bu sürümde bir para birimi SEÇİCİSİ SUNMUYOR (İz E'nin kapsamı — bu görev yalnızca doğru
+// sembolü basıyor, dönüşüm/seçim eklemiyor). Yeni bir teklif henüz `currency` taşımadığından
+// (backend `quotes.currency` kolonu `default('TRY')`, `backend/config/exchange.php`
+// `base_currency` da `'TRY'`) oluşturma modunda bu sabit kullanılır — sunucunun zaten
+// uygulayacağı varsayılanla birebir aynı, uydurma bir değer değil.
+const NEW_QUOTE_DEFAULT_CURRENCY = 'TRY'
 
 /** Kilitli bir alanın altında/yanında gösterilen küçük ipucu — kullanıcı ALAN BAZINDA neden
  * değiştiremediğini görsün (koordinatör düzeltmesi: yalnızca kart altlığı yetmiyordu). */
 function LockedFieldHint() {
+  const { t } = useTranslation()
   return (
     <p className="mt-1 flex items-center gap-1 text-xs text-fg-muted">
       <Lock className="size-3" aria-hidden="true" />
-      Gönderildikten sonra değiştirilemez.
+      {t('quotes:form.lockedFieldHint')}
     </p>
   )
 }
 
 export function QuoteFormPage() {
+  const { t } = useTranslation()
   const params = useParams<{ id?: string }>()
   const navigate = useNavigate()
   const { can } = usePermission()
@@ -108,6 +110,10 @@ export function QuoteFormPage() {
     }
   }
   const hydrated = hydrationKey !== null && hydrationKey === lastHydrationKey
+
+  // Düzenlemede teklifin KENDİ para birimi (`quote.currency`); oluşturmada henüz bir kayıt/seçim
+  // olmadığından `NEW_QUOTE_DEFAULT_CURRENCY` (bkz. dosya başı gerekçe).
+  const currency = isEdit && quote ? quote.currency : NEW_QUOTE_DEFAULT_CURRENCY
 
   const locked = isEdit && !!quote && quote.status !== 'draft'
   const revisable = !!quote && (quote.status === 'sent' || quote.status === 'rejected' || quote.status === 'expired')
@@ -193,7 +199,7 @@ export function QuoteFormPage() {
         }),
       )
       setItems(updated)
-      toast.success('Ürün bazlı kalemlerin fiyatları yeni listeye göre güncellendi.')
+      toast.success(t('quotes:form.priceListChangeModal.pricesUpdated'))
     } finally {
       setUpdatingPrices(false)
     }
@@ -226,7 +232,7 @@ export function QuoteFormPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const errors: Record<string, string[]> = {}
-    if (!title.trim()) errors.title = ['Teklif başlığı zorunludur.']
+    if (!title.trim()) errors.title = [t('quotes:form.validation.titleRequired')]
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
 
@@ -272,9 +278,9 @@ export function QuoteFormPage() {
   if (isEdit && (isError || !quote)) {
     return (
       <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-fg-muted">Teklif yüklenirken bir hata oluştu.</p>
+        <p className="text-sm text-fg-muted">{t('quotes:form.loadError')}</p>
         <Button variant="secondary" onClick={() => refetch()}>
-          Tekrar dene
+          {t('quotes:retry')}
         </Button>
       </div>
     )
@@ -282,11 +288,14 @@ export function QuoteFormPage() {
 
   const isPending = createQuote.isPending || updateQuote.isPending
   const priceListSelectOptions = [
-    { value: '', label: '(Varsayılan fiyat listesi)' },
-    ...(priceListOptions ?? []).map((pl) => ({ value: String(pl.id), label: pl.is_default ? `${pl.name} (varsayılan)` : pl.name })),
+    { value: '', label: t('quotes:form.priceListDefaultOption') },
+    ...(priceListOptions ?? []).map((pl) => ({
+      value: String(pl.id),
+      label: pl.is_default ? t('quotes:form.priceListDefaultSuffix', { name: pl.name }) : pl.name,
+    })),
   ]
   const contactSelectOptions = [
-    { value: '', label: 'Kişi yok' },
+    { value: '', label: t('quotes:form.contactNone') },
     ...(contactOptions ?? []).map((c) => ({ value: String(c.id), label: c.full_name })),
   ]
 
@@ -295,10 +304,10 @@ export function QuoteFormPage() {
       <nav aria-label="breadcrumb" className="flex items-center gap-1.5 text-xs text-fg-muted">
         <Link to="/quotes" className="inline-flex items-center gap-1 hover:text-fg">
           <ArrowLeft className="size-3.5" aria-hidden="true" />
-          Teklifler
+          {t('quotes:breadcrumb.quotes')}
         </Link>
         <span className="mx-1">/</span>
-        <span className="text-primary">{isEdit ? quote?.quote_number : 'Yeni Teklif'}</span>
+        <span className="text-primary">{isEdit ? quote?.quote_number : t('quotes:form.titleCreate')}</span>
       </nav>
 
       {locked && quote && (
@@ -307,18 +316,16 @@ export function QuoteFormPage() {
             <Info className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
             <div className="flex flex-col gap-1 text-sm">
               <p>
-                Bu teklif &quot;{STATUS_LABELS[quote.status]}&quot; durumunda. <strong>Değiştirilemez:</strong>{' '}
-                kalemler, indirim, firma, kişi. <strong>Düzenlenebilir:</strong> başlık, fırsat, geçerlilik
-                tarihi, notlar, şartlar — bunlar yalnızca sunum/idari bilgidir, teklifin tutarını etkilemez ve
-                normal &quot;Kaydet&quot; ile kaydedilir.
+                <Trans
+                  i18nKey="quotes:form.lockedBanner.statusText"
+                  values={{ status: t(`enums:quote.status.${quote.status}`) }}
+                  components={{ bold: <strong /> }}
+                />
               </p>
               {revisable ? (
-                <p>Kalemleri veya indirimi değiştirmeniz gerekiyorsa yeni bir revizyon oluşturun.</p>
+                <p>{t('quotes:form.lockedBanner.revisableHint')}</p>
               ) : (
-                <p>
-                  Bu teklif kabul edildiği için revizyon oluşturulamaz (kabul edilmiş bir taahhüt geri
-                  alınamaz) — tutarı etkileyen bir değişiklik gerekiyorsa bağımsız yeni bir teklif açın.
-                </p>
+                <p>{t('quotes:form.lockedBanner.notRevisableHint')}</p>
               )}
             </div>
           </div>
@@ -330,7 +337,7 @@ export function QuoteFormPage() {
               loading={reviseQuote.isPending}
               onClick={handleRevise}
             >
-              Revizyon Oluştur
+              {t('quotes:actions.createRevision')}
             </Button>
           )}
         </div>
@@ -338,12 +345,12 @@ export function QuoteFormPage() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Card>
-          <CardHeader title={isEdit ? `${quote?.quote_number} — Düzenle` : 'Yeni Teklif'} />
+          <CardHeader title={isEdit ? t('quotes:form.cardTitleEdit', { number: quote?.quote_number }) : t('quotes:form.titleCreate')} />
           <CardBody className="flex flex-col gap-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <Input
-                  label="Başlık"
+                  label={t('quotes:fields.title')}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   error={fieldError('title')}
@@ -352,7 +359,7 @@ export function QuoteFormPage() {
               </div>
               <DealCombobox value={deal} onChange={setDeal} error={fieldError('deal_id')} />
               <Input
-                label="Geçerlilik Tarihi"
+                label={t('quotes:fields.validUntil')}
                 type="date"
                 value={validUntil}
                 onChange={(e) => setValidUntil(e.target.value)}
@@ -364,7 +371,7 @@ export function QuoteFormPage() {
               </div>
               <div>
                 <Select
-                  label="Kişi"
+                  label={t('quotes:fields.contact')}
                   value={contact ? String(contact.id) : ''}
                   onChange={(e) => {
                     const id = e.target.value ? Number(e.target.value) : null
@@ -378,19 +385,19 @@ export function QuoteFormPage() {
                 {locked && <LockedFieldHint />}
               </div>
             </div>
-            <Textarea label="Notlar" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
-            <Textarea label="Şartlar" value={terms} onChange={(e) => setTerms(e.target.value)} rows={3} />
+            <Textarea label={t('quotes:fields.notes')} value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
+            <Textarea label={t('quotes:fields.terms')} value={terms} onChange={(e) => setTerms(e.target.value)} rows={3} />
           </CardBody>
         </Card>
 
         <Card>
           <CardHeader
-            title="Kalemler"
+            title={t('quotes:form.itemsTitle')}
             subtitle={
               locked && (
                 <span className="flex items-center gap-1">
                   <Lock className="size-3" aria-hidden="true" />
-                  Tutarı etkilediği için salt okunur — değişiklik revizyon gerektirir.
+                  {t('quotes:form.itemsLockedHint')}
                 </span>
               )
             }
@@ -398,7 +405,7 @@ export function QuoteFormPage() {
               !locked && (
                 <div className="w-56">
                   <Select
-                    label="Fiyat Listesi"
+                    label={t('quotes:form.priceListLabel')}
                     value={priceListId ? String(priceListId) : ''}
                     onChange={(e) => handlePriceListChange(e.target.value)}
                     options={priceListSelectOptions}
@@ -413,6 +420,7 @@ export function QuoteFormPage() {
               items={items}
               onChange={setItems}
               priceListId={priceListId}
+              currency={currency}
               fieldErrors={fieldErrors}
               readOnly={locked}
             />
@@ -421,12 +429,12 @@ export function QuoteFormPage() {
 
         <Card>
           <CardHeader
-            title="İndirim"
+            title={t('quotes:form.discountTitle')}
             subtitle={
               locked && (
                 <span className="flex items-center gap-1">
                   <Lock className="size-3" aria-hidden="true" />
-                  Gönderildikten sonra değiştirilemez.
+                  {t('quotes:form.discountLockedHint')}
                 </span>
               )
             }
@@ -434,18 +442,18 @@ export function QuoteFormPage() {
           <CardBody>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:max-w-md">
               <Select
-                label="İndirim Tipi"
+                label={t('quotes:form.discountTypeLabel')}
                 value={discountType}
                 onChange={(e) => setDiscountType(e.target.value as DiscountType)}
                 options={[
-                  { value: 'amount', label: 'Sabit Tutar' },
-                  { value: 'percent', label: 'Yüzde' },
+                  { value: 'amount', label: t('quotes:form.discountAmountOption') },
+                  { value: 'percent', label: t('quotes:form.discountPercentOption') },
                 ]}
                 disabled={locked}
                 error={fieldError('discount_type')}
               />
               <Input
-                label="İndirim Değeri"
+                label={t('quotes:form.discountValueLabel')}
                 type="number"
                 min={0}
                 max={discountType === 'percent' ? 100 : undefined}
@@ -453,7 +461,16 @@ export function QuoteFormPage() {
                 value={discountValue}
                 onChange={(e) => setDiscountValue(e.target.value)}
                 disabled={locked}
-                rightIcon={<span className="text-xs text-fg-muted">{discountType === 'percent' ? '%' : 'TRY'}</span>}
+                // Faz 14 kapanışı — sabit 'TRY' yerine bu teklifin KENDİ `currency`'si (yukarıdaki
+                // `currency` yereli: düzenlemede `quote.currency`, oluşturmada
+                // `NEW_QUOTE_DEFAULT_CURRENCY`). ISO kodu basılıyor, SİMGE (₺/$/€/£) değil:
+                // `lib/money.ts` bağımsız bir "yalnızca sembol" yolu sunmuyor (yalnızca
+                // `formatMoney`/`formatMoneyCompact` tam biçimli tutar döner) ve money.ts bu
+                // şeridin kapsamında DEĞİŞTİRİLEMEZ; formatMoney(0, currency) çıktısından sembolü
+                // string ayrıştırmayla çekmek locale'e göre önek/sonek sırası değiştiği için
+                // kırılgan olur, kod->sembol eşlemesini elle yazmak da yasak — bu yüzden ham ISO
+                // kodu (`TRY`/`USD`/...) tercih edildi.
+                rightIcon={<span className="text-xs text-fg-muted">{discountType === 'percent' ? '%' : currency}</span>}
                 error={fieldError('discount_value')}
               />
             </div>
@@ -461,7 +478,7 @@ export function QuoteFormPage() {
         </Card>
 
         <Card>
-          <CardHeader title="Toplamlar" />
+          <CardHeader title={t('quotes:form.totalsTitle')} />
           <CardBody>
             <QuoteTotalsPanel
               subtotal={totals.subtotal}
@@ -471,6 +488,7 @@ export function QuoteFormPage() {
               taxAmount={totals.tax_amount}
               total={totals.total}
               taxBreakdown={totals.tax_breakdown}
+              currency={currency}
               isCalculating={!locked && isCalculating}
             />
           </CardBody>
@@ -478,10 +496,10 @@ export function QuoteFormPage() {
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={() => navigate(-1)}>
-            Vazgeç
+            {t('common:actions.cancel')}
           </Button>
           <Button type="submit" leftIcon={<Save className="size-4" aria-hidden="true" />} loading={isPending}>
-            Kaydet
+            {t('common:actions.save')}
           </Button>
         </div>
       </form>
@@ -489,18 +507,18 @@ export function QuoteFormPage() {
       <Modal
         open={!!confirmPriceList}
         onClose={() => applyPriceListChange(false)}
-        title="Fiyat listesi değişti"
-        description="Ürün bazlı mevcut kalemlerin fiyatlarını yeni fiyat listesine göre de güncellemek ister misiniz? Serbest (ürünsüz) kalemler bu işlemden etkilenmez. Güncellemezseniz mevcut kalemler eski fiyatlarıyla kalır, yalnızca bundan sonra eklenen ürünler yeni listeyi kullanır."
+        title={t('quotes:form.priceListChangeModal.title')}
+        description={t('quotes:form.priceListChangeModal.description')}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => applyPriceListChange(false)}>
-              Hayır, mevcut fiyatları koru
+              {t('quotes:form.priceListChangeModal.keepPrices')}
             </Button>
-            <Button onClick={() => applyPriceListChange(true)}>Evet, güncelle</Button>
+            <Button onClick={() => applyPriceListChange(true)}>{t('quotes:form.priceListChangeModal.updatePrices')}</Button>
           </div>
         }
       >
-        <p className="text-sm text-fg-secondary">Bu işlem geri alınamaz; ancak kaydetmeden formdan çıkarsanız değişiklik uygulanmaz.</p>
+        <p className="text-sm text-fg-secondary">{t('quotes:form.priceListChangeModal.note')}</p>
       </Modal>
     </div>
   )

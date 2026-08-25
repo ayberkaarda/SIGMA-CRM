@@ -1,0 +1,264 @@
+{
+  "board": {
+    "title": "Affaires",
+    "openTotalLabel": "Total des affaires ouvertes :",
+    "viewSwitcher": {
+      "aria": "Affichage",
+      "board": "Tableau",
+      "list": "Liste"
+    },
+    "refresh": "Actualiser",
+    "newDeal": "Affaire",
+    "offlineWarning": "Pas de connexion en direct — les déplacements effectués par d'autres ne sont pas visibles pour le moment. Le tableau s'actualisera automatiquement dès le retour de la connexion.",
+    "readOnlyHint": "Vous n'avez pas la permission de déplacer les cartes ; le tableau est affiché en lecture seule.",
+    "loadError": {
+      "title": "Impossible de charger le tableau",
+      "description": "Une erreur est survenue lors du chargement du tableau des affaires.",
+      "retry": "Réessayer"
+    },
+    "empty": {
+      "title": "Aucune affaire à afficher",
+      "description": "Aucune affaire ne correspond aux filtres sélectionnés.",
+      "create": "Créer une affaire"
+    },
+    "column": {
+      "aria_one": "Étape {{stage}}, {{count}} carte",
+      "aria_other": "Étape {{stage}}, {{count}} cartes",
+      "empty": "Aucune carte dans cette étape",
+      "moreHidden_one": "{{count}} carte supplémentaire — affinez avec les filtres",
+      "moreHidden_other": "{{count}} cartes supplémentaires — affinez avec les filtres",
+      "addDeal": "Affaire"
+    },
+    "card": {
+      "lockedTooltip": "Vous n'êtes pas le titulaire de cette carte, vous ne pouvez donc pas la déplacer.",
+      "unassigned": "Non attribuée",
+      "movedBy": "{{name}} a déplacé cette carte",
+      "overdueSrOnly": "(en retard)",
+      "draggableRole": "Carte d'affaire déplaçable",
+      "ariaLabel": "{{title}}, {{amount}}"
+    },
+    "announcements": {
+      "pickedUp": "Carte {{title}} saisie. Utilisez les flèches pour la déplacer.",
+      "overStage": "La carte {{title}} survole l'étape {{stage}}.",
+      "overNone": "La carte {{title}} est en dehors d'une zone de dépôt.",
+      "droppedOnStage": "La carte {{title}} a été déposée sur l'étape {{stage}}.",
+      "droppedBack": "La carte {{title}} a été remise à sa position précédente.",
+      "cancelled": "Le déplacement de la carte {{title}} a été annulé.",
+      "defaultCardName": "Carte",
+      "keyboardInstructions": "Pour déplacer une carte d'affaire au clavier, appuyez sur espace ou entrée pour la saisir. Utilisez les flèches pour la déplacer entre les étapes et au sein d'une étape. Appuyez à nouveau sur espace ou entrée pour la déposer, ou sur échap pour annuler."
+    },
+    "filters": {
+      "searchLabel": "Rechercher",
+      "searchPlaceholder": "Titre ou description de l'affaire",
+      "ownerLabel": "Titulaire",
+      "allOwners": "Tous les titulaires",
+      "companyLabel": "Entreprise",
+      "allCompanies": "Toutes les entreprises",
+      "closeFrom": "Clôture (à partir de)",
+      "closeTo": "Clôture (jusqu'à)",
+      "clear": "Effacer"
+    },
+    "toast": {
+      "conflict": "Cette carte a été déplacée entre-temps par quelqu'un d'autre ; elle a été mise à jour avec l'état actuel du serveur.",
+      "networkError": "Erreur de connexion : la carte n'a pas pu être déplacée et a été remise à sa position précédente."
+    }
+  },
+  "stageReason": {
+    "lostRequired": "Un motif de perte est requis.",
+    "titleLost": "Motif de perte",
+    "titleWon": "Motif de gain",
+    "description": "La carte « {{dealTitle}} » est déplacée vers l'étape « {{stageName}} ».",
+    "cancel": "Annuler",
+    "submitLost": "Déplacer comme perdue",
+    "submitWon": "Déplacer comme gagnée",
+    "fieldLabelLost": "Motif de perte",
+    "fieldLabelWon": "Motif de gain (facultatif)",
+    "placeholderLost": "Ex. Prix supérieur à une offre concurrente",
+    "placeholderWon": "Ex. Influence d'un client de référence",
+    "hintLost": "Le motif de perte est la donnée la plus précieuse pour l'analyse des ventes ; il est donc requis.",
+    "hintWon": "Vous pouvez laisser ce champ vide."
+  },
+  "form": {
+    "titleCreate": "Nouvelle affaire",
+    "titleEdit": "Modifier l'affaire",
+    "cancel": "Annuler",
+    "submitCreate": "Créer",
+    "submitEdit": "Enregistrer",
+    "titleLabel": "Titre",
+    "descriptionLabel": "Description",
+    "amountLabel": "Montant",
+    "currencyLabel": "Devise",
+    "currency": {
+      "try": "TRY — Livre turque",
+      "usd": "USD — Dollar américain",
+      "eur": "EUR — Euro",
+      "gbp": "GBP — Livre sterling"
+    },
+    "probabilityLabel": "Probabilité (%)",
+    "probabilityHint": "Valeur par défaut de cette étape : {{value}} %. Si laissé vide, cette valeur est utilisée.",
+    "expectedCloseDateLabel": "Date de clôture prévue",
+    "stageLabel": "Étape",
+    "stageReadonlyHint": "Les changements d'étape se font par glisser-déposer sur le tableau.",
+    "stageHint": "Si non précisé, le serveur place l'affaire dans la première étape active.",
+    "statusLabel": "Statut",
+    "companyLabel": "Entreprise",
+    "contactLabel": "Contact",
+    "contactHint": "Si une entreprise est sélectionnée, la liste des contacts est filtrée sur cette entreprise.",
+    "contactLoading": "Chargement…",
+    "contactNone": "Aucun contact",
+    "ownerLabel": "Titulaire",
+    "ownerPlaceholder": "Sélectionner un titulaire",
+    "validation": {
+      "titleRequired": "Le titre est requis.",
+      "amountRequired": "Le montant est requis.",
+      "amountInvalid": "Le montant doit être un nombre valide.",
+      "probabilityRange": "La probabilité doit être comprise entre 0 et 100."
+    }
+  },
+  "customFields": {
+    "sectionTitle": "Champs personnalisés",
+    "selectPlaceholder": "Sélectionner…",
+    "noOptions": "Aucune option définie."
+  },
+  "tagSelect": {
+    "label": "Étiquettes",
+    "placeholder": "Sélectionner des étiquettes...",
+    "loading": "Chargement…",
+    "empty": "Aucune étiquette trouvée",
+    "removeAria": "Retirer l'étiquette {{name}}"
+  },
+  "companyCombobox": {
+    "label": "Entreprise",
+    "placeholder": "Rechercher une entreprise...",
+    "clearAria": "Effacer la sélection d'entreprise",
+    "clearOption": "Aucune entreprise / effacer",
+    "loading": "Chargement…",
+    "empty": "Aucun résultat trouvé"
+  },
+  "assignOwner": {
+    "title": "Attribuer un titulaire",
+    "description": "Choisissez un titulaire pour {{title}}.",
+    "cancel": "Annuler",
+    "submit": "Attribuer",
+    "ownerLabel": "Titulaire",
+    "ownerPlaceholder": "Sélectionner un titulaire",
+    "forbidden": "Vous n'avez pas la permission d'accéder à la liste des utilisateurs."
+  },
+  "list": {
+    "breadcrumbHome": "Accueil",
+    "breadcrumbCurrent": "Affaires",
+    "title": "Affaires",
+    "subtitle_one": "{{count}} affaire",
+    "subtitle_other": "{{count}} affaires",
+    "viewSwitcher": {
+      "aria": "Affichage",
+      "board": "Tableau",
+      "list": "Liste"
+    },
+    "newDeal": "Nouvelle affaire",
+    "searchPlaceholder": "Rechercher un titre d'affaire...",
+    "searchAria": "Rechercher des affaires",
+    "stageFilterAria": "Filtre d'étape",
+    "statusFilterAria": "Filtre de statut",
+    "ownerFilterAria": "Filtre de titulaire",
+    "companyFilterAria": "Filtre d'entreprise",
+    "tagFilterAria": "Filtre d'étiquette",
+    "allStages": "Toutes les étapes",
+    "allStatuses": "Tous les statuts",
+    "allOwners": "Tous les titulaires",
+    "allCompanies": "Toutes les entreprises",
+    "allTags": "Toutes les étiquettes",
+    "minAmountPlaceholder": "Montant min.",
+    "minAmountAria": "Montant minimum",
+    "maxAmountPlaceholder": "Montant max.",
+    "maxAmountAria": "Montant maximum",
+    "fromDateAria": "Date de début (clôture prévue)",
+    "toDateAria": "Date de fin (clôture prévue)",
+    "totals": {
+      "count_one": "{{count}} enregistrement (total filtré)",
+      "count_other": "{{count}} enregistrements (total filtré)",
+      "tooltip": "Total : {{total}} · Gagnées : {{won}} · Perdues : {{lost}}",
+      "open": "Valeur ouverte : {{amount}}",
+      "wonLost": "Gagnées {{won}} · Perdues {{lost}}"
+    },
+    "loadError": "Une erreur est survenue lors du chargement des affaires.",
+    "retry": "Réessayer",
+    "empty": {
+      "title": "Aucune affaire trouvée",
+      "description": "Aucune affaire ne correspond à vos critères de recherche ou de filtre."
+    },
+    "columns": {
+      "title": "Titre",
+      "company": "Entreprise",
+      "contact": "Contact",
+      "stage": "Étape",
+      "status": "Statut",
+      "amount": "Montant",
+      "probability": "Probabilité",
+      "expectedClose": "Clôture prévue",
+      "owner": "Titulaire",
+      "tags": "Étiquettes",
+      "actions": "Actions"
+    },
+    "actions": {
+      "detail": "Détail",
+      "edit": "Modifier",
+      "editLockedTooltip": "Vous n'êtes pas le titulaire de cet enregistrement, vous ne pouvez donc pas le modifier.",
+      "assign": "Attribuer un titulaire",
+      "delete": "Supprimer"
+    },
+    "deleteModal": {
+      "title": "Supprimer l'affaire",
+      "description": "Cette action est irréversible. L'affaire sera définitivement supprimée.",
+      "cancel": "Annuler",
+      "confirm": "Supprimer",
+      "confirmText": "Voulez-vous vraiment supprimer l'affaire « {{title}} » ?"
+    }
+  },
+  "detail": {
+    "backToList": "Affaires",
+    "loadError": "Une erreur est survenue lors du chargement de l'affaire.",
+    "retry": "Réessayer",
+    "wonBanner": "Cette affaire a été gagnée le {{date}}.",
+    "lostBanner": "Cette affaire a été perdue le {{date}}.",
+    "noReason": "Aucun motif indiqué.",
+    "showOnBoard": "Afficher sur le tableau",
+    "assignOwner": "Attribuer un titulaire",
+    "edit": "Modifier",
+    "editLockedTooltip": "Vous n'êtes pas le titulaire de cet enregistrement, vous ne pouvez donc pas le modifier.",
+    "delete": "Supprimer",
+    "probabilityBadge": "Probabilité : {{value}} %",
+    "fields": {
+      "company": "Entreprise",
+      "contact": "Contact",
+      "owner": "Titulaire",
+      "expectedClose": "Clôture prévue"
+    },
+    "unassignedOwner": "Non attribuée",
+    "overdueSuffix": " (en retard)",
+    "descriptionLabel": "Description",
+    "tagsLabel": "Étiquettes",
+    "noTags": "Aucune étiquette.",
+    "customFieldsTitle": "Champs personnalisés",
+    "timeline": {
+      "title": "Historique des échanges",
+      "notice": "Il n'existe pas encore de point d'accès dédié à l'historique des affaires. Vous pouvez à la place consulter l'historique du contact ou de l'entreprise liés à cette affaire.",
+      "viewContact": "Voir l'historique des échanges du contact de cette affaire",
+      "viewCompany": "Voir l'historique des échanges de l'entreprise de cette affaire",
+      "none": "Cette affaire n'a aucun contact ni entreprise liés."
+    },
+    "deleteModal": {
+      "title": "Supprimer l'affaire",
+      "description": "Cette action est irréversible. L'affaire sera définitivement supprimée.",
+      "cancel": "Annuler",
+      "confirm": "Supprimer",
+      "confirmText": "Voulez-vous vraiment supprimer l'affaire « {{title}} » ?"
+    }
+  },
+  "toast": {
+    "created": "Affaire créée.",
+    "updated": "Affaire mise à jour.",
+    "deleted": "Affaire supprimée.",
+    "ownerAssigned": "Attribution du titulaire mise à jour."
+  }
+}

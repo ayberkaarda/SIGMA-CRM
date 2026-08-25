@@ -1,6 +1,7 @@
 // Sahip atama modalı — `PATCH /api/deals/{id}/assign` ({ owner_id }). Liste ve detay
 // sayfalarının ikisi de kullanır (bkz. `leads/components/AssignOwnerModal.tsx` deseni).
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button, Modal, Select } from '../../../components/ui'
 import { useAssignDeal } from '../api/dealsApi'
 import { useDealOwnerOptions } from '../api/boardApi'
@@ -13,6 +14,7 @@ export type AssignDealOwnerModalProps = {
 }
 
 export function AssignDealOwnerModal({ open, onClose, deal }: AssignDealOwnerModalProps) {
+  const { t } = useTranslation('deals')
   const { data: ownerOptions, isForbidden } = useDealOwnerOptions()
   const assignDeal = useAssignDeal()
   const [ownerId, setOwnerId] = useState('')
@@ -33,7 +35,7 @@ export function AssignDealOwnerModal({ open, onClose, deal }: AssignDealOwnerMod
   }
 
   const options = [
-    { value: '', label: 'Sahip seçin', disabled: true },
+    { value: '', label: t('assignOwner.ownerPlaceholder'), disabled: true },
     ...(ownerOptions ?? []).map((owner) => ({ value: String(owner.id), label: owner.name })),
   ]
 
@@ -41,24 +43,24 @@ export function AssignDealOwnerModal({ open, onClose, deal }: AssignDealOwnerMod
     <Modal
       open={open}
       onClose={onClose}
-      title="Sahip Ata"
-      description={`${deal.title} için sahip seçin.`}
+      title={t('assignOwner.title')}
+      description={t('assignOwner.description', { title: deal.title })}
       size="sm"
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Vazgeç
+            {t('assignOwner.cancel')}
           </Button>
           <Button type="button" loading={assignDeal.isPending} disabled={!ownerId} onClick={handleAssign}>
-            Ata
+            {t('assignOwner.submit')}
           </Button>
         </div>
       }
     >
       {isForbidden ? (
-        <p className="text-sm text-fg-muted">Kullanıcı listesine erişim izniniz yok.</p>
+        <p className="text-sm text-fg-muted">{t('assignOwner.forbidden')}</p>
       ) : (
-        <Select label="Sahip" value={ownerId} onChange={(e) => setOwnerId(e.target.value)} options={options} />
+        <Select label={t('assignOwner.ownerLabel')} value={ownerId} onChange={(e) => setOwnerId(e.target.value)} options={options} />
       )}
     </Modal>
   )

@@ -1,5 +1,6 @@
 // Sahip atama modalı — `PATCH /api/leads/{id}/assign` ({ owner_id }).
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button, Modal, Select } from '../../../components/ui'
 import { useAssignLead, useOwnerOptions } from '../api/leadsApi'
 import type { Lead } from '../types'
@@ -11,6 +12,7 @@ export type AssignOwnerModalProps = {
 }
 
 export function AssignOwnerModal({ open, onClose, lead }: AssignOwnerModalProps) {
+  const { t } = useTranslation('leads')
   const { data: ownerOptions, isForbidden } = useOwnerOptions()
   const assignLead = useAssignLead()
   const [ownerId, setOwnerId] = useState('')
@@ -31,7 +33,7 @@ export function AssignOwnerModal({ open, onClose, lead }: AssignOwnerModalProps)
   }
 
   const options = [
-    { value: '', label: 'Sahip seçin', disabled: true },
+    { value: '', label: t('leads:assignOwnerModal.selectOwnerPlaceholder'), disabled: true },
     ...(ownerOptions ?? []).map((owner) => ({ value: String(owner.id), label: owner.name })),
   ]
 
@@ -39,24 +41,29 @@ export function AssignOwnerModal({ open, onClose, lead }: AssignOwnerModalProps)
     <Modal
       open={open}
       onClose={onClose}
-      title="Sahip Ata"
-      description={`${lead.full_name} için sahip seçin.`}
+      title={t('leads:assignOwnerModal.title')}
+      description={t('leads:assignOwnerModal.description', { name: lead.full_name })}
       size="sm"
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Vazgeç
+            {t('leads:assignOwnerModal.cancel')}
           </Button>
           <Button type="button" loading={assignLead.isPending} disabled={!ownerId} onClick={handleAssign}>
-            Ata
+            {t('leads:assignOwnerModal.submit')}
           </Button>
         </div>
       }
     >
       {isForbidden ? (
-        <p className="text-sm text-fg-muted">Kullanıcı listesine erişim izniniz yok.</p>
+        <p className="text-sm text-fg-muted">{t('leads:assignOwnerModal.noPermission')}</p>
       ) : (
-        <Select label="Sahip" value={ownerId} onChange={(e) => setOwnerId(e.target.value)} options={options} />
+        <Select
+          label={t('leads:assignOwnerModal.selectOwnerLabel')}
+          value={ownerId}
+          onChange={(e) => setOwnerId(e.target.value)}
+          options={options}
+        />
       )}
     </Modal>
   )

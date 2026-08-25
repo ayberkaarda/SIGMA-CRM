@@ -41,8 +41,7 @@ class AssignTicketRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'assigned_to.present' => 'Atanan kişi alanı gönderilmelidir (atamayı kaldırmak için null).',
-            'assigned_to.exists' => 'Seçilen atanan kişi geçerli değil.',
+            'assigned_to.present' => __('validation.custom.tickets.assigned_present'),
         ];
     }
 }

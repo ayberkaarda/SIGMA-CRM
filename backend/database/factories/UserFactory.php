@@ -36,6 +36,17 @@ class UserFactory extends Factory
             ]),
             'last_login_at' => null,
             'must_change_password' => false,
+            /*
+             * Kişisel tercihler (Faz 14) — RASTGELE DEĞİL, uygulama varsayılanı.
+             *
+             * `fake()->randomElement(['tr','en','de','fr'])` cazip görünür ama testleri
+             * belirlenimsiz yapardı: yanıt metinleri kullanıcının diline göre değişiyor
+             * (`SetLocale`), yani rastgele bir locale mesaj iddialarını rastgele kırardı.
+             * Farklı dil isteyen test bunu AÇIKÇA (`User::factory()->create(['locale' => 'en'])`)
+             * belirtir — niyet görünür olur.
+             */
+            'locale' => 'tr',
+            'preferred_currency' => 'TRY',
         ];
     }
 

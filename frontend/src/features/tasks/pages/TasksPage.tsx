@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import {
   AlertTriangle,
   CalendarDays,
@@ -43,12 +44,14 @@ import {
 } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
 import { getErrorMessage } from '../../../lib/axios'
+import { formatDateTime } from '../../../lib/datetime'
 import { useQueryClient } from '@tanstack/react-query'
 import { usePermission } from '../../auth/hooks/usePermission'
+import { SavedViewsBar } from '../../saved-views/components/SavedViewsBar'
 import { PriorityBadge } from '../components/PriorityBadge'
-import { PRIORITY_OPTIONS } from '../components/priorityMeta'
+import { priorityOptions } from '../components/priorityMeta'
 import { TaskStatusBadge } from '../components/TaskStatusBadge'
-import { STATUS_OPTIONS } from '../components/taskStatusMeta'
+import { statusOptions } from '../components/taskStatusMeta'
 import { relatedRecordMeta, relatedRecordTypeLabel, RELATED_RECORD_SELECTABLE_TYPES } from '../components/relatedRecordMeta'
 import { TaskFormModal } from '../components/TaskFormModal'
 import { AssignTaskModal } from '../components/AssignTaskModal'
@@ -63,18 +66,10 @@ import type { Task, TasksCalendarResponse, TasksListResponse, TasksQuery } from 
 const DEFAULT_PER_PAGE = 10
 const SEARCH_DEBOUNCE_MS = 300
 
-function formatDateTime(iso: string | null): string {
-  if (!iso) return '—'
-  try {
-    return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
-  } catch {
-    return iso
-  }
-}
-
 type FormModalState = { mode: 'create'; defaultDueDate?: string } | { mode: 'edit'; task: Task } | null
 
 export function TasksPage() {
+  const { t } = useTranslation(['tasks', 'common'])
   const [searchParams, setSearchParams] = useSearchParams()
   const { can } = usePermission()
   const queryClient = useQueryClient()
@@ -160,15 +155,15 @@ export function TasksPage() {
     updateParams({ sort: nextSort, page: '1' })
   }
 
-  const statusFilterOptions = [{ value: '', label: 'Tüm durumlar' }, ...STATUS_OPTIONS]
-  const priorityFilterOptions = [{ value: '', label: 'Tüm öncelikler' }, ...PRIORITY_OPTIONS]
+  const statusFilterOptions = [{ value: '', label: t('tasks:filters.allStatuses') }, ...statusOptions(t)]
+  const priorityFilterOptions = [{ value: '', label: t('tasks:filters.allPriorities') }, ...priorityOptions(t)]
   const assignedFilterOptions = [
-    { value: '', label: 'Tüm atananlar' },
+    { value: '', label: t('tasks:filters.allAssignees') },
     ...(userOptions ?? []).map((u) => ({ value: String(u.id), label: u.name })),
   ]
   const taskableFilterOptions = [
-    { value: '', label: 'Tüm kayıt türleri' },
-    ...RELATED_RECORD_SELECTABLE_TYPES.concat('ticket').map((type) => ({ value: type, label: relatedRecordTypeLabel(type) })),
+    { value: '', label: t('tasks:filters.allTaskableTypes') },
+    ...RELATED_RECORD_SELECTABLE_TYPES.concat('ticket').map((type) => ({ value: type, label: relatedRecordTypeLabel(type, t) })),
   ]
 
   const tasks = data?.data ?? []
@@ -313,28 +308,40 @@ export function TasksPage() {
   return (
     <div className="flex flex-col gap-4">
       <nav aria-label="breadcrumb" className="text-xs text-fg-muted">
-        <span>Anasayfa</span>
+        <span>{t('tasks:breadcrumb.home')}</span>
         <span className="mx-1.5">/</span>
-        <span className="text-primary">Görevler</span>
+        <span className="text-primary">{t('tasks:breadcrumb.current')}</span>
       </nav>
 
       <Card>
         <CardHeader
-          title="Görevler"
-          subtitle={view === 'list' ? `${total} görev` : monthLabel(calYear, calMonth)}
+          title={t('tasks:page.title')}
+          subtitle={view === 'list' ? t('tasks:page.countLabel', { count: total }) : monthLabel(calYear, calMonth)}
           action={
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 rounded-lg border border-border bg-surface-1 p-1" role="group" aria-label="Görünüm">
+              <div
+                className="flex items-center gap-1 rounded-lg border border-border bg-surface-1 p-1"
+                role="group"
+                aria-label={t('tasks:page.viewGroupAria')}
+              >
                 <ViewButton active={view === 'list'} onClick={() => updateParams({ view: null })} icon={<ListIcon className="size-4" aria-hidden="true" />}>
-                  Liste
+                  {t('tasks:page.viewList')}
                 </ViewButton>
                 <ViewButton active={view === 'calendar'} onClick={() => updateParams({ view: 'calendar' })} icon={<CalendarDays className="size-4" aria-hidden="true" />}>
-                  Takvim
+                  {t('tasks:page.viewCalendar')}
                 </ViewButton>
               </div>
+              {/* Kayıtlı görünümler yalnızca liste görünümünde anlamlı — takvim görünümü
+                  filtre/sıra DEĞİL `cy`/`cm` (yıl/ay) parametreleriyle çalışır. */}
+              {view === 'list' && (
+                <SavedViewsBar
+                  module="tasks"
+                  filterKeys={['status', 'priority', 'assigned_to', 'taskable_type', 'from', 'to', 'overdue']}
+                />
+              )}
               {can('tasks.create') && (
                 <Button leftIcon={<Plus className="size-4" aria-hidden="true" />} onClick={() => setFormModal({ mode: 'create' })}>
-                  Yeni Görev
+                  {t('tasks:page.newTask')}
                 </Button>
               )}
             </div>
@@ -349,9 +356,9 @@ export function TasksPage() {
                   <Input
                     value={searchDraft}
                     onChange={(e) => setSearchDraft(e.target.value)}
-                    placeholder="Görev başlığı ara..."
+                    placeholder={t('tasks:filters.searchPlaceholder')}
                     leftIcon={<Search className="size-4" aria-hidden="true" />}
-                    aria-label="Görev ara"
+                    aria-label={t('tasks:filters.searchAria')}
                   />
                 </div>
                 <div className="w-full lg:w-44">
@@ -359,7 +366,7 @@ export function TasksPage() {
                     value={query.status ?? ''}
                     onChange={(e) => updateParams({ status: e.target.value || null, page: '1' })}
                     options={statusFilterOptions}
-                    aria-label="Durum filtresi"
+                    aria-label={t('tasks:filters.statusAria')}
                   />
                 </div>
                 <div className="w-full lg:w-40">
@@ -367,7 +374,7 @@ export function TasksPage() {
                     value={query.priority ?? ''}
                     onChange={(e) => updateParams({ priority: e.target.value || null, page: '1' })}
                     options={priorityFilterOptions}
-                    aria-label="Öncelik filtresi"
+                    aria-label={t('tasks:filters.priorityAria')}
                   />
                 </div>
                 {!usersForbidden && (
@@ -376,7 +383,7 @@ export function TasksPage() {
                       value={query.assigned_to ? String(query.assigned_to) : ''}
                       onChange={(e) => updateParams({ assigned_to: e.target.value || null, page: '1' })}
                       options={assignedFilterOptions}
-                      aria-label="Atanan filtresi"
+                      aria-label={t('tasks:filters.assignedAria')}
                     />
                   </div>
                 )}
@@ -385,7 +392,7 @@ export function TasksPage() {
                     value={query.taskable_type ?? ''}
                     onChange={(e) => updateParams({ taskable_type: e.target.value || null, page: '1' })}
                     options={taskableFilterOptions}
-                    aria-label="İlgili kayıt türü filtresi"
+                    aria-label={t('tasks:filters.taskableAria')}
                   />
                 </div>
               </div>
@@ -396,7 +403,7 @@ export function TasksPage() {
                       type="date"
                       value={query.from ?? ''}
                       onChange={(e) => updateParams({ from: e.target.value || null, page: '1' })}
-                      aria-label="Başlangıç tarihi (vade)"
+                      aria-label={t('tasks:filters.fromAria')}
                       max={query.to || undefined}
                     />
                   </div>
@@ -406,7 +413,7 @@ export function TasksPage() {
                       type="date"
                       value={query.to ?? ''}
                       onChange={(e) => updateParams({ to: e.target.value || null, page: '1' })}
-                      aria-label="Bitiş tarihi (vade)"
+                      aria-label={t('tasks:filters.toAria')}
                       min={query.from || undefined}
                     />
                   </div>
@@ -416,44 +423,44 @@ export function TasksPage() {
                     checked={query.overdue === true}
                     onChange={(e) => updateParams({ overdue: e.target.checked ? '1' : null, page: '1' })}
                   />
-                  Sadece gecikmişler
+                  {t('tasks:filters.overdueOnly')}
                 </label>
               </div>
             </div>
 
             {isError ? (
               <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
-                <p className="text-sm text-fg-muted">Görevler yüklenirken bir hata oluştu.</p>
+                <p className="text-sm text-fg-muted">{t('tasks:list.loadError')}</p>
                 <Button variant="secondary" onClick={() => refetch()}>
-                  Tekrar dene
+                  {t('tasks:list.retry')}
                 </Button>
               </div>
             ) : isEmpty ? (
               <EmptyState
                 icon={<ListTodo className="size-6" aria-hidden="true" />}
-                title="Görev bulunamadı"
-                description="Arama veya filtre kriterlerinizle eşleşen görev yok."
+                title={t('tasks:list.emptyTitle')}
+                description={t('tasks:list.emptyDescription')}
               />
             ) : (
               <Table>
                 <THead>
                   <Tr>
-                    <Th aria-label="Tamamlandı" />
+                    <Th aria-label={t('tasks:table.completedAria')} />
                     <Th sortable sortDirection={sortDirectionFor('title')} onSort={() => toggleSort('title')}>
-                      Görev
+                      {t('tasks:table.task')}
                     </Th>
                     <Th sortable sortDirection={sortDirectionFor('priority')} onSort={() => toggleSort('priority')}>
-                      Öncelik
+                      {t('tasks:table.priority')}
                     </Th>
                     <Th sortable sortDirection={sortDirectionFor('status')} onSort={() => toggleSort('status')}>
-                      Durum
+                      {t('tasks:table.status')}
                     </Th>
                     <Th sortable sortDirection={sortDirectionFor('due_at')} onSort={() => toggleSort('due_at')}>
-                      Vade
+                      {t('tasks:table.dueDate')}
                     </Th>
-                    <Th>Atanan</Th>
-                    <Th>İlgili Kayıt</Th>
-                    <Th align="right">İşlemler</Th>
+                    <Th>{t('tasks:table.assignee')}</Th>
+                    <Th>{t('tasks:table.relatedRecord')}</Th>
+                    <Th align="right">{t('tasks:table.actions')}</Th>
                   </Tr>
                 </THead>
                 <TBody aria-busy={isLoading}>
@@ -471,7 +478,7 @@ export function TasksPage() {
                         </Tr>
                       ))
                     : tasks.map((task) => {
-                        const meta = task.taskable ? relatedRecordMeta(task.taskable.type) : null
+                        const meta = task.taskable ? relatedRecordMeta(task.taskable.type, t) : null
                         const Icon = meta?.icon
                         const isCompleting = completingIds.has(task.id)
                         const isHighlighted = highlightedTaskId === task.id
@@ -497,8 +504,8 @@ export function TasksPage() {
                                   checked={task.status === 'completed'}
                                   disabled={task.status === 'cancelled' || isCompleting || !task.can.complete}
                                   onChange={(e) => handleQuickComplete(task, e.target.checked)}
-                                  aria-label={`${task.title} tamamlandı`}
-                                  title={task.can.complete ? undefined : 'Bu görevin sahibi değilsiniz, tamamlayamazsınız.'}
+                                  aria-label={t('tasks:row.completeAria', { title: task.title })}
+                                  title={task.can.complete ? undefined : t('tasks:row.completeDisabledTitle')}
                                 />
                               )}
                             </Td>
@@ -547,9 +554,9 @@ export function TasksPage() {
                               <div className="flex items-center justify-end gap-1">
                                 {can('tasks.update') && (
                                   <IconButton
-                                    label="Düzenle"
+                                    label={t('tasks:row.edit')}
                                     disabled={!task.can.update}
-                                    title={task.can.update ? 'Düzenle' : 'Bu görevin sahibi değilsiniz, düzenleyemezsiniz.'}
+                                    title={task.can.update ? t('tasks:row.edit') : t('tasks:row.editDisabledTitle')}
                                     onClick={() => setFormModal({ mode: 'edit', task })}
                                   >
                                     <Pencil className="size-4" aria-hidden="true" />
@@ -558,14 +565,14 @@ export function TasksPage() {
                                 {/* `tasks.assign` saf izin kontrolüdür (bkz. `TaskPolicy::assign`) —
                                     sahiplik boyutu yok, gizlemek yeterli. */}
                                 {can('tasks.assign') && task.can.assign && (
-                                  <IconButton label="Ata" onClick={() => setAssignTaskState(task)}>
+                                  <IconButton label={t('tasks:row.assign')} onClick={() => setAssignTaskState(task)}>
                                     <UserCog className="size-4" aria-hidden="true" />
                                   </IconButton>
                                 )}
                                 {/* `tasks.delete` de saf izin kontrolüdür — `TaskPolicy::delete` sahiplik
                                     sormaz (görev silme yalnızca Müdür/Admin'de, bkz. policy gerekçesi). */}
                                 {can('tasks.delete') && task.can.delete && (
-                                  <IconButton label="Sil" danger onClick={() => setDeleteTaskState(task)}>
+                                  <IconButton label={t('tasks:row.delete')} danger onClick={() => setDeleteTaskState(task)}>
                                     <Trash2 className="size-4" aria-hidden="true" />
                                   </IconButton>
                                 )}
@@ -593,18 +600,18 @@ export function TasksPage() {
           <CardBody>
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <Button variant="secondary" onClick={() => changeMonth(-1)} aria-label="Önceki ay">
+                <Button variant="secondary" onClick={() => changeMonth(-1)} aria-label={t('tasks:calendar.prevMonth')}>
                   ‹
                 </Button>
                 <Button variant="secondary" onClick={goToToday}>
-                  Bugün
+                  {t('tasks:calendar.today')}
                 </Button>
-                <Button variant="secondary" onClick={() => changeMonth(1)} aria-label="Sonraki ay">
+                <Button variant="secondary" onClick={() => changeMonth(1)} aria-label={t('tasks:calendar.nextMonth')}>
                   ›
                 </Button>
                 <span className="text-sm font-medium text-fg">{monthLabel(calYear, calMonth)}</span>
               </div>
-              <p className="text-xs text-fg-muted">Vadesi olmayan görevler takvimde gösterilmez.</p>
+              <p className="text-xs text-fg-muted">{t('tasks:calendar.noDueDateNote')}</p>
             </div>
             {calendarLoading ? (
               <Skeleton height={480} />
@@ -649,12 +656,12 @@ export function TasksPage() {
       <Modal
         open={!!deleteTaskState}
         onClose={() => setDeleteTaskState(null)}
-        title="Görevi sil"
-        description="Bu işlem geri alınamaz. Görev kalıcı olarak silinecek."
+        title={t('tasks:deleteModal.title')}
+        description={t('tasks:deleteModal.description')}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setDeleteTaskState(null)}>
-              Vazgeç
+              {t('common:actions.cancel')}
             </Button>
             <Button
               variant="danger"
@@ -665,14 +672,19 @@ export function TasksPage() {
                 setDeleteTaskState(null)
               }}
             >
-              Sil
+              {t('tasks:deleteModal.confirm')}
             </Button>
           </div>
         }
       >
         {deleteTaskState && (
           <p className="text-sm text-fg-secondary">
-            <strong className="text-fg">{deleteTaskState.title}</strong> adlı görevi silmek istediğinize emin misiniz?
+            <Trans
+              t={t}
+              i18nKey="tasks:deleteModal.confirmBody"
+              values={{ title: deleteTaskState.title }}
+              components={{ bold: <strong className="text-fg" /> }}
+            />
           </p>
         )}
       </Modal>

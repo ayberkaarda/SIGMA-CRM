@@ -2,9 +2,12 @@
 
 namespace App\Services\Reports;
 
+use App\Models\Deal;
 use App\Models\Lead;
+use App\Services\Exchange\ExchangeRateService;
 use App\Services\Reports\Support\DateRange;
 use App\Services\Reports\Support\MoneyFormatter;
+use App\Services\Reports\Support\ReportCurrencyContext;
 
 /**
  * `GET /api/reports/source-analysis?from&to`
@@ -22,11 +25,15 @@ use App\Services\Reports\Support\MoneyFormatter;
  */
 class SourceAnalysisReport
 {
+    public function __construct(private readonly ExchangeRateService $rates) {}
+
     /**
-     * @return array{from: string, to: string, data: array<int, array<string, mixed>>}
+     * @return array{from: string, to: string, data: array<int, array<string, mixed>>, rate_info: array<string, mixed>}
      */
-    public function run(DateRange $range): array
+    public function run(DateRange $range, ?ReportCurrencyContext $currency = null): array
     {
+        $currency ??= ReportCurrencyContext::make($this->rates);
+
         $leadCounts = Lead::query()
             ->whereBetween('created_at', [$range->from, $range->to])
             ->selectRaw('source, COUNT(*) as cnt')
@@ -48,9 +55,23 @@ class SourceAnalysisReport
             ->whereBetween('leads.created_at', [$range->from, $range->to])
             ->where('deals.status', 'won')
             ->whereNull('deals.deleted_at')
-            ->selectRaw('leads.source as source, COALESCE(SUM(deals.amount), 0) as amt')
+            // Kazanılmış fırsatın DONMUŞ TRY tutarı (`base_amount`) —
+            // `amount` DEĞİL: kaynak analizi de tarihsel gelir raporudur ve
+            // güncel kurla yeniden değerlenmemelidir (PHASE-INTL §2.4).
+            ->selectRaw('leads.source as source, COALESCE(SUM(deals.base_amount), 0) as amt')
             ->groupBy('leads.source')
             ->pluck('amt', 'source');
+
+        $currency->noteUnconvertedClosed(
+            Deal::query()
+                ->where('status', 'won')
+                ->whereNull('base_amount')
+                ->whereIn('id', Lead::query()
+                    ->whereBetween('created_at', [$range->from, $range->to])
+                    ->whereNotNull('converted_deal_id')
+                    ->select('converted_deal_id'))
+                ->count()
+        );
 
         $sources = collect()
             ->merge($leadCounts->keys())
@@ -59,7 +80,7 @@ class SourceAnalysisReport
             ->unique()
             ->values();
 
-        $data = $sources->map(function (string $source) use ($leadCounts, $convertedCounts, $revenueBySource) {
+        $data = $sources->map(function (string $source) use ($leadCounts, $convertedCounts, $revenueBySource, $currency) {
             $leadsCount = (int) ($leadCounts[$source] ?? 0);
             $convertedCount = (int) ($convertedCounts[$source] ?? 0);
 
@@ -68,7 +89,7 @@ class SourceAnalysisReport
                 'leads_count' => $leadsCount,
                 'converted_count' => $convertedCount,
                 'conversion_rate' => MoneyFormatter::ratio($convertedCount, $leadsCount),
-                'revenue' => MoneyFormatter::normalize($revenueBySource[$source] ?? 0),
+                'revenue' => $currency->fromFrozenBase($revenueBySource[$source] ?? 0),
             ];
         })->sortByDesc('leads_count')->values()->all();
 
@@ -76,6 +97,7 @@ class SourceAnalysisReport
             'from' => $range->from->toDateString(),
             'to' => $range->to->toDateString(),
             'data' => $data,
+            'rate_info' => $currency->rateInfo(),
         ];
     }
 

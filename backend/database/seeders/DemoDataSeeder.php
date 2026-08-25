@@ -490,10 +490,12 @@ class DemoDataSeeder extends Seeder
             $stageId = $stage['id'];
             $positionCounters[$stageId] = ($positionCounters[$stageId] ?? 0) + 1;
 
+            $amount = $this->faker->numberBetween(5_000, 500_000);
+
             $rows[] = [
                 'title' => self::DEAL_TITLES[$i % count(self::DEAL_TITLES)].' — '.Str::of(self::COMPANY_NAMES[$i % count(self::COMPANY_NAMES)])->before(' ')->toString(),
                 'description' => 'Müşterinin mevcut altyapısına uygun kapsam belirlendi; devreye alma takvimi görüşülüyor.',
-                'amount' => $this->faker->numberBetween(5_000, 500_000),
+                'amount' => $amount,
                 'currency' => 'TRY',
                 'pipeline_stage_id' => $stageId,
                 'position' => $this->fractionalKey($positionCounters[$stageId]),
@@ -507,6 +509,14 @@ class DemoDataSeeder extends Seeder
                 'company_id' => $companyId,
                 'contact_id' => $contactId,
                 'owner_id' => $ownerId,
+                // Faz 14 / İz E (docs/PHASE-INTL.md §2.3): kapanışta donan TRY
+                // tutarı. Göç yalnız MEVCUT satırları geriye dönük doldurur —
+                // seeder yeniden çalıştırılırsa kapanmış fırsatlar bu alanlar
+                // olmadan yazılır ve raporlar "0 gelir" gösterir. Tüm demo veri
+                // TRY olduğu için kur 1 kesin doğru; açık fırsatlarda üçü de null.
+                'base_amount' => $closedAt !== null ? $amount : null,
+                'base_rate' => $closedAt !== null ? '1.000000' : null,
+                'base_rate_date' => $closedAt?->toDateString(),
                 'created_at' => $createdAt,
                 'updated_at' => $closedAt ?? $createdAt,
             ];

@@ -12,8 +12,10 @@
 // sonsuz sorgulama YOK.
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AlertCircle, CheckCircle2, Download, UploadCloud } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
+import type { TFunction } from 'i18next'
 import { Button, Modal } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
 import { getErrorMessage } from '../../../lib/axios'
@@ -28,11 +30,15 @@ export type ImportLeadsModalProps = {
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
 
-const DUPLICATE_MODE_OPTIONS: Array<{ value: ImportDuplicateMode; label: string; description: string }> = [
-  { value: 'skip', label: 'Atla', description: 'E-posta/telefon eşleşen satırlar atlanır, mevcut kayıt değişmez.' },
-  { value: 'create', label: 'Yeni oluştur', description: 'Eşleşme olsa bile her satır için yeni bir aday oluşturulur.' },
-  { value: 'update', label: 'Güncelle', description: 'Eşleşen kayıt varsa güncellenir, yoksa yeni oluşturulur.' },
-]
+function duplicateModeOptions(
+  t: TFunction
+): Array<{ value: ImportDuplicateMode; label: string; description: string }> {
+  return [
+    { value: 'skip', label: t('leads:importModal.modes.skip.label'), description: t('leads:importModal.modes.skip.description') },
+    { value: 'create', label: t('leads:importModal.modes.create.label'), description: t('leads:importModal.modes.create.description') },
+    { value: 'update', label: t('leads:importModal.modes.update.label'), description: t('leads:importModal.modes.update.description') },
+  ]
+}
 
 type Phase = 'form' | 'busy' | 'result' | 'timed_out'
 
@@ -53,9 +59,11 @@ function triggerHiddenDownload(url: string) {
 }
 
 export function ImportLeadsModal({ open, onClose }: ImportLeadsModalProps) {
+  const { t } = useTranslation('leads')
   const queryClient = useQueryClient()
   const importLeads = useImportLeads()
   const cancelledRef = useRef(false)
+  const DUPLICATE_MODE_OPTIONS = duplicateModeOptions(t)
 
   const [file, setFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
@@ -102,12 +110,12 @@ export function ImportLeadsModal({ open, onClose }: ImportLeadsModalProps) {
     }
     if (!selected.name.toLowerCase().endsWith('.csv')) {
       setFile(null)
-      setFileError('Yalnızca .csv dosyaları kabul edilir.')
+      setFileError(t('leads:importModal.fileErrorType'))
       return
     }
     if (selected.size > MAX_FILE_SIZE_BYTES) {
       setFile(null)
-      setFileError('Dosya boyutu 5 MB’ı aşamaz.')
+      setFileError(t('leads:importModal.fileErrorSize'))
       return
     }
     setFile(selected)
@@ -149,22 +157,22 @@ export function ImportLeadsModal({ open, onClose }: ImportLeadsModalProps) {
     <Modal
       open={open}
       onClose={onClose}
-      title="Müşteri Adaylarını İçe Aktar"
+      title={t('leads:importModal.title')}
       size="md"
       footer={
         phase === 'form' ? (
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={onClose}>
-              Vazgeç
+              {t('leads:importModal.cancel')}
             </Button>
             <Button type="button" disabled={!file} loading={importLeads.isPending} onClick={handleUpload}>
-              Yükle
+              {t('leads:importModal.upload')}
             </Button>
           </div>
         ) : (
           <div className="flex justify-end gap-2">
             <Button type="button" onClick={onClose}>
-              Kapat
+              {t('leads:importModal.close')}
             </Button>
           </div>
         )
@@ -173,7 +181,7 @@ export function ImportLeadsModal({ open, onClose }: ImportLeadsModalProps) {
       {phase === 'form' && (
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-1.5">
-            <p className="text-xs font-medium text-fg-muted">1. Şablon indir</p>
+            <p className="text-xs font-medium text-fg-muted">{t('leads:importModal.step1Title')}</p>
             <button
               type="button"
               onClick={handleTemplateDownload}
@@ -183,13 +191,13 @@ export function ImportLeadsModal({ open, onClose }: ImportLeadsModalProps) {
               )}
             >
               <Download className="size-4" aria-hidden="true" />
-              CSV şablonunu indir
+              {t('leads:importModal.downloadTemplate')}
             </button>
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label htmlFor="lead-import-file" className="text-xs font-medium text-fg-muted">
-              2. Dosya seç (.csv, en fazla 5 MB)
+              {t('leads:importModal.step2Title')}
             </label>
             <label
               htmlFor="lead-import-file"
@@ -199,7 +207,7 @@ export function ImportLeadsModal({ open, onClose }: ImportLeadsModalProps) {
               )}
             >
               <UploadCloud className="size-6 text-fg-muted" aria-hidden="true" />
-              <span className="text-sm text-fg">{file ? file.name : 'Dosya seçmek için tıklayın'}</span>
+              <span className="text-sm text-fg">{file ? file.name : t('leads:importModal.dropzoneText')}</span>
               <input
                 id="lead-import-file"
                 type="file"
@@ -212,7 +220,7 @@ export function ImportLeadsModal({ open, onClose }: ImportLeadsModalProps) {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <p className="text-xs font-medium text-fg-muted">3. Çakışan kayıtlar için davranış</p>
+            <p className="text-xs font-medium text-fg-muted">{t('leads:importModal.step3Title')}</p>
             <div className="flex flex-col gap-2">
               {DUPLICATE_MODE_OPTIONS.map((option) => (
                 <label
@@ -252,20 +260,17 @@ export function ImportLeadsModal({ open, onClose }: ImportLeadsModalProps) {
           <div
             className="size-8 animate-spin motion-reduce:animate-none rounded-full border-2 border-border-strong border-t-primary"
             role="status"
-            aria-label="Yükleniyor"
+            aria-label={t('leads:importModal.busyAria')}
           />
-          <p className="text-sm text-fg-muted">Dosya işleniyor, bu biraz zaman alabilir…</p>
+          <p className="text-sm text-fg-muted">{t('leads:importModal.busyText')}</p>
         </div>
       )}
 
       {phase === 'timed_out' && (
         <div className="flex flex-col items-center gap-3 py-8 text-center">
           <AlertCircle className="size-8 text-warning" aria-hidden="true" />
-          <p className="text-sm text-fg">İşlem devam ediyor, daha sonra kontrol edin.</p>
-          <p className="max-w-sm text-xs text-fg-muted">
-            İçe aktarma arka planda sürüyor. Tamamlandığında liste güncellenecektir; bu pencereyi kapatıp devam
-            edebilirsiniz.
-          </p>
+          <p className="text-sm text-fg">{t('leads:importModal.timedOutTitle')}</p>
+          <p className="max-w-sm text-xs text-fg-muted">{t('leads:importModal.timedOutDescription')}</p>
         </div>
       )}
 
@@ -278,17 +283,17 @@ export function ImportLeadsModal({ open, onClose }: ImportLeadsModalProps) {
               <CheckCircle2 className="size-5 text-success" aria-hidden="true" />
             )}
             <p className="text-sm font-medium text-fg">
-              {finalStatus === 'failed' ? 'İçe aktarma başarısız oldu.' : 'İçe aktarma tamamlandı.'}
+              {finalStatus === 'failed' ? t('leads:importModal.resultFailedTitle') : t('leads:importModal.resultSuccessTitle')}
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {[
-              { label: 'Toplam', value: result.total },
-              { label: 'Oluşturulan', value: result.created },
-              { label: 'Atlanan', value: result.skipped },
-              { label: 'Güncellenen', value: result.updated },
-              { label: 'Başarısız', value: result.failed },
+              { label: t('leads:importModal.stats.total'), value: result.total },
+              { label: t('leads:importModal.stats.created'), value: result.created },
+              { label: t('leads:importModal.stats.skipped'), value: result.skipped },
+              { label: t('leads:importModal.stats.updated'), value: result.updated },
+              { label: t('leads:importModal.stats.failed'), value: result.failed },
             ].map((stat) => (
               <div key={stat.label} className="rounded-md bg-surface-2 p-2.5 text-center">
                 <p className="text-lg font-medium text-fg">{stat.value}</p>
@@ -299,19 +304,21 @@ export function ImportLeadsModal({ open, onClose }: ImportLeadsModalProps) {
 
           {result.errors.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <p className="text-xs font-medium text-fg-muted">Satır bazlı hatalar</p>
+              <p className="text-xs font-medium text-fg-muted">{t('leads:importModal.errorsTitle')}</p>
               <div className="max-h-48 overflow-y-auto rounded-md border border-border-subtle">
                 <ul className="divide-y divide-border-subtle">
                   {result.errors.map((rowError, index) => (
                     <li key={`${rowError.row}-${index}`} className="flex gap-2 px-3 py-2 text-xs">
-                      <span className="shrink-0 font-medium text-fg-muted">Satır {rowError.row}</span>
+                      <span className="shrink-0 font-medium text-fg-muted">
+                        {t('leads:importModal.rowLabel', { row: rowError.row })}
+                      </span>
                       <span className="text-danger">{rowError.message}</span>
                     </li>
                   ))}
                 </ul>
               </div>
               {result.errors_truncated && (
-                <p className="text-xs text-fg-muted">Hata listesi kısaltıldı — yalnızca ilk hatalar gösteriliyor.</p>
+                <p className="text-xs text-fg-muted">{t('leads:importModal.errorsTruncated')}</p>
               )}
             </div>
           )}

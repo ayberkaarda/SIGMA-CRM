@@ -5,21 +5,25 @@
 // modülündeki `activityTypeMeta.ts`den YENİDEN KULLANILIR (kopyalanmaz) — "arama" ikonu her yerde
 // aynı anlama gelsin diye; bilinmeyen bir `type` gelirse (silinmiş/gelecekte eklenen bir tür)
 // genel `Activity` ikonuna ve ham metne sessizce düşülür.
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { Activity } from 'lucide-react'
 import { EmptyState, Skeleton } from '../../../components/ui'
-import { TYPE_ICON, TYPE_LABEL } from '../../activities/components/activityTypeMeta'
+import { TYPE_ICON, TYPE_LABEL_KEY } from '../../activities/components/activityTypeMeta'
 import type { ActivityType } from '../../activities/types'
 import { formatRelativeTime } from '../utils/chartTheme'
 import type { RecentActivity } from '../types'
 
-const RELATED_TYPE_LABELS: Record<string, string> = {
-  deal: 'Fırsat',
-  lead: 'Aday',
-  contact: 'Kişi',
-  company: 'Şirket',
-  ticket: 'Talep',
-  task: 'Görev',
-  quote: 'Teklif',
+function relatedTypeLabels(t: TFunction): Record<string, string> {
+  return {
+    deal: t('dashboard:recentActivities.related.deal'),
+    lead: t('dashboard:recentActivities.related.lead'),
+    contact: t('dashboard:recentActivities.related.contact'),
+    company: t('dashboard:recentActivities.related.company'),
+    ticket: t('dashboard:recentActivities.related.ticket'),
+    task: t('dashboard:recentActivities.related.task'),
+    quote: t('dashboard:recentActivities.related.quote'),
+  }
 }
 
 function isKnownActivityType(type: string): type is ActivityType {
@@ -38,8 +42,10 @@ function activityTypeIcon(type: string) {
   return isKnownActivityType(type) ? TYPE_ICON[type] : Activity
 }
 
-function activityTypeLabel(type: string): string {
-  return isKnownActivityType(type) ? TYPE_LABEL[type] : type
+/** Bilinmeyen bir `type` gelirse (silinmiş/gelecekte eklenen bir tür) ham metne sessizce düşülür —
+ *  `enums` namespace'inde anahtarı olmayan bir değer için çeviri aranmaz. */
+function activityTypeLabel(t: TFunction, type: string): string {
+  return isKnownActivityType(type) ? t(TYPE_LABEL_KEY[type], { ns: 'enums' }) : type
 }
 
 export type RecentActivitiesProps = {
@@ -48,6 +54,9 @@ export type RecentActivitiesProps = {
 }
 
 export function RecentActivities({ activities, isLoading }: RecentActivitiesProps) {
+  const { t } = useTranslation(['dashboard', 'enums'])
+  const RELATED_TYPE_LABELS = relatedTypeLabels(t)
+
   if (isLoading) {
     return (
       <div className="flex flex-col gap-4" aria-busy="true">
@@ -65,8 +74,8 @@ export function RecentActivities({ activities, isLoading }: RecentActivitiesProp
     return (
       <EmptyState
         icon={<Activity className="size-6" aria-hidden="true" />}
-        title="Henüz aktivite yok"
-        description="Kaydedilmiş bir aktivite bulunamadı."
+        title={t('dashboard:recentActivities.emptyTitle')}
+        description={t('dashboard:recentActivities.emptyDescription')}
       />
     )
   }
@@ -75,8 +84,8 @@ export function RecentActivities({ activities, isLoading }: RecentActivitiesProp
     <ul className="flex flex-col gap-4">
       {activities.map((activity) => {
         const Icon = activityTypeIcon(activity.type)
-        const typeLabel = activityTypeLabel(activity.type)
-        const actor = activity.user?.name ?? 'Sistem'
+        const typeLabel = activityTypeLabel(t, activity.type)
+        const actor = activity.user?.name ?? t('dashboard:recentActivities.systemActor')
         const related = activity.related
 
         return (

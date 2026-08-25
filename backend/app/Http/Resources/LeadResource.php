@@ -55,6 +55,31 @@ class LeadResource extends JsonResource
             'converted_contact_id' => $lead->converted_contact_id,
             'converted_company_id' => $lead->converted_company_id,
             'converted_deal_id' => $lead->converted_deal_id,
+            // Faz 14 / İz F — C3 ilişkili-kayıtlar paneli (docs/PHASE-INTL.md §3).
+            // Yalnızca dönüşüm hedefi VARSA VE ilgili modülün izniyle
+            // yüklendiyse eklenir (gerekçe LeadController::loadRelatedRecords()).
+            // Ters yön (bir kişi/firma/fırsatın "hangi lead'den geldiği") şemada
+            // yok — UYDURULMADI, atlandı.
+            'related' => array_filter([
+                'converted_contact' => $lead->relationLoaded('convertedContact') && $lead->convertedContact
+                    ? ['total' => 1, 'items' => [[
+                        'id' => $lead->convertedContact->id,
+                        'full_name' => trim("{$lead->convertedContact->first_name} {$lead->convertedContact->last_name}"),
+                    ]]]
+                    : null,
+                'converted_company' => $lead->relationLoaded('convertedCompany') && $lead->convertedCompany
+                    ? ['total' => 1, 'items' => [[
+                        'id' => $lead->convertedCompany->id,
+                        'name' => $lead->convertedCompany->name,
+                    ]]]
+                    : null,
+                'converted_deal' => $lead->relationLoaded('convertedDeal') && $lead->convertedDeal
+                    ? ['total' => 1, 'items' => [[
+                        'id' => $lead->convertedDeal->id,
+                        'title' => $lead->convertedDeal->title,
+                    ]]]
+                    : null,
+            ], fn ($group) => $group !== null),
             'created_at' => $lead->created_at?->toIso8601String(),
             'updated_at' => $lead->updated_at?->toIso8601String(),
             // Bu kullanıcının bu kayıtta neyi YAPABİLDİĞİ — arayüz kuralı

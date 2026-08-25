@@ -7,12 +7,13 @@
 // (uyarı varken metni "Yine de Kaydet" olur).
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Info } from 'lucide-react'
 import { Button, Input, Modal, Select, Textarea } from '../../../components/ui'
 import { getFieldErrors } from '../../../lib/axios'
 import { useCheckDuplicates, useCreateLead, useCustomFields, useOwnerOptions, useUpdateLead } from '../api/leadsApi'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
-import { EDITABLE_STATUS_OPTIONS, SOURCE_OPTIONS } from '../utils'
+import { editableLeadStatusOptions, leadSourceOptions } from '../utils'
 import { DuplicateWarningPanel } from './DuplicateWarningPanel'
 import { TagMultiSelect } from './TagMultiSelect'
 import { CustomFieldsSection } from './CustomFieldsSection'
@@ -27,6 +28,7 @@ export type LeadFormModalProps = {
 const DUPLICATE_DEBOUNCE_MS = 500
 
 export function LeadFormModal({ open, onClose, lead }: LeadFormModalProps) {
+  const { t } = useTranslation(['leads', 'common', 'enums'])
   const isEdit = !!lead
   const createLead = useCreateLead()
   const updateLead = useUpdateLead()
@@ -123,12 +125,12 @@ export function LeadFormModal({ open, onClose, lead }: LeadFormModalProps) {
 
   function validate(): boolean {
     const errors: Record<string, string[]> = {}
-    if (!firstName.trim()) errors.first_name = ['Ad alanı zorunludur.']
-    if (!lastName.trim()) errors.last_name = ['Soyad alanı zorunludur.']
-    if (!source) errors.source = ['Kaynak alanı zorunludur.']
+    if (!firstName.trim()) errors.first_name = [t('leads:form.validation.firstNameRequired')]
+    if (!lastName.trim()) errors.last_name = [t('leads:form.validation.lastNameRequired')]
+    if (!source) errors.source = [t('leads:form.validation.sourceRequired')]
     if (score.trim() !== '') {
       const n = Number(score)
-      if (Number.isNaN(n) || n < 0 || n > 100) errors.score = ['Skor 0 ile 100 arasında olmalıdır.']
+      if (Number.isNaN(n) || n < 0 || n > 100) errors.score = [t('leads:form.validation.scoreRange')]
     }
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
@@ -168,7 +170,7 @@ export function LeadFormModal({ open, onClose, lead }: LeadFormModalProps) {
   }
 
   const ownerSelectOptions = [
-    { value: '', label: 'Atanmamış' },
+    { value: '', label: t('leads:form.ownerUnassigned') },
     ...(ownerOptions ?? []).map((owner) => ({ value: String(owner.id), label: owner.name })),
   ]
 
@@ -178,15 +180,15 @@ export function LeadFormModal({ open, onClose, lead }: LeadFormModalProps) {
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? 'Müşteri Adayını Düzenle' : 'Yeni Müşteri Adayı'}
+      title={isEdit ? t('leads:form.titleEdit') : t('leads:form.titleCreate')}
       size="lg"
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Vazgeç
+            {t('leads:form.cancel')}
           </Button>
           <Button type="submit" form="lead-form" loading={isPending}>
-            {hasDuplicateWarning ? 'Yine de Kaydet' : isEdit ? 'Kaydet' : 'Oluştur'}
+            {hasDuplicateWarning ? t('leads:form.submitSaveAnyway') : isEdit ? t('leads:form.submitEdit') : t('leads:form.submitCreate')}
           </Button>
         </div>
       }
@@ -197,28 +199,56 @@ export function LeadFormModal({ open, onClose, lead }: LeadFormModalProps) {
         )}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Input label="Ad" value={firstName} onChange={(e) => setFirstName(e.target.value)} error={fieldError('first_name')} required />
-          <Input label="Soyad" value={lastName} onChange={(e) => setLastName(e.target.value)} error={fieldError('last_name')} required />
-          <Input label="E-posta" type="email" value={email} onChange={(e) => setEmail(e.target.value)} error={fieldError('email')} />
-          <Input label="Telefon" value={phone} onChange={(e) => setPhone(e.target.value)} error={fieldError('phone')} />
-          <Input label="Firma Adı" value={companyName} onChange={(e) => setCompanyName(e.target.value)} error={fieldError('company_name')} />
-          <Input label="Pozisyon" value={position} onChange={(e) => setPosition(e.target.value)} error={fieldError('position')} />
+          <Input
+            label={t('leads:form.firstNameLabel')}
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            error={fieldError('first_name')}
+            required
+          />
+          <Input
+            label={t('leads:form.lastNameLabel')}
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            error={fieldError('last_name')}
+            required
+          />
+          <Input
+            label={t('leads:form.emailLabel')}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            error={fieldError('email')}
+          />
+          <Input label={t('leads:form.phoneLabel')} value={phone} onChange={(e) => setPhone(e.target.value)} error={fieldError('phone')} />
+          <Input
+            label={t('leads:form.companyNameLabel')}
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            error={fieldError('company_name')}
+          />
+          <Input
+            label={t('leads:form.positionLabel')}
+            value={position}
+            onChange={(e) => setPosition(e.target.value)}
+            error={fieldError('position')}
+          />
           <Select
-            label="Kaynak"
+            label={t('leads:form.sourceLabel')}
             value={source}
             onChange={(e) => setSource(e.target.value as LeadSource)}
-            options={SOURCE_OPTIONS}
+            options={leadSourceOptions(t)}
             error={fieldError('source')}
           />
           <Select
-            label="Durum"
+            label={t('leads:form.statusLabel')}
             value={status}
             onChange={(e) => setStatus(e.target.value as LeadStatus)}
-            options={EDITABLE_STATUS_OPTIONS}
+            options={editableLeadStatusOptions(t)}
             error={fieldError('status')}
           />
           <Input
-            label="Skor (0-100)"
+            label={t('leads:form.scoreLabel')}
             type="number"
             min={0}
             max={100}
@@ -228,7 +258,7 @@ export function LeadFormModal({ open, onClose, lead }: LeadFormModalProps) {
           />
           {!ownersForbidden && (
             <Select
-              label="Sahip"
+              label={t('leads:form.ownerLabel')}
               value={ownerId}
               onChange={(e) => setOwnerId(e.target.value)}
               options={ownerSelectOptions}
@@ -239,7 +269,12 @@ export function LeadFormModal({ open, onClose, lead }: LeadFormModalProps) {
 
         <TagMultiSelect selectedIds={tagIds} onChange={setTagIds} />
 
-        <Textarea label="Notlar" value={notes} onChange={(e) => setNotes(e.target.value)} error={fieldError('notes')} />
+        <Textarea
+          label={t('leads:form.notesLabel')}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          error={fieldError('notes')}
+        />
 
         <CustomFieldsSection
           fields={customFields ?? []}
@@ -250,9 +285,7 @@ export function LeadFormModal({ open, onClose, lead }: LeadFormModalProps) {
         {hasDuplicateWarning && (
           <div className="flex items-start gap-2 rounded-md bg-warning-tint p-3 text-xs text-warning">
             <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            <p>
-              Olası eşleşen kayıtlar yukarıda listelendi. Kaydetmek yine de mümkündür — karar sizindir.
-            </p>
+            <p>{t('leads:form.duplicateNotice')}</p>
           </div>
         )}
       </form>

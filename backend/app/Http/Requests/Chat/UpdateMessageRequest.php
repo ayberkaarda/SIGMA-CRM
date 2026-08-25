@@ -34,17 +34,6 @@ class UpdateMessageRequest extends FormRequest
     }
 
     /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'body.required' => 'Mesaj boş olamaz.',
-            'body.max' => 'Mesaj en fazla :max karakter olabilir.',
-        ];
-    }
-
-    /**
      * @return array<string, mixed>
      */
     public function payload(): array

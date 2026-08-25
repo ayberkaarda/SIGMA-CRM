@@ -2,6 +2,7 @@
 // işaretle", tek tek silme. Sekme/sayfa durumu URL query string'inde tutulur (desen:
 // `features/logs/pages/LogsPage.tsx`/`features/tickets/pages/TicketsListPage.tsx`).
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Bell, CheckCheck, Trash2 } from 'lucide-react'
 import {
   Badge,
@@ -25,6 +26,7 @@ type TabValue = 'all' | NotificationReadFilter
 const VALID_TABS: TabValue[] = ['all', 'unread', 'read']
 
 export function NotificationsPage() {
+  const { t } = useTranslation('notifications')
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
 
@@ -72,15 +74,15 @@ export function NotificationsPage() {
   return (
     <div className="flex flex-col gap-4">
       <nav aria-label="breadcrumb" className="text-xs text-fg-muted">
-        <span>Anasayfa</span>
+        <span>{t('notifications:breadcrumb.home')}</span>
         <span className="mx-1.5">/</span>
-        <span className="text-primary">Bildirimler</span>
+        <span className="text-primary">{t('notifications:breadcrumb.notifications')}</span>
       </nav>
 
       <Card>
         <CardHeader
-          title="Bildirimler"
-          subtitle={pagination ? `${pagination.total} bildirim` : undefined}
+          title={t('notifications:page.title')}
+          subtitle={pagination ? t('notifications:page.subtitle', { count: pagination.total }) : undefined}
           action={
             <Button
               variant="secondary"
@@ -89,16 +91,16 @@ export function NotificationsPage() {
               onClick={() => markAllRead.mutate()}
               loading={markAllRead.isPending}
             >
-              Tümünü okundu işaretle
+              {t('notifications:page.markAllRead')}
             </Button>
           }
         />
         <CardBody noPadding>
           <Tabs value={tab} onValueChange={switchTab}>
             <TabList className="px-5 pt-3">
-              <Tab value="all">Tümü</Tab>
-              <Tab value="unread">Okunmamış</Tab>
-              <Tab value="read">Okunmuş</Tab>
+              <Tab value="all">{t('notifications:page.tabs.all')}</Tab>
+              <Tab value="unread">{t('notifications:page.tabs.unread')}</Tab>
+              <Tab value="read">{t('notifications:page.tabs.read')}</Tab>
             </TabList>
           </Tabs>
 
@@ -116,8 +118,8 @@ export function NotificationsPage() {
           ) : isEmpty ? (
             <EmptyState
               icon={<Bell className="size-6" aria-hidden="true" />}
-              title="Bildirim yok"
-              description={tab === 'unread' ? 'Okunmamış bildiriminiz yok.' : 'Henüz bir bildirim almadınız.'}
+              title={t('notifications:page.emptyTitle')}
+              description={tab === 'unread' ? t('notifications:page.emptyUnread') : t('notifications:page.emptyAll')}
               className="px-6 py-12"
             />
           ) : (
@@ -156,7 +158,7 @@ export function NotificationsPage() {
                           </p>
                           {isUnread && (
                             <Badge variant="primary" size="sm" dot>
-                              Yeni
+                              {t('notifications:page.newBadge')}
                             </Badge>
                           )}
                         </div>
@@ -168,7 +170,7 @@ export function NotificationsPage() {
                       type="button"
                       onClick={() => deleteNotification.mutate(notification.id)}
                       disabled={deleteNotification.isPending}
-                      aria-label="Bildirimi sil"
+                      aria-label={t('notifications:page.deleteAria')}
                       className={cn(
                         'mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-md text-fg-muted',
                         'hover:bg-surface-2 hover:text-danger disabled:cursor-not-allowed disabled:opacity-50',

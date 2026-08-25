@@ -15,44 +15,19 @@
 // dışı gösteriyor.
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Plus, X } from 'lucide-react'
 import { Button, Checkbox, Input, Modal, Select } from '../../../components/ui'
 import { getFieldErrors } from '../../../lib/axios'
 import { useCreateCustomField, useCustomFields, useUpdateCustomField } from '../hooks/useCustomFields'
+import { labelForEntityType, labelForFieldType } from './CustomFieldsTab'
 import type { CustomField, CustomFieldType } from '../types'
-
-const ENTITY_TYPE_LABELS: Record<string, string> = {
-  leads: 'Potansiyeller (Leads)',
-  contacts: 'Kişiler',
-  companies: 'Firmalar',
-  deals: 'Fırsatlar',
-  tickets: 'Destek Talepleri',
-  products: 'Ürünler',
-}
-
-const FIELD_TYPE_LABELS: Record<string, string> = {
-  text: 'Metin',
-  textarea: 'Uzun Metin',
-  number: 'Sayı',
-  date: 'Tarih',
-  select: 'Seçim (Tekli)',
-  multiselect: 'Seçim (Çoklu)',
-  boolean: 'Evet/Hayır',
-}
 
 // Yalnızca `meta` beklenmedik biçimde boş gelirse kullanılan güvenlik ağı — normal akışta
 // devreye girmez (bkz. dosya başı notu).
 const FALLBACK_ENTITY_TYPES = ['leads', 'contacts', 'companies', 'deals', 'tickets', 'products']
 const FALLBACK_TYPES: CustomFieldType[] = ['text', 'textarea', 'number', 'date', 'select', 'multiselect', 'boolean']
 const FALLBACK_OPTION_TYPES = ['select', 'multiselect']
-
-function labelForEntityType(entityType: string): string {
-  return ENTITY_TYPE_LABELS[entityType] ?? entityType.replace(/\b\w/g, (c) => c.toUpperCase())
-}
-
-function labelForFieldType(type: string): string {
-  return FIELD_TYPE_LABELS[type] ?? type.replace(/\b\w/g, (c) => c.toUpperCase())
-}
 
 function normalizeKey(raw: string): string {
   return raw
@@ -70,6 +45,7 @@ export type CustomFieldFormModalProps = {
 }
 
 export function CustomFieldFormModal({ open, onClose, field, defaultEntityType }: CustomFieldFormModalProps) {
+  const { t } = useTranslation(['settings', 'common'])
   const isEdit = !!field
 
   const { data } = useCustomFields()
@@ -80,8 +56,8 @@ export function CustomFieldFormModal({ open, onClose, field, defaultEntityType }
   const fieldTypeOptionValues = data?.meta.types?.length ? data.meta.types : FALLBACK_TYPES
   const optionTypes = data?.meta.option_types?.length ? data.meta.option_types : FALLBACK_OPTION_TYPES
 
-  const entityTypeOptions = entityTypeOptionValues.map((type) => ({ value: type, label: labelForEntityType(type) }))
-  const fieldTypeOptions = fieldTypeOptionValues.map((type) => ({ value: type, label: labelForFieldType(type) }))
+  const entityTypeOptions = entityTypeOptionValues.map((type) => ({ value: type, label: labelForEntityType(type, t) }))
+  const fieldTypeOptions = fieldTypeOptionValues.map((type) => ({ value: type, label: labelForFieldType(type, t) }))
 
   const [entityType, setEntityType] = useState(defaultEntityType ?? entityTypeOptionValues[0] ?? '')
   const [name, setName] = useState('')
@@ -115,10 +91,10 @@ export function CustomFieldFormModal({ open, onClose, field, defaultEntityType }
 
   function validate(): boolean {
     const errors: Record<string, string[]> = {}
-    if (!name.trim()) errors.name = ['Alan adı zorunludur.']
-    if (!isEdit && !key.trim()) errors.key = ['Alan anahtarı zorunludur.']
+    if (!name.trim()) errors.name = [t('settings:customFieldForm.errors.nameRequired')]
+    if (!isEdit && !key.trim()) errors.key = [t('settings:customFieldForm.errors.keyRequired')]
     if (needsOptions && options.filter((o) => o.trim()).length === 0) {
-      errors.options = ['En az bir seçenek eklemelisiniz.']
+      errors.options = [t('settings:customFieldForm.errors.optionsRequired')]
     }
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
@@ -166,15 +142,15 @@ export function CustomFieldFormModal({ open, onClose, field, defaultEntityType }
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? 'Özel Alanı Düzenle' : 'Yeni Özel Alan'}
+      title={isEdit ? t('settings:customFieldForm.titleEdit') : t('settings:customFieldForm.titleCreate')}
       size="lg"
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Vazgeç
+            {t('common:actions.cancel')}
           </Button>
           <Button type="submit" form="custom-field-form" loading={isPending}>
-            {isEdit ? 'Kaydet' : 'Oluştur'}
+            {isEdit ? t('common:actions.save') : t('common:actions.create')}
           </Button>
         </div>
       }
@@ -182,39 +158,50 @@ export function CustomFieldFormModal({ open, onClose, field, defaultEntityType }
       <form id="custom-field-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Select
-            label="Kayıt Türü"
+            label={t('settings:customFieldForm.entityTypeLabel')}
             value={entityType}
             onChange={(e) => setEntityType(e.target.value)}
             options={entityTypeOptions}
             disabled={isEdit}
-            hint={isEdit ? 'Oluşturulduktan sonra değiştirilemez.' : undefined}
+            hint={isEdit ? t('settings:customFieldForm.entityTypeHintLocked') : undefined}
           />
-          <Select label="Alan Türü" value={type} onChange={(e) => setType(e.target.value)} options={fieldTypeOptions} />
+          <Select
+            label={t('settings:customFieldForm.fieldTypeLabel')}
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+            options={fieldTypeOptions}
+          />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Input label="Alan Adı" value={name} onChange={(e) => setName(e.target.value)} error={fieldError('name')} required />
           <Input
-            label="Anahtar (key)"
+            label={t('settings:customFieldForm.nameLabel')}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            error={fieldError('name')}
+            required
+          />
+          <Input
+            label={t('settings:customFieldForm.keyLabel')}
             value={key}
             onChange={(e) => setKey(normalizeKey(e.target.value))}
             error={fieldError('key')}
             disabled={isEdit}
-            hint={isEdit ? 'Oluşturulduktan sonra değiştirilemez.' : 'Yalnızca küçük harf, rakam ve alt çizgi.'}
+            hint={isEdit ? t('settings:customFieldForm.keyHintLocked') : t('settings:customFieldForm.keyHintPattern')}
             required={!isEdit}
           />
         </div>
 
         {needsOptions && (
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-medium text-fg-muted">Seçenekler</span>
+            <span className="text-xs font-medium text-fg-muted">{t('settings:customFieldForm.optionsLabel')}</span>
             {options.map((option, index) => (
               <div key={index} className="flex items-center gap-2">
                 <div className="flex-1">
                   <Input
                     value={option}
                     onChange={(e) => updateOption(index, e.target.value)}
-                    placeholder={`Seçenek ${index + 1}`}
+                    placeholder={t('settings:customFieldForm.optionPlaceholder', { index: index + 1 })}
                   />
                 </div>
                 <Button
@@ -222,7 +209,7 @@ export function CustomFieldFormModal({ open, onClose, field, defaultEntityType }
                   variant="ghost"
                   size="sm"
                   onClick={() => removeOption(index)}
-                  aria-label="Seçeneği kaldır"
+                  aria-label={t('settings:customFieldForm.removeOption')}
                 >
                   <X className="size-4" aria-hidden="true" />
                 </Button>
@@ -235,13 +222,17 @@ export function CustomFieldFormModal({ open, onClose, field, defaultEntityType }
               leftIcon={<Plus className="size-3.5" aria-hidden="true" />}
               onClick={() => setOptions((prev) => [...prev, ''])}
             >
-              Seçenek Ekle
+              {t('settings:customFieldForm.addOption')}
             </Button>
             {fieldError('options') && <p className="text-xs text-danger">{fieldError('options')}</p>}
           </div>
         )}
 
-        <Checkbox label="Zorunlu alan" checked={isRequired} onChange={(e) => setIsRequired(e.target.checked)} />
+        <Checkbox
+          label={t('settings:customFieldForm.requiredLabel')}
+          checked={isRequired}
+          onChange={(e) => setIsRequired(e.target.checked)}
+        />
       </form>
     </Modal>
   )

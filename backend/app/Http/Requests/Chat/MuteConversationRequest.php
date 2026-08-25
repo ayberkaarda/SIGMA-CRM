@@ -29,17 +29,6 @@ class MuteConversationRequest extends FormRequest
         ];
     }
 
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'is_muted.required' => 'Susturma durumu zorunludur.',
-            'is_muted.boolean' => 'Susturma durumu yalnızca true veya false olabilir.',
-        ];
-    }
-
     public function isMuted(): bool
     {
         return (bool) $this->validated()['is_muted'];

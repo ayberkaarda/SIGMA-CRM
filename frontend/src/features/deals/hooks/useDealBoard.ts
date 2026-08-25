@@ -19,6 +19,7 @@
 // pano fotoğrafını geri yüklemek B'nin iyimser hareketini de silerdi. Kart bazlı geri alma
 // yalnızca kendi kartına dokunur — aynı gerekçe 409 ve 422 yollarında da geçerli.
 import { useCallback, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   KeyboardSensor,
   PointerSensor,
@@ -110,6 +111,7 @@ export type UseDealBoardResult = {
 }
 
 export function useDealBoard(filters: BoardFilters): UseDealBoardResult {
+  const { t } = useTranslation('deals')
   const queryClient = useQueryClient()
   const queryKey = useMemo(() => boardKeys.board(filters), [filters])
   const query = useBoardQuery(filters)
@@ -187,21 +189,21 @@ export function useDealBoard(filters: BoardFilters): UseDealBoardResult {
         const conflictCard = conflictCardFrom(error)
         if (conflictCard) {
           settleCard(conflictCard)
-          toast.warning('Bu kartı bu sırada başkası taşıdı; kart sunucudaki güncel hâliyle güncellendi.')
+          toast.warning(t('board.toast.conflict'))
           return
         }
 
         settleCard(origin)
 
         if (isNetworkError(error)) {
-          toast.error('Bağlantı hatası: kart taşınamadı, eski konumuna geri alındı.')
+          toast.error(t('board.toast.networkError'))
           return
         }
 
         toast.error(getErrorMessage(error))
       }
     },
-    [moveAsync, settleCard]
+    [moveAsync, settleCard, t]
   )
 
   const onDragStart = useCallback(

@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import { ArrowLeft, Building2, Pencil, Trash2, User as UserIcon, Users } from 'lucide-react'
 import { Badge, Button, Card, CardBody, CardHeader, Modal, Skeleton } from '../../../components/ui'
+import { formatDateTime } from '../../../lib/datetime'
 import { usePermission } from '../../auth/hooks/usePermission'
 import { RecordChatPanel } from '../../chat/record'
 import { TicketPriorityBadge } from '../components/TicketPriorityBadge'
@@ -17,17 +19,11 @@ import { TicketActivityPanel } from '../components/TicketActivityPanel'
 import { TicketTasksPanel } from '../components/TicketTasksPanel'
 import { useDeleteTicket, useTicket } from '../api/ticketsApi'
 import { useTicketRealtime } from '../hooks/useTicketRealtime'
-
-function formatDateTime(iso: string | null): string {
-  if (!iso) return '—'
-  try {
-    return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
-  } catch {
-    return iso
-  }
-}
+import { companyGroupConfig, contactGroupConfig } from '../../related/adapters'
+import { RelatedRecordsPanel } from '../../related/RelatedRecordsPanel'
 
 export function TicketDetailPage() {
+  const { t } = useTranslation('tickets')
   const params = useParams<{ id: string }>()
   const ticketId = Number(params.id)
   const navigate = useNavigate()
@@ -65,9 +61,9 @@ export function TicketDetailPage() {
   if (isError || !ticket) {
     return (
       <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-fg-muted">Talep yüklenirken bir hata oluştu.</p>
+        <p className="text-sm text-fg-muted">{t('detail.loadError')}</p>
         <Button variant="secondary" onClick={() => refetch()}>
-          Tekrar dene
+          {t('detail.retry')}
         </Button>
       </div>
     )
@@ -78,7 +74,7 @@ export function TicketDetailPage() {
       <nav aria-label="breadcrumb" className="flex items-center gap-1.5 text-xs text-fg-muted">
         <Link to="/tickets" className="inline-flex items-center gap-1 hover:text-fg">
           <ArrowLeft className="size-3.5" aria-hidden="true" />
-          Destek Talepleri
+          {t('detail.backToList')}
         </Link>
         <span className="mx-1">/</span>
         <span className="text-primary">{ticket.ticket_number}</span>
@@ -93,7 +89,7 @@ export function TicketDetailPage() {
                   boyutu yok, `can.assign` her zaman modül izniyle aynıdır. */}
               {can('tickets.assign') && ticket.can.assign && (
                 <Button variant="secondary" leftIcon={<Users className="size-4" aria-hidden="true" />} onClick={() => setAssignOpen(true)}>
-                  Ata
+                  {t('detail.assign')}
                 </Button>
               )}
               {/* Faz 13: `tickets.update` izni yeterli değil — atanan kişi, atanmamış talep ya da
@@ -106,9 +102,9 @@ export function TicketDetailPage() {
                   leftIcon={<Pencil className="size-4" aria-hidden="true" />}
                   onClick={() => setEditOpen(true)}
                   disabled={!ticket.can.update}
-                  title={ticket.can.update ? undefined : 'Bu talebin sahibi değilsiniz, düzenleyemezsiniz.'}
+                  title={ticket.can.update ? undefined : t('detail.editLockedTooltip')}
                 >
-                  Düzenle
+                  {t('detail.edit')}
                 </Button>
               )}
               {/* Çözülmüş/kapanmış talep silinemez — sahiplikten bağımsız, herkes için geçerli bir
@@ -116,7 +112,7 @@ export function TicketDetailPage() {
                   durum kopyasını tutmaz. */}
               {can('tickets.delete') && ticket.can.delete && (
                 <Button variant="danger" leftIcon={<Trash2 className="size-4" aria-hidden="true" />} onClick={() => setDeleteOpen(true)}>
-                  Sil
+                  {t('detail.delete')}
                 </Button>
               )}
             </div>
@@ -134,7 +130,7 @@ export function TicketDetailPage() {
           <TicketStatusControl ticket={ticket} />
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <DetailField label="Firma">
+            <DetailField label={t('detail.fields.company')}>
               {ticket.company ? (
                 <Link to={`/companies/${ticket.company.id}`} className="flex items-center gap-1.5 text-sm text-primary hover:underline">
                   <Building2 className="size-3.5" aria-hidden="true" />
@@ -144,7 +140,7 @@ export function TicketDetailPage() {
                 <span className="text-sm text-fg-muted">—</span>
               )}
             </DetailField>
-            <DetailField label="Kişi">
+            <DetailField label={t('detail.fields.contact')}>
               {ticket.contact ? (
                 <Link to={`/contacts/${ticket.contact.id}`} className="flex items-center gap-1.5 text-sm text-primary hover:underline">
                   <UserIcon className="size-3.5" aria-hidden="true" />
@@ -154,23 +150,23 @@ export function TicketDetailPage() {
                 <span className="text-sm text-fg-muted">—</span>
               )}
             </DetailField>
-            <DetailField label="Atanan">
-              <span className="text-sm text-fg">{ticket.assignee?.name ?? 'Atanmamış'}</span>
+            <DetailField label={t('detail.fields.assignee')}>
+              <span className="text-sm text-fg">{ticket.assignee?.name ?? t('detail.unassignedAssignee')}</span>
             </DetailField>
-            <DetailField label="Oluşturan">
+            <DetailField label={t('detail.fields.creator')}>
               <span className="text-sm text-fg">{ticket.creator?.name ?? '—'}</span>
             </DetailField>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-fg-muted">Açıklama</span>
+            <span className="text-xs font-medium text-fg-muted">{t('detail.descriptionLabel')}</span>
             <p className="whitespace-pre-wrap text-sm text-fg-secondary">{ticket.description}</p>
           </div>
 
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">Etiketler</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">{t('detail.tagsLabel')}</p>
             <div className="flex flex-wrap gap-1.5">
-              {ticket.tags.length === 0 && <span className="text-sm text-fg-muted">Etiket yok.</span>}
+              {ticket.tags.length === 0 && <span className="text-sm text-fg-muted">{t('detail.noTags')}</span>}
               {ticket.tags.map((tag) => (
                 <Badge key={tag.id} variant="neutral">
                   {tag.name}
@@ -183,7 +179,7 @@ export function TicketDetailPage() {
 
       {Object.keys(ticket.custom_fields).length > 0 && (
         <Card>
-          <CardHeader title="Özel Alanlar" />
+          <CardHeader title={t('detail.customFieldsTitle')} />
           <CardBody>
             <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {Object.entries(ticket.custom_fields).map(([key, value]) => (
@@ -198,19 +194,30 @@ export function TicketDetailPage() {
       )}
 
       <Card>
-        <CardHeader title="Zaman Damgaları" />
+        <CardHeader title={t('detail.timestampsTitle')} />
         <CardBody>
           <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <TimestampField label="Oluşturma" value={formatDateTime(ticket.created_at)} />
+            <TimestampField label={t('detail.timestamps.created')} value={formatDateTime(ticket.created_at)} />
             <TimestampField
-              label="İlk Yanıt"
-              value={ticket.first_response_at ? formatDateTime(ticket.first_response_at) : 'Henüz yanıt verilmedi'}
+              label={t('detail.timestamps.firstResponse')}
+              value={ticket.first_response_at ? formatDateTime(ticket.first_response_at) : t('detail.noResponseYet')}
               muted={!ticket.first_response_at}
             />
-            <TimestampField label="Çözüm" value={ticket.resolved_at ? formatDateTime(ticket.resolved_at) : '—'} muted={!ticket.resolved_at} />
-            <TimestampField label="Kapanış" value={ticket.closed_at ? formatDateTime(ticket.closed_at) : '—'} muted={!ticket.closed_at} />
-            <TimestampField label="SLA Hedefi" value={ticket.sla_due_at ? formatDateTime(ticket.sla_due_at) : '—'} />
-            <TimestampField label="SLA Hedef Süresi" value={`${ticket.sla_target_hours} saat`} />
+            <TimestampField
+              label={t('detail.timestamps.resolved')}
+              value={ticket.resolved_at ? formatDateTime(ticket.resolved_at) : '—'}
+              muted={!ticket.resolved_at}
+            />
+            <TimestampField
+              label={t('detail.timestamps.closed')}
+              value={ticket.closed_at ? formatDateTime(ticket.closed_at) : '—'}
+              muted={!ticket.closed_at}
+            />
+            <TimestampField label={t('detail.timestamps.slaDue')} value={ticket.sla_due_at ? formatDateTime(ticket.sla_due_at) : '—'} />
+            <TimestampField
+              label={t('detail.timestamps.slaTargetHours')}
+              value={t('detail.slaTargetHoursValue', { hours: ticket.sla_target_hours })}
+            />
           </dl>
         </CardBody>
       </Card>
@@ -218,6 +225,32 @@ export function TicketDetailPage() {
       <TicketActivityPanel ticket={ticket} />
 
       <TicketTasksPanel ticket={ticket} />
+
+      {/* Faz 14 / İz F — C3: `destek talebi ↔ firma/kişi` ters yönü (firma/kişi → destek
+          talepleri) Company/ContactController::loadRelatedRecords()'ta eklendi; bu yön
+          (talep → firma/kişi) zaten `ticket.company`/`ticket.contact` alanlarında vardı
+          (yukarıdaki DetailField'lar) — burada YENİ bir BE ucu açmadan, aynı veriyi TEK
+          ortak panel bileşeniyle tutarlı biçimde tekrar sunuyoruz. */}
+      <RelatedRecordsPanel
+        groups={[
+          companyGroupConfig(
+            'company',
+            t('related:groups.company'),
+            t('related:empty.company'),
+            can('companies.view')
+              ? { total: ticket.company ? 1 : 0, items: ticket.company ? [ticket.company] : [] }
+              : undefined
+          ),
+          contactGroupConfig(
+            'contact',
+            t('related:groups.contact'),
+            t('related:empty.contact'),
+            can('contacts.view')
+              ? { total: ticket.contact ? 1 : 0, items: ticket.contact ? [ticket.contact] : [] }
+              : undefined
+          ),
+        ]}
+      />
 
       <RecordChatPanel recordType="ticket" recordId={ticket.id} />
 
@@ -227,12 +260,12 @@ export function TicketDetailPage() {
       <Modal
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
-        title="Talebi sil"
-        description="Bu işlem geri alınamaz. Talep kalıcı olarak silinecek."
+        title={t('detail.deleteModal.title')}
+        description={t('detail.deleteModal.description')}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setDeleteOpen(false)}>
-              Vazgeç
+              {t('detail.deleteModal.cancel')}
             </Button>
             <Button
               variant="danger"
@@ -243,16 +276,17 @@ export function TicketDetailPage() {
                 navigate('/tickets')
               }}
             >
-              Sil
+              {t('detail.deleteModal.confirm')}
             </Button>
           </div>
         }
       >
         <p className="text-sm text-fg-secondary">
-          <strong className="text-fg">
-            {ticket.ticket_number} — {ticket.subject}
-          </strong>{' '}
-          adlı talebi silmek istediğinize emin misiniz?
+          <Trans
+            i18nKey="tickets:detail.deleteModal.confirmText"
+            values={{ ticketNumber: ticket.ticket_number, subject: ticket.subject }}
+            components={{ bold: <strong className="text-fg" /> }}
+          />
         </p>
       </Modal>
     </div>

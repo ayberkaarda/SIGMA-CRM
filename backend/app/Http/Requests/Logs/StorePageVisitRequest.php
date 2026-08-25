@@ -27,18 +27,4 @@ class StorePageVisitRequest extends FormRequest
             'title' => ['nullable', 'string', 'max:255'],
         ];
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'route.required' => 'route alanı zorunludur.',
-            'route.max' => 'route en fazla :max karakter olabilir.',
-            'path.required' => 'path alanı zorunludur.',
-            'path.max' => 'path en fazla :max karakter olabilir.',
-            'title.max' => 'title en fazla :max karakter olabilir.',
-        ];
-    }
 }

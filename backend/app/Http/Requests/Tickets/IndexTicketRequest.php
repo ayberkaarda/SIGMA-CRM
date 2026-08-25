@@ -46,25 +46,6 @@ class IndexTicketRequest extends FormRequest
     }
 
     /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'per_page.max' => 'Sayfa başına kayıt sayısı en fazla :max olabilir.',
-            'filter.status.in' => 'Seçilen durum filtresi geçerli değil.',
-            'filter.priority.in' => 'Seçilen öncelik filtresi geçerli değil.',
-            'filter.assigned_to.exists' => 'Seçilen atanan kişi filtresi geçerli değil.',
-            'filter.company_id.exists' => 'Seçilen firma filtresi geçerli değil.',
-            'filter.contact_id.exists' => 'Seçilen kişi filtresi geçerli değil.',
-            'filter.tag_id.exists' => 'Seçilen etiket filtresi geçerli değil.',
-            'filter.sla_breached.boolean' => 'SLA ihlali filtresi yalnızca 0 veya 1 olabilir.',
-            'filter.from.date' => 'Başlangıç tarihi geçerli bir tarih olmalıdır.',
-            'filter.to.date' => 'Bitiş tarihi geçerli bir tarih olmalıdır.',
-        ];
-    }
-
-    /**
      * Repository/Service katmanının beklediği düz filtre dizisini üretir.
      *
      * @return array<string, mixed>

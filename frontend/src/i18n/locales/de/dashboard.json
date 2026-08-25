@@ -1,0 +1,46 @@
+{
+  "kpi": {
+    "revenue": "Umsatz",
+    "openDealsCount": "Anzahl offener Deals",
+    "openDealsValue": "Wert offener Deals",
+    "conversionRate": "Konversionsrate",
+    "activitiesCount": "Anzahl Aktivitäten",
+    "wonCount": "Gewonnen",
+    "lostCount": "Verloren",
+    "avgDealSize": "Durchschnittliche Dealgröße"
+  },
+  "recentActivities": {
+    "emptyTitle": "Noch keine Aktivitäten",
+    "emptyDescription": "Es wurde keine aufgezeichnete Aktivität gefunden.",
+    "systemActor": "System",
+    "related": {
+      "deal": "Deal",
+      "lead": "Interessent",
+      "contact": "Kontakt",
+      "company": "Firma",
+      "ticket": "Ticket",
+      "task": "Aufgabe",
+      "quote": "Angebot"
+    }
+  },
+  "revenueTrend": {
+    "group": { "day": "Tag", "week": "Woche", "month": "Monat" },
+    "emptyTitle": "Keine Umsatzdaten für diesen Zeitraum",
+    "emptyDescription": "Im gewählten Zeitraum wurde kein gewonnener Deal gefunden.",
+    "tooltipWonDeals": "{{value}} gewonnene Deals"
+  },
+  "salesFunnel": {
+    "emptyTitle": "Keine Trichterdaten für diesen Zeitraum",
+    "emptyDescription": "Im gewählten Zeitraum ist kein Deal in die Pipeline eingetreten.",
+    "tooltipDealsCount": "{{value}} Deals"
+  },
+  "taskSummary": {
+    "overdue": "Überfällig",
+    "dueToday": "Heute fällig",
+    "open": "Offene Aufgaben",
+    "completedToday": "Heute abgeschlossen"
+  },
+  "relativeTime": {
+    "justNow": "gerade eben"
+  }
+}

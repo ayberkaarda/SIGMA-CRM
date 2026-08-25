@@ -47,9 +47,7 @@ class UpdateRolePermissionsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'permissions.present' => 'permissions alanı gönderilmelidir (boş dizi olabilir).',
-            'permissions.array' => 'permissions bir izin adı listesi olmalıdır.',
-            'permissions.*.distinct' => 'İzin listesinde aynı izin birden fazla kez yer alamaz.',
+            'permissions.present' => __('validation.custom.settings.role_permissions_present'),
         ];
     }
 

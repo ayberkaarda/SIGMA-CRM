@@ -8,6 +8,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '../../../components/ui'
 import { getErrorMessage } from '../../../lib/axios'
+import i18n from '../../../i18n'
 import {
   createPipelineStageRequest,
   fetchPipelineStages,
@@ -30,7 +31,7 @@ export function useCreatePipelineStage() {
     mutationFn: (payload: PipelineStageCreatePayload) => createPipelineStageRequest(payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: settingsKeys.pipelineStages })
-      toast.success('Aşama oluşturuldu.')
+      toast.success(i18n.t('settings:toast.stageCreated'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })

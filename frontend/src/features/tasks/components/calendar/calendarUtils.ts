@@ -1,6 +1,7 @@
 // Aylık ızgara için SAF tarih yardımcıları — harici takvim/tarih kütüphanesi YOK (bkz. görev
 // tanımı KESİN YASAKLAR), yalnızca native `Date` ve `Intl`. Hafta Pazartesi'den başlar (TR
 // takvim geleneği).
+import { getIntlLocale } from '../../../../i18n'
 export type CalendarDay = {
   date: Date
   /** Yerel (tarayıcı saat dilimi) `YYYY-MM-DD` — `due_at`'in yerel gün karşılığıyla eşleştirmede
@@ -12,7 +13,9 @@ export type CalendarDay = {
   isWeekend: boolean
 }
 
-export const WEEKDAY_LABELS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
+// Etiketler `tasks:calendar.weekday.*` anahtarındadır (Faz 14 / İz D) — bu dosya saf/i18n'siz
+// kalır (bkz. dosya başı notu), çağıran component (`CalendarGrid`) kendi `t`'siyle çevirir.
+export const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
 
 function pad2(n: number): string {
   return String(n).padStart(2, '0')
@@ -66,7 +69,7 @@ export function monthRange(year: number, month: number): { from: string; to: str
 }
 
 export function monthLabel(year: number, month: number): string {
-  return new Intl.DateTimeFormat('tr-TR', { month: 'long', year: 'numeric' }).format(new Date(year, month, 1))
+  return new Intl.DateTimeFormat(getIntlLocale(), { month: 'long', year: 'numeric' }).format(new Date(year, month, 1))
 }
 
 /** `due_at` (ISO) -> yerel `YYYY-MM-DD`, ızgara hücresiyle eşleştirmek için. */

@@ -55,26 +55,4 @@ class StoreDealRequest extends FormRequest
             'custom_fields' => ['nullable', 'array'],
         ];
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'title.required' => 'Başlık alanı zorunludur.',
-            'title.max' => 'Başlık en fazla :max karakter olabilir.',
-            'amount.numeric' => 'Tutar sayısal olmalıdır.',
-            'amount.min' => 'Tutar negatif olamaz.',
-            'currency.size' => 'Para birimi 3 harfli bir kod olmalıdır (ör. TRY).',
-            'pipeline_stage_id.exists' => 'Seçilen aşama geçerli değil.',
-            'probability.between' => 'Olasılık 0 ile 100 arasında olmalıdır.',
-            'company_id.exists' => 'Seçilen firma geçerli değil.',
-            'contact_id.exists' => 'Seçilen kişi geçerli değil.',
-            'owner_id.exists' => 'Seçilen sahip geçerli değil.',
-            'tag_ids.array' => 'Etiketler bir liste olmalıdır.',
-            'tag_ids.*.exists' => 'Seçilen etiketlerden biri geçerli değil.',
-            'custom_fields.array' => 'Özel alanlar bir liste olmalıdır.',
-        ];
-    }
 }

@@ -40,20 +40,6 @@ class BoardDealRequest extends FormRequest
     }
 
     /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'per_stage.max' => 'Aşama başına kart sayısı en fazla :max olabilir.',
-            'filter.owner_id.exists' => 'Seçilen sahip filtresi geçerli değil.',
-            'filter.company_id.exists' => 'Seçilen firma filtresi geçerli değil.',
-            'filter.from.date' => 'Başlangıç tarihi geçerli bir tarih olmalıdır.',
-            'filter.to.date' => 'Bitiş tarihi geçerli bir tarih olmalıdır.',
-        ];
-    }
-
-    /**
      * Repository/Service katmanının beklediği düz filtre dizisini üretir.
      *
      * @return array<string, mixed>

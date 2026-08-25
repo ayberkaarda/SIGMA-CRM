@@ -42,26 +42,6 @@ class IndexDealRequest extends FormRequest
     }
 
     /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'per_page.max' => 'Sayfa başına kayıt sayısı en fazla :max olabilir.',
-            'filter.stage_id.exists' => 'Seçilen aşama filtresi geçerli değil.',
-            'filter.status.in' => 'Seçilen durum filtresi geçerli değil.',
-            'filter.owner_id.exists' => 'Seçilen sahip filtresi geçerli değil.',
-            'filter.company_id.exists' => 'Seçilen firma filtresi geçerli değil.',
-            'filter.contact_id.exists' => 'Seçilen kişi filtresi geçerli değil.',
-            'filter.tag_id.exists' => 'Seçilen etiket filtresi geçerli değil.',
-            'filter.amount_min.numeric' => 'Minimum tutar sayısal olmalıdır.',
-            'filter.amount_max.numeric' => 'Maksimum tutar sayısal olmalıdır.',
-            'filter.from.date' => 'Başlangıç tarihi geçerli bir tarih olmalıdır.',
-            'filter.to.date' => 'Bitiş tarihi geçerli bir tarih olmalıdır.',
-        ];
-    }
-
-    /**
      * Repository/Service katmanının beklediği düz filtre dizisini üretir.
      *
      * @return array<string, mixed>

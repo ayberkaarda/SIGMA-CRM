@@ -5,6 +5,7 @@
 // kimliği zaten Y ekseni etiketinde (aşama adı) doğrudan yazılı olduğundan ayrı bir lejant
 // GEREKMEZ (choosing-a-form.md: tek eksende doğrudan etiketlenen kategorik barlar).
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Bar, BarChart, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { TooltipContentProps } from 'recharts'
 import { EmptyState, Skeleton } from '../../../components/ui'
@@ -27,6 +28,10 @@ function toChartData(stages: FunnelStage[]): FunnelChartDatum[] {
 export type SalesFunnelProps = {
   stages: FunnelStage[] | undefined
   isLoading: boolean
+  /** Görüntü para birimi (`rate_info.display_currency`) — Faz 14 / İz E. Backend zaten bu
+   *  birimde döner, burada yeniden dönüştürme yapılmaz. `rate_info` yoksa (ilk yükleme) temel
+   *  para birimine (TRY) düşülür. */
+  currency?: string
 }
 
 // Recharts 3.x'te `content={<FunnelTooltip />}` (element) artık `TooltipContentProps`e karşı tip
@@ -36,9 +41,13 @@ export type SalesFunnelProps = {
 // ve bileşenin kendi prop tipi `Partial<TooltipContentProps>` yapılır — Recharts'ın enjekte ettiği
 // alanlar burada zaten hepsi opsiyonel tanımlı (bkz. `node_modules/recharts/types/component/
 // Tooltip.d.ts`), `Partial` yalnızca aynı opsiyonelliği bizim tipimizde de garanti eder.
-type FunnelTooltipProps = Partial<TooltipContentProps>
+type FunnelTooltipProps = Partial<TooltipContentProps> & {
+  /** Görüntü para birimi (`rate_info.display_currency`) — Faz 14 / İz E. */
+  currency: string
+}
 
-function FunnelTooltip({ active, payload }: FunnelTooltipProps) {
+function FunnelTooltip({ active, payload, currency }: FunnelTooltipProps) {
+  const { t } = useTranslation('dashboard')
   const theme = useChartTheme()
   if (!active || !payload?.length) return null
   const stage = payload[0]?.payload as FunnelStage | undefined
@@ -51,14 +60,18 @@ function FunnelTooltip({ active, payload }: FunnelTooltipProps) {
     >
       <p className="mb-1 font-medium">{stage.stage_name}</p>
       <p>
-        <span className="font-semibold">{formatMoney(stage.value)}</span>
-        <span style={{ color: theme.fgMuted }}> · {formatNumber(stage.count)} fırsat</span>
+        <span className="font-semibold">{formatMoney(stage.value, currency)}</span>
+        <span style={{ color: theme.fgMuted }}>
+          {' '}
+          · {t('dashboard:salesFunnel.tooltipDealsCount', { value: formatNumber(stage.count) })}
+        </span>
       </p>
     </div>
   )
 }
 
-export function SalesFunnel({ stages, isLoading }: SalesFunnelProps) {
+export function SalesFunnel({ stages, isLoading, currency = 'TRY' }: SalesFunnelProps) {
+  const { t } = useTranslation('dashboard')
   const theme = useChartTheme()
   const chartData = useMemo(() => toChartData(stages ?? []), [stages])
 
@@ -69,7 +82,10 @@ export function SalesFunnel({ stages, isLoading }: SalesFunnelProps) {
   if (!stages || stages.length === 0) {
     return (
       <div style={{ height: CHART_HEIGHT }} className="flex items-center justify-center">
-        <EmptyState title="Bu aralıkta huni verisi yok" description="Seçili tarih aralığında pipeline'a giren fırsat bulunamadı." />
+        <EmptyState
+          title={t('dashboard:salesFunnel.emptyTitle')}
+          description={t('dashboard:salesFunnel.emptyDescription')}
+        />
       </div>
     )
   }
@@ -93,7 +109,7 @@ export function SalesFunnel({ stages, isLoading }: SalesFunnelProps) {
               axisLine={false}
               tick={{ fill: theme.axisText, fontSize: 12 }}
             />
-            <Tooltip cursor={{ fill: theme.grid }} content={(props) => <FunnelTooltip {...props} />} />
+            <Tooltip cursor={{ fill: theme.grid }} content={(props) => <FunnelTooltip {...props} currency={currency} />} />
             <Bar dataKey="_numericValue" radius={[0, 4, 4, 0]} maxBarSize={24} isAnimationActive={false}>
               {chartData.map((stage) => (
                 <Cell key={stage.stage_id} fill={theme.token(stage.color)} />
@@ -104,7 +120,7 @@ export function SalesFunnel({ stages, isLoading }: SalesFunnelProps) {
               <LabelList
                 dataKey="_numericValue"
                 position="right"
-                formatter={(value: unknown) => formatMoneyCompact(value as number)}
+                formatter={(value: unknown) => formatMoneyCompact(value as number, currency)}
                 style={{ fill: theme.fgMuted, fontSize: 12 }}
               />
             </Bar>

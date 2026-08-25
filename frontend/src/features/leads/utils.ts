@@ -1,37 +1,50 @@
 // Leads modülü için paylaşılan sabitler/yardımcılar — liste, form, detay ve
 // dönüştürme modalı arasında tekrarı önler.
+//
+// Faz 14 / İz D: enum etiketleri ARTIK METİN DEĞİL, `enums` namespace'indeki ANAHTAR taşır (bkz.
+// `features/activities/components/activityTypeMeta.ts`'teki aynı gerekçe) — bir modül sabiti
+// değerlendirme anında `t()` çağırsaydı metin ilk yüklenen dile donardı. Tüketiciler
+// `leadSourceOptions(t)`/`leadStatusOptions(t)` ile (Select seçenekleri) ya da doğrudan
+// `t(SOURCE_LABEL_KEY[source], { ns: 'enums' })` ile çözer. `MATCH_REASON_LABEL_KEY`/
+// `DUPLICATE_LEVEL_LABEL_KEY` ise `leads` namespace'inde kalır (backend enum'u değil, yalnızca
+// bu modüle özgü duplicate-tespiti metni).
+import type { TFunction } from 'i18next'
 import type { BadgeProps } from '../../components/ui'
 import type { DuplicateLevel, DuplicateMatchReason, LeadSource, LeadStatus } from './types'
 
-export const SOURCE_LABELS: Record<LeadSource, string> = {
-  website: 'Web Sitesi',
-  referral: 'Referans',
-  cold_call: 'Soğuk Arama',
-  email_campaign: 'E-posta Kampanyası',
-  social_media: 'Sosyal Medya',
-  event: 'Etkinlik',
-  other: 'Diğer',
+/** `enums` namespace anahtarı (önek `lead.source.*` — bkz. docs/PHASE-INTL.md §1.3/§1.5). */
+export const SOURCE_LABEL_KEY: Record<LeadSource, string> = {
+  website: 'lead.source.website',
+  referral: 'lead.source.referral',
+  cold_call: 'lead.source.cold_call',
+  email_campaign: 'lead.source.email_campaign',
+  social_media: 'lead.source.social_media',
+  event: 'lead.source.event',
+  other: 'lead.source.other',
 }
 
-export const SOURCE_OPTIONS: Array<{ value: LeadSource; label: string }> = (
-  Object.keys(SOURCE_LABELS) as LeadSource[]
-).map((value) => ({ value, label: SOURCE_LABELS[value] }))
+export function leadSourceOptions(t: TFunction): Array<{ value: LeadSource; label: string }> {
+  return (Object.keys(SOURCE_LABEL_KEY) as LeadSource[]).map((value) => ({
+    value,
+    label: t(SOURCE_LABEL_KEY[value], { ns: 'enums' }),
+  }))
+}
 
-export const STATUS_LABELS: Record<LeadStatus, string> = {
-  new: 'Yeni',
-  contacted: 'İletişime Geçildi',
-  qualified: 'Nitelikli',
-  unqualified: 'Niteliksiz',
-  converted: 'Dönüştürüldü',
+/** `enums` namespace anahtarı (önek `lead.status.*`). */
+export const STATUS_LABEL_KEY: Record<LeadStatus, string> = {
+  new: 'lead.status.new',
+  contacted: 'lead.status.contacted',
+  qualified: 'lead.status.qualified',
+  unqualified: 'lead.status.unqualified',
+  converted: 'lead.status.converted',
 }
 
 /** Formdaki durum seçiminde `converted` KASITLI olarak yok (bkz. görev tanımı). */
-export const EDITABLE_STATUS_OPTIONS: Array<{ value: LeadStatus; label: string }> = [
-  'new',
-  'contacted',
-  'qualified',
-  'unqualified',
-].map((value) => ({ value: value as LeadStatus, label: STATUS_LABELS[value as LeadStatus] }))
+const EDITABLE_STATUSES: LeadStatus[] = ['new', 'contacted', 'qualified', 'unqualified']
+
+export function editableLeadStatusOptions(t: TFunction): Array<{ value: LeadStatus; label: string }> {
+  return EDITABLE_STATUSES.map((value) => ({ value, label: t(STATUS_LABEL_KEY[value], { ns: 'enums' }) }))
+}
 
 export const STATUS_BADGE_VARIANT: Record<LeadStatus, NonNullable<BadgeProps['variant']>> = {
   new: 'neutral',
@@ -47,22 +60,16 @@ export function scoreVariant(score: number): 'danger' | 'warning' | 'success' {
   return 'danger'
 }
 
-export const MATCH_REASON_LABELS: Record<DuplicateMatchReason, string> = {
-  email: 'E-posta aynı',
-  phone: 'Telefon aynı',
-  name: 'Ad soyad aynı',
+/** `leads` namespace anahtarı (önek `matchReason.*`) — backend enum'u değil, yalnızca duplicate
+ *  tespiti panelinin gösterdiği bir eşleşme nedeni etiketi. */
+export const MATCH_REASON_LABEL_KEY: Record<DuplicateMatchReason, string> = {
+  email: 'leads:matchReason.email',
+  phone: 'leads:matchReason.phone',
+  name: 'leads:matchReason.name',
 }
 
-export const DUPLICATE_LEVEL_LABELS: Record<DuplicateLevel, string> = {
-  strong: 'Güçlü eşleşme',
-  possible: 'Olası eşleşme',
-}
-
-export function formatDateTime(iso: string | null): string {
-  if (!iso) return '—'
-  try {
-    return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
-  } catch {
-    return iso
-  }
+/** `leads` namespace anahtarı (önek `duplicateLevel.*`). */
+export const DUPLICATE_LEVEL_LABEL_KEY: Record<DuplicateLevel, string> = {
+  strong: 'leads:duplicateLevel.strong',
+  possible: 'leads:duplicateLevel.possible',
 }

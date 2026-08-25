@@ -11,10 +11,13 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { useTranslation } from 'react-i18next'
 import { Building2, CalendarDays, Lock, TriangleAlert } from 'lucide-react'
 import { Avatar, Badge } from '../../../../components/ui'
 import { cn } from '../../../../lib/cn'
-import { formatAmount, formatDate, tokenBadgeVariant } from './boardUtils'
+import { formatDate, tokenBadgeVariant } from './boardUtils'
+import { ConvertedAmount } from '../../../exchange/components/ConvertedAmount'
+import { useConvertedAmountText } from '../../../exchange/hooks/useConvertedAmountText'
 import type { DealCard } from '../../types'
 
 type DealCardBodyProps = {
@@ -32,6 +35,8 @@ type DealCardBodyProps = {
 }
 
 function DealCardBody({ card, movedBy, isOverlay = false, lockedByOwnership = false }: DealCardBodyProps) {
+  const { t } = useTranslation('deals')
+
   return (
     <>
       <div className="flex items-start justify-between gap-2">
@@ -49,17 +54,19 @@ function DealCardBody({ card, movedBy, isOverlay = false, lockedByOwnership = fa
           {lockedByOwnership && !isOverlay && (
             <span
               className="inline-flex items-center text-fg-muted"
-              title="Bu kartın sahibi değilsiniz, taşıyamazsınız."
+              title={t('board.card.lockedTooltip')}
             >
               <Lock className="size-3.5" aria-hidden="true" />
-              <span className="sr-only">Bu kartın sahibi değilsiniz, taşıyamazsınız.</span>
+              <span className="sr-only">{t('board.card.lockedTooltip')}</span>
             </span>
           )}
           {card.probability !== null && <span className="text-xs text-fg-muted">%{card.probability}</span>}
         </div>
       </div>
 
-      <p className="text-base font-semibold text-fg">{formatAmount(card.amount, card.currency)}</p>
+      <p className="text-base font-semibold text-fg">
+        <ConvertedAmount amount={card.amount} currency={card.currency} variant="compact" />
+      </p>
 
       {card.company && (
         <p className="flex items-center gap-1.5 text-xs text-fg-muted">
@@ -91,18 +98,18 @@ function DealCardBody({ card, movedBy, isOverlay = false, lockedByOwnership = fa
             <CalendarDays className="size-3.5 shrink-0" aria-hidden="true" />
           )}
           {formatDate(card.expected_close_date)}
-          {card.is_overdue && <span className="sr-only">(gecikmiş)</span>}
+          {card.is_overdue && <span className="sr-only">{t('board.card.overdueSrOnly')}</span>}
         </span>
 
         {card.owner ? (
           <Avatar size="xs" name={card.owner.name} title={card.owner.name} />
         ) : (
-          <span className="text-xs text-fg-disabled">Sahipsiz</span>
+          <span className="text-xs text-fg-disabled">{t('board.card.unassigned')}</span>
         )}
       </div>
 
       {movedBy && !isOverlay && (
-        <p className="text-xs text-primary">{movedBy} bu kartı taşıdı</p>
+        <p className="text-xs text-primary">{t('board.card.movedBy', { name: movedBy })}</p>
       )}
     </>
   )
@@ -119,6 +126,7 @@ export type DealBoardCardProps = {
 }
 
 export function DealBoardCard({ card, dragEnabled, movedBy }: DealBoardCardProps) {
+  const { t } = useTranslation('deals')
   const navigate = useNavigate()
   // Faz 13 — yatay yazma izolasyonu: modül izni tek başına yetmez, BU kartın `can.move`'u da
   // `true` olmalı (sahip / sahipsiz / `deals.assign`, bkz. backend `DealPolicy::move`). dnd-kit'te
@@ -134,6 +142,9 @@ export function DealBoardCard({ card, dragEnabled, movedBy }: DealBoardCardProps
     id: card.id,
     disabled: !canDragThisCard,
   })
+  // Kartın gövdesinde GÖRÜNEN tutarla (`ConvertedAmount`, aynı hook) BİREBİR aynı metin —
+  // ekran okuyucu görünenden farklı bir tutar/para birimi anons etmesin.
+  const { text: amountLabel } = useConvertedAmountText(card.amount, card.currency, 'compact')
 
   return (
     <div
@@ -141,9 +152,9 @@ export function DealBoardCard({ card, dragEnabled, movedBy }: DealBoardCardProps
       style={{ transform: CSS.Translate.toString(transform), transition }}
       {...attributes}
       {...listeners}
-      aria-roledescription={canDragThisCard ? 'Sürüklenebilir fırsat kartı' : undefined}
-      aria-label={`${card.title}, ${formatAmount(card.amount, card.currency)}`}
-      title={lockedByOwnership ? 'Bu kartın sahibi değilsiniz, taşıyamazsınız.' : undefined}
+      aria-roledescription={canDragThisCard ? t('board.card.draggableRole') : undefined}
+      aria-label={t('board.card.ariaLabel', { title: card.title, amount: amountLabel })}
+      title={lockedByOwnership ? t('board.card.lockedTooltip') : undefined}
       onClick={() => navigate(`/deals/${card.id}`)}
       className={cn(
         CARD_BASE_CLASSES,

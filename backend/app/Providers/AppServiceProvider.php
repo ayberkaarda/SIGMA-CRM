@@ -7,6 +7,9 @@ use App\Events\TaskReminderDue;
 use App\Events\TicketSlaBreached;
 use App\Events\TicketSlaWarning;
 use App\Http\Resources\UserResource;
+use App\Listeners\Automation\RunAutomationRulesOnDealMoved;
+use App\Listeners\Automation\RunAutomationRulesOnDealUpdated;
+use App\Listeners\Automation\RunAutomationRulesOnTicketCreated;
 use App\Listeners\Notifications\SendDealStageChangedNotification;
 use App\Listeners\Notifications\SendTaskReminderNotification;
 use App\Listeners\Notifications\SendTicketSlaBreachedNotification;
@@ -51,6 +54,7 @@ class AppServiceProvider extends ServiceProvider
         $this->registerActivityLogObserver();
         $this->registerNotificationObservers();
         $this->registerNotificationListeners();
+        $this->registerAutomationRuleListeners();
     }
 
     /*
@@ -135,6 +139,26 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(TaskReminderDue::class, SendTaskReminderNotification::class);
         Event::listen(TicketSlaWarning::class, SendTicketSlaWarningNotification::class);
         Event::listen(TicketSlaBreached::class, SendTicketSlaBreachedNotification::class);
+    }
+
+    /**
+     * Faz 14 / İz F — C4 küçük no-code otomasyon kuralları
+     * (docs/PHASE-INTL.md §3, docs/PHASE-AUDIT.md §5.1/§5.4).
+     *
+     * ÜÇ tetikleyici de mevcut Eloquent/broadcast olaylarına bağlanır, YENİ bir paralel
+     * mekanizma kurulmaz:
+     *   - `deal.stage_changed`  → `DealMoved`  (Faz 7'de zaten yayınlanıyor, Faz 10'un
+     *     `SendDealStageChangedNotification`'ı ile AYNI event, ikinci bağımsız dinleyici).
+     *   - `deal.status_changed` → Eloquent'in HER `Deal` güncellemesinde kendiliğinden
+     *     fırlattığı ham `"eloquent.updated: ".Deal::class` olayı — `Deal::observe()`'un
+     *     ALTINDA yatan AYNI mekanizma (bkz. RunAutomationRulesOnDealUpdated dokümanı).
+     *   - `ticket.created`      → aynı desenin `Ticket` + `created` karşılığı.
+     */
+    protected function registerAutomationRuleListeners(): void
+    {
+        Event::listen(DealMoved::class, RunAutomationRulesOnDealMoved::class);
+        Event::listen('eloquent.updated: '.Deal::class, RunAutomationRulesOnDealUpdated::class);
+        Event::listen('eloquent.created: '.Ticket::class, RunAutomationRulesOnTicketCreated::class);
     }
 
     /**

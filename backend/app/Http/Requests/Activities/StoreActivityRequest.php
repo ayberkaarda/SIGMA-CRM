@@ -68,22 +68,4 @@ class StoreActivityRequest extends FormRequest
             }
         });
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'type.required' => 'Tür alanı zorunludur.',
-            'type.in' => 'Seçilen tür geçerli değil.',
-            'subject.required' => 'Konu alanı zorunludur.',
-            'subject.max' => 'Konu en fazla :max karakter olabilir.',
-            'occurred_at.required' => 'Gerçekleşme tarihi zorunludur.',
-            'duration_minutes.max' => 'Süre en fazla :max dakika olabilir.',
-            'activityable_type.in' => 'Seçilen hedef türü geçerli değil.',
-            'activityable_type.required_with' => 'Hedef türü ve hedef kimliği birlikte gönderilmelidir.',
-            'activityable_id.required_with' => 'Hedef türü ve hedef kimliği birlikte gönderilmelidir.',
-        ];
-    }
 }

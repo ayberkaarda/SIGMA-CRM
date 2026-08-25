@@ -20,15 +20,4 @@ class ForgotPasswordRequest extends FormRequest
             'email' => ['required', 'string', 'email', 'max:255'],
         ];
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'email.required' => 'E-posta adresi zorunludur.',
-            'email.email' => 'Geçerli bir e-posta adresi giriniz.',
-        ];
-    }
 }

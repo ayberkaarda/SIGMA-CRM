@@ -15,6 +15,7 @@
 // kapsayıcısını zaten sarmalıyor (bkz. `components/ui/Table.tsx`), sayfa gövdesi kaymaz. İlk
 // sütun (izin adı) `sticky left-0` ile kaydırma sırasında sabit kalır.
 import { Fragment } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ShieldCheck, Users } from 'lucide-react'
 import { Badge, Button, Checkbox, Skeleton, Table, TBody, Td, THead, Th, Tr } from '../../../components/ui'
 import { usePermissionMatrix, useUpdateRolePermissions } from '../hooks/usePermissionMatrix'
@@ -25,6 +26,7 @@ function titleizeModule(moduleKey: string): string {
 }
 
 export function PermissionMatrixTab() {
+  const { t } = useTranslation(['settings', 'common'])
   const { data, isLoading, isError, refetch } = usePermissionMatrix()
   const updatePermissions = useUpdateRolePermissions()
 
@@ -61,9 +63,9 @@ export function PermissionMatrixTab() {
   if (isError) {
     return (
       <div className="flex flex-col items-center gap-3 py-12 text-center">
-        <p className="text-sm text-fg-muted">İzin matrisi yüklenirken bir hata oluştu.</p>
+        <p className="text-sm text-fg-muted">{t('settings:permissions.loadError')}</p>
         <Button variant="secondary" onClick={() => refetch()}>
-          Tekrar dene
+          {t('common:actions.retry')}
         </Button>
       </div>
     )
@@ -73,14 +75,12 @@ export function PermissionMatrixTab() {
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-sm text-fg-muted">
-        Bir kutuyu işaretleyip kaldırarak ilgili rolün iznini değiştirebilirsiniz. Değişiklik anında kaydedilir.
-      </p>
+      <p className="text-sm text-fg-muted">{t('settings:permissions.description')}</p>
 
       <Table>
         <THead>
           <Tr>
-            <Th className="sticky left-0 z-10 bg-surface-1">İzin</Th>
+            <Th className="sticky left-0 z-10 bg-surface-1">{t('settings:permissions.columns.permission')}</Th>
             {roles.map((role) => (
               <Th key={role.id} align="center">
                 <span className="inline-flex flex-col items-center gap-0.5">
@@ -120,16 +120,36 @@ export function PermissionMatrixTab() {
                   </Td>
                   {roles.map((role) => (
                     <Td key={role.id} align="center">
-                      {!role.is_editable ? (
-                        <Checkbox checked disabled aria-label={`${role.name} — ${permissionName} (her zaman izinli)`} />
-                      ) : (
-                        <Checkbox
-                          checked={hasPermission(role, permissionName)}
-                          onChange={() => togglePermission(role, permissionName)}
-                          disabled={updatePermissions.isPending && updatePermissions.variables?.roleId === role.id}
-                          aria-label={`${role.name} — ${permissionName}`}
-                        />
-                      )}
+                      {/* KÖK NEDEN + DÜZELTME: `Td align="center"` zaten doğru `text-center` sınıfını
+                          taşıyor (bkz. `components/ui/Table.tsx`) — sorun orada değil. `Checkbox`
+                          bileşeninin kökü `<div className="flex flex-col gap-1">`; bu blok, varsayılan
+                          `align-items: stretch` yüzünden tek çocuğu olan `<label className="inline-flex
+                          items-center gap-2">` öğesini hücrenin TAM genişliğine geriyor. Genişleyen bu
+                          `label` ise kendi içinde `justify-center` TAŞIMADIĞI için kutucuğu sola
+                          (`justify-start`) yaslıyor — kayma sütun genişliğiyle orantılı büyüyor (Ölçüm:
+                          Super Admin −51px, Admin −18px, Destek Temsilcisi −56px, ...). `Checkbox` birçok
+                          yerde paylaşılıyor (QuoteItemsEditor, ConversionTab, SourceAnalysisTab,
+                          UserPerformanceTab, SalesPerformanceTab, ContactsPage) — bileşeni burada
+                          değiştirmek regresyon riski taşır, bu yüzden düzeltme yalnızca bu sekmeye özel:
+                          `flex justify-center` sarmalayıcı, Checkbox'ın kök div'ini flex öğesi yapıp ana
+                          eksende (yatay) ortalıyor; Checkbox'ın kendi iç `flex-col` yapısı bu sarmalayıcı
+                          içinde artık gerilmiyor (stretch yalnızca çapraz eksende, yani dikeyde etkili). */}
+                      <div className="flex justify-center">
+                        {!role.is_editable ? (
+                          <Checkbox
+                            checked
+                            disabled
+                            aria-label={t('settings:permissions.ariaAlwaysGranted', { role: role.name, permission: permissionName })}
+                          />
+                        ) : (
+                          <Checkbox
+                            checked={hasPermission(role, permissionName)}
+                            onChange={() => togglePermission(role, permissionName)}
+                            disabled={updatePermissions.isPending && updatePermissions.variables?.roleId === role.id}
+                            aria-label={t('settings:permissions.ariaToggle', { role: role.name, permission: permissionName })}
+                          />
+                        )}
+                      </div>
                     </Td>
                   ))}
                 </Tr>
@@ -141,9 +161,9 @@ export function PermissionMatrixTab() {
 
       <div className="flex items-center gap-1.5 text-xs text-fg-muted">
         <Badge variant="neutral" size="sm">
-          <ShieldCheck className="size-3" aria-hidden="true" /> Kilitli
+          <ShieldCheck className="size-3" aria-hidden="true" /> {t('settings:permissions.readOnlyBadge')}
         </Badge>
-        <span>rozetli roller tüm izinlere sahiptir ve düzenlenemez.</span>
+        <span>{t('settings:permissions.readOnlyNote')}</span>
       </div>
     </div>
   )

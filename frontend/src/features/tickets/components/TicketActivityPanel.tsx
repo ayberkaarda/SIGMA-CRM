@@ -11,23 +11,17 @@
 // `features/activities/components/ActivityTypeBadge.tsx` dosyaları DOĞRUDAN kullanılır — kopya
 // YAZILMAZ (görev tanımı).
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { MessageSquarePlus, PhoneCall } from 'lucide-react'
 import { Avatar, Button, Card, CardBody, CardHeader, Skeleton } from '../../../components/ui'
+import { formatDateTime } from '../../../lib/datetime'
 import { useActivities } from '../../activities/api/activitiesApi'
 import { ActivityTypeBadge } from '../../activities/components/ActivityTypeBadge'
 import { TicketActivityFormModal } from './TicketActivityFormModal'
 import type { Ticket } from '../types'
 
-function formatDateTime(iso: string | null): string {
-  if (!iso) return '—'
-  try {
-    return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
-  } catch {
-    return iso
-  }
-}
-
 export function TicketActivityPanel({ ticket }: { ticket: Ticket }) {
+  const { t } = useTranslation('tickets')
   const { data, isLoading, isError, refetch } = useActivities({
     activityable_type: 'ticket',
     activityable_id: ticket.id,
@@ -44,11 +38,11 @@ export function TicketActivityPanel({ ticket }: { ticket: Ticket }) {
     <>
       <Card>
         <CardHeader
-          title="Notlar"
-          subtitle={`${notes.length} not — iç not, "İlk Yanıt"ı tetiklemez`}
+          title={t('activity.notesTitle')}
+          subtitle={t('activity.notesSubtitle', { count: notes.length })}
           action={
             <Button size="sm" leftIcon={<MessageSquarePlus className="size-4" aria-hidden="true" />} onClick={() => setModalKind('note')}>
-              Not Ekle
+              {t('activity.addNote')}
             </Button>
           }
         />
@@ -57,20 +51,20 @@ export function TicketActivityPanel({ ticket }: { ticket: Ticket }) {
             <Skeleton variant="text" lines={3} />
           ) : isError ? (
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm text-fg-muted">Notlar yüklenirken bir hata oluştu.</p>
+              <p className="text-sm text-fg-muted">{t('activity.notesLoadError')}</p>
               <Button variant="secondary" size="sm" onClick={() => refetch()}>
-                Tekrar dene
+                {t('activity.retry')}
               </Button>
             </div>
           ) : notes.length === 0 ? (
-            <p className="text-sm text-fg-muted">Henüz not eklenmedi.</p>
+            <p className="text-sm text-fg-muted">{t('activity.noNotes')}</p>
           ) : (
             notes.map((note) => (
               <div key={note.id} className="flex flex-col gap-1.5 rounded-md border border-border-subtle p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <Avatar name={note.user?.name ?? '—'} size="xs" />
-                    <span className="text-sm font-medium text-fg">{note.user?.name ?? 'Bilinmiyor'}</span>
+                    <span className="text-sm font-medium text-fg">{note.user?.name ?? t('activity.unknownUser')}</span>
                   </div>
                   <span className="text-xs text-fg-muted">{formatDateTime(note.occurred_at)}</span>
                 </div>
@@ -84,8 +78,8 @@ export function TicketActivityPanel({ ticket }: { ticket: Ticket }) {
 
       <Card>
         <CardHeader
-          title="Etkileşimler"
-          subtitle={`${interactions.length} kayıt — arama/e-posta/toplantı`}
+          title={t('activity.interactionsTitle')}
+          subtitle={t('activity.interactionsSubtitle', { count: interactions.length })}
           action={
             <Button
               size="sm"
@@ -93,7 +87,7 @@ export function TicketActivityPanel({ ticket }: { ticket: Ticket }) {
               leftIcon={<PhoneCall className="size-4" aria-hidden="true" />}
               onClick={() => setModalKind('interaction')}
             >
-              Etkileşim Ekle
+              {t('activity.addInteraction')}
             </Button>
           }
         />
@@ -101,9 +95,9 @@ export function TicketActivityPanel({ ticket }: { ticket: Ticket }) {
           {isLoading ? (
             <Skeleton variant="text" lines={3} />
           ) : isError ? (
-            <p className="text-sm text-fg-muted">Etkileşimler yüklenirken bir hata oluştu.</p>
+            <p className="text-sm text-fg-muted">{t('activity.interactionsLoadError')}</p>
           ) : interactions.length === 0 ? (
-            <p className="text-sm text-fg-muted">Henüz etkileşim kaydedilmedi.</p>
+            <p className="text-sm text-fg-muted">{t('activity.noInteractions')}</p>
           ) : (
             interactions.map((activity) => (
               <div key={activity.id} className="flex flex-col gap-1.5 rounded-md border border-border-subtle p-3">
@@ -121,8 +115,10 @@ export function TicketActivityPanel({ ticket }: { ticket: Ticket }) {
                       {activity.user.name}
                     </span>
                   )}
-                  {activity.duration_minutes !== null && <span>{activity.duration_minutes} dk</span>}
-                  {activity.outcome && <span>Sonuç: {activity.outcome}</span>}
+                  {activity.duration_minutes !== null && (
+                    <span>{t('activity.durationMinutes', { count: activity.duration_minutes })}</span>
+                  )}
+                  {activity.outcome && <span>{t('activity.outcomeLabel', { outcome: activity.outcome })}</span>}
                 </div>
                 {activity.body && <p className="whitespace-pre-wrap text-sm text-fg-secondary">{activity.body}</p>}
               </div>

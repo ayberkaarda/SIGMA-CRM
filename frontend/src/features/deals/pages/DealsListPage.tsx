@@ -6,6 +6,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Handshake, KanbanSquare, List as ListIcon, Pencil, Plus, Search, Trash2, UserCog, Users } from 'lucide-react'
 import {
   Avatar,
@@ -29,7 +30,10 @@ import {
 } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
 import { formatMoney } from '../../../lib/money'
+import { formatDate } from '../../../lib/datetime'
 import { usePermission } from '../../auth/hooks/usePermission'
+import { ConvertedAmount } from '../../exchange/components/ConvertedAmount'
+import { SavedViewsBar } from '../../saved-views/components/SavedViewsBar'
 import { DealStageBadge } from '../components/DealStageBadge'
 import { DealStatusBadge } from '../components/DealStatusBadge'
 import { DealFormModal } from '../components/DealFormModal'
@@ -46,14 +50,6 @@ const SEARCH_DEBOUNCE_MS = 300
 
 const formatCurrency = formatMoney
 
-/**
- * `GET /api/deals` yanıtına `meta.totals` eklenmesi B şeridin PARALEL işiydi — bu görev
- * başladığında C'nin `DealsListResponse` tipinde (dolayısıyla `api/dealsApi.ts`'te, ki o dosyaya
- * DOKUNMUYORUM) henüz YOKTU. `api/dealsApi.ts` güncellenene kadar tipi burada YEREL olarak
- * tanımlayıp güvenli bir cast ile OKUYORUM — alan gerçekten gelmiyorsa `totals` `undefined`
- * kalır ve bölüm tamamen gizlenir (aşağıya bkz.); geldiğinde otomatik görünür, uydurma/varsayım
- * YOK.
- */
 type DealsTotals = {
   count: number
   total_amount: number
@@ -63,18 +59,10 @@ type DealsTotals = {
   currency: string
 }
 
-function formatDate(iso: string | null): string {
-  if (!iso) return '—'
-  try {
-    return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium' }).format(new Date(iso))
-  } catch {
-    return iso
-  }
-}
-
 type FormModalState = { mode: 'create' } | { mode: 'edit'; deal: Deal } | null
 
 export function DealsListPage() {
+  const { t } = useTranslation(['deals', 'enums'])
   const [searchParams, setSearchParams] = useSearchParams()
   const { can } = usePermission()
 
@@ -150,25 +138,25 @@ export function DealsListPage() {
   }
 
   const stageFilterOptions = [
-    { value: '', label: 'Tüm aşamalar' },
+    { value: '', label: t('list.allStages') },
     ...(pipelineStages ?? []).map((stage) => ({ value: String(stage.id), label: stage.name })),
   ]
   const statusFilterOptions = [
-    { value: '', label: 'Tüm durumlar' },
-    { value: 'open', label: 'Açık' },
-    { value: 'won', label: 'Kazanıldı' },
-    { value: 'lost', label: 'Kaybedildi' },
+    { value: '', label: t('list.allStatuses') },
+    { value: 'open', label: t('enums:deal.status.open') },
+    { value: 'won', label: t('enums:deal.status.won') },
+    { value: 'lost', label: t('enums:deal.status.lost') },
   ]
   const ownerFilterOptions = [
-    { value: '', label: 'Tüm sahipler' },
+    { value: '', label: t('list.allOwners') },
     ...(ownerOptions ?? []).map((owner) => ({ value: String(owner.id), label: owner.name })),
   ]
   const companyFilterOptions = [
-    { value: '', label: 'Tüm firmalar' },
+    { value: '', label: t('list.allCompanies') },
     ...(companyOptions ?? []).map((c) => ({ value: String(c.id), label: c.name })),
   ]
   const tagFilterOptions = [
-    { value: '', label: 'Tüm etiketler' },
+    { value: '', label: t('list.allTags') },
     ...(tags ?? []).map((tag) => ({ value: String(tag.id), label: tag.name })),
   ]
 
@@ -180,15 +168,15 @@ export function DealsListPage() {
   return (
     <div className="flex flex-col gap-4">
       <nav aria-label="breadcrumb" className="text-xs text-fg-muted">
-        <span>Anasayfa</span>
+        <span>{t('list.breadcrumbHome')}</span>
         <span className="mx-1.5">/</span>
-        <span className="text-primary">Fırsatlar</span>
+        <span className="text-primary">{t('list.breadcrumbCurrent')}</span>
       </nav>
 
       <Card>
         <CardHeader
-          title="Fırsatlar"
-          subtitle={`${total} fırsat`}
+          title={t('list.title')}
+          subtitle={t('list.subtitle', { count: total })}
           action={
             <div className="flex items-center gap-2">
               {/* Görünüm değiştirici — C'nin `DealsBoardPage.tsx`'teki denetimiyle BİREBİR aynı
@@ -197,26 +185,30 @@ export function DealsListPage() {
               <div
                 className="flex items-center gap-1 rounded-lg border border-border bg-surface-1 p-1"
                 role="group"
-                aria-label="Görünüm"
+                aria-label={t('list.viewSwitcher.aria')}
               >
                 <Link
                   to="/deals"
                   className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium text-fg-muted hover:bg-surface-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >
                   <KanbanSquare className="size-4" aria-hidden="true" />
-                  Pano
+                  {t('list.viewSwitcher.board')}
                 </Link>
                 <span
                   aria-current="page"
                   className={cn('flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium', 'bg-primary-tint text-primary')}
                 >
                   <ListIcon className="size-4" aria-hidden="true" />
-                  Liste
+                  {t('list.viewSwitcher.list')}
                 </span>
               </div>
+              <SavedViewsBar
+                module="deals"
+                filterKeys={['stage_id', 'status', 'owner_id', 'company_id', 'tag_id', 'amount_min', 'amount_max', 'from', 'to']}
+              />
               {can('deals.create') && (
                 <Button leftIcon={<Plus className="size-4" aria-hidden="true" />} onClick={() => setFormModal({ mode: 'create' })}>
-                  Yeni Fırsat
+                  {t('list.newDeal')}
                 </Button>
               )}
             </div>
@@ -229,9 +221,9 @@ export function DealsListPage() {
                 <Input
                   value={searchDraft}
                   onChange={(e) => setSearchDraft(e.target.value)}
-                  placeholder="Fırsat başlığı ara..."
+                  placeholder={t('list.searchPlaceholder')}
                   leftIcon={<Search className="size-4" aria-hidden="true" />}
-                  aria-label="Fırsat ara"
+                  aria-label={t('list.searchAria')}
                 />
               </div>
               <div className="w-full lg:w-44">
@@ -239,7 +231,7 @@ export function DealsListPage() {
                   value={query.stage_id ? String(query.stage_id) : ''}
                   onChange={(e) => updateParams({ stage_id: e.target.value || null, page: '1' })}
                   options={stageFilterOptions}
-                  aria-label="Aşama filtresi"
+                  aria-label={t('list.stageFilterAria')}
                 />
               </div>
               <div className="w-full lg:w-40">
@@ -247,7 +239,7 @@ export function DealsListPage() {
                   value={query.status ?? ''}
                   onChange={(e) => updateParams({ status: e.target.value || null, page: '1' })}
                   options={statusFilterOptions}
-                  aria-label="Durum filtresi"
+                  aria-label={t('list.statusFilterAria')}
                 />
               </div>
               {!ownersForbidden && (
@@ -256,7 +248,7 @@ export function DealsListPage() {
                     value={query.owner_id ? String(query.owner_id) : ''}
                     onChange={(e) => updateParams({ owner_id: e.target.value || null, page: '1' })}
                     options={ownerFilterOptions}
-                    aria-label="Sahip filtresi"
+                    aria-label={t('list.ownerFilterAria')}
                   />
                 </div>
               )}
@@ -265,7 +257,7 @@ export function DealsListPage() {
                   value={query.company_id ? String(query.company_id) : ''}
                   onChange={(e) => updateParams({ company_id: e.target.value || null, page: '1' })}
                   options={companyFilterOptions}
-                  aria-label="Firma filtresi"
+                  aria-label={t('list.companyFilterAria')}
                 />
               </div>
               <div className="w-full lg:w-44">
@@ -273,7 +265,7 @@ export function DealsListPage() {
                   value={query.tag_id ? String(query.tag_id) : ''}
                   onChange={(e) => updateParams({ tag_id: e.target.value || null, page: '1' })}
                   options={tagFilterOptions}
-                  aria-label="Etiket filtresi"
+                  aria-label={t('list.tagFilterAria')}
                 />
               </div>
             </div>
@@ -285,8 +277,8 @@ export function DealsListPage() {
                     min={0}
                     value={query.amount_min ?? ''}
                     onChange={(e) => updateParams({ amount_min: e.target.value || null, page: '1' })}
-                    placeholder="Min tutar"
-                    aria-label="Minimum tutar"
+                    placeholder={t('list.minAmountPlaceholder')}
+                    aria-label={t('list.minAmountAria')}
                   />
                 </div>
                 <span className="pb-2.5 text-xs text-fg-muted">—</span>
@@ -296,8 +288,8 @@ export function DealsListPage() {
                     min={0}
                     value={query.amount_max ?? ''}
                     onChange={(e) => updateParams({ amount_max: e.target.value || null, page: '1' })}
-                    placeholder="Maks tutar"
-                    aria-label="Maksimum tutar"
+                    placeholder={t('list.maxAmountPlaceholder')}
+                    aria-label={t('list.maxAmountAria')}
                   />
                 </div>
               </div>
@@ -307,7 +299,7 @@ export function DealsListPage() {
                     type="date"
                     value={query.from ?? ''}
                     onChange={(e) => updateParams({ from: e.target.value || null, page: '1' })}
-                    aria-label="Başlangıç tarihi (tahmini kapanış)"
+                    aria-label={t('list.fromDateAria')}
                     max={query.to || undefined}
                   />
                 </div>
@@ -317,7 +309,7 @@ export function DealsListPage() {
                     type="date"
                     value={query.to ?? ''}
                     onChange={(e) => updateParams({ to: e.target.value || null, page: '1' })}
-                    aria-label="Bitiş tarihi (tahmini kapanış)"
+                    aria-label={t('list.toDateAria')}
                     min={query.from || undefined}
                   />
                 </div>
@@ -331,62 +323,66 @@ export function DealsListPage() {
             </div>
           ) : totals ? (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border-subtle px-4 py-3 text-sm">
-              <span className="text-fg-secondary">
-                <strong className="text-fg">{totals.count}</strong> kayıt (filtrelenmiş toplam)
-              </span>
+              <span className="text-fg-secondary">{t('list.totals.count', { count: totals.count })}</span>
               <span
                 className="font-medium text-primary"
-                title={`Toplam: ${formatCurrency(totals.total_amount, totals.currency)} · Kazanılan: ${formatCurrency(totals.won_amount, totals.currency)} · Kaybedilen: ${formatCurrency(totals.lost_amount, totals.currency)}`}
+                title={t('list.totals.tooltip', {
+                  total: formatCurrency(totals.total_amount, totals.currency),
+                  won: formatCurrency(totals.won_amount, totals.currency),
+                  lost: formatCurrency(totals.lost_amount, totals.currency),
+                })}
               >
-                Açık tutar: {formatCurrency(totals.open_amount, totals.currency)}
+                {t('list.totals.open', { amount: formatCurrency(totals.open_amount, totals.currency) })}
               </span>
               <span className="text-xs text-fg-muted">
-                Kazanılan {formatCurrency(totals.won_amount, totals.currency)} · Kaybedilen{' '}
-                {formatCurrency(totals.lost_amount, totals.currency)}
+                {t('list.totals.wonLost', {
+                  won: formatCurrency(totals.won_amount, totals.currency),
+                  lost: formatCurrency(totals.lost_amount, totals.currency),
+                })}
               </span>
             </div>
           ) : null}
 
           {isError ? (
             <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
-              <p className="text-sm text-fg-muted">Fırsatlar yüklenirken bir hata oluştu.</p>
+              <p className="text-sm text-fg-muted">{t('list.loadError')}</p>
               <Button variant="secondary" onClick={() => refetch()}>
-                Tekrar dene
+                {t('list.retry')}
               </Button>
             </div>
           ) : isEmpty ? (
             <EmptyState
               icon={<Handshake className="size-6" aria-hidden="true" />}
-              title="Fırsat bulunamadı"
-              description="Arama veya filtre kriterlerinizle eşleşen fırsat yok."
+              title={t('list.empty.title')}
+              description={t('list.empty.description')}
             />
           ) : (
             <Table>
               <THead>
                 <Tr>
                   <Th sortable sortDirection={sortDirectionFor('title')} onSort={() => toggleSort('title')}>
-                    Başlık
+                    {t('list.columns.title')}
                   </Th>
-                  <Th>Firma</Th>
-                  <Th>Kişi</Th>
-                  <Th>Aşama</Th>
+                  <Th>{t('list.columns.company')}</Th>
+                  <Th>{t('list.columns.contact')}</Th>
+                  <Th>{t('list.columns.stage')}</Th>
                   <Th sortable sortDirection={sortDirectionFor('status')} onSort={() => toggleSort('status')}>
-                    Durum
+                    {t('list.columns.status')}
                   </Th>
                   <Th align="right" sortable sortDirection={sortDirectionFor('amount')} onSort={() => toggleSort('amount')}>
-                    Tutar
+                    {t('list.columns.amount')}
                   </Th>
-                  <Th>Olasılık</Th>
+                  <Th>{t('list.columns.probability')}</Th>
                   <Th
                     sortable
                     sortDirection={sortDirectionFor('expected_close_date')}
                     onSort={() => toggleSort('expected_close_date')}
                   >
-                    Tahmini Kapanış
+                    {t('list.columns.expectedClose')}
                   </Th>
-                  <Th>Sahip</Th>
-                  <Th>Etiketler</Th>
-                  <Th align="right">İşlemler</Th>
+                  <Th>{t('list.columns.owner')}</Th>
+                  <Th>{t('list.columns.tags')}</Th>
+                  <Th align="right">{t('list.columns.actions')}</Th>
                 </Tr>
               </THead>
               <TBody aria-busy={isLoading}>
@@ -423,7 +419,7 @@ export function DealsListPage() {
                             <DealStatusBadge status={deal.status} />
                           </Td>
                           <Td align="right" className="whitespace-nowrap font-medium">
-                            {formatCurrency(deal.amount, deal.currency)}
+                            <ConvertedAmount amount={deal.amount} currency={deal.currency} />
                           </Td>
                           <Td>{deal.probability !== null ? `%${deal.probability}` : '—'}</Td>
                           <Td className={cn(deal.is_overdue && 'font-medium text-danger')}>
@@ -451,7 +447,7 @@ export function DealsListPage() {
                           </Td>
                           <Td align="right">
                             <div className="flex items-center justify-end gap-1">
-                              <IconLinkButton label="Detay" to={`/deals/${deal.id}`}>
+                              <IconLinkButton label={t('list.actions.detail')} to={`/deals/${deal.id}`}>
                                 <UserCog className="size-4" aria-hidden="true" />
                               </IconLinkButton>
                               {/* Faz 13: `deals.update` izni yeterli değil — kayıt sahibi/sahipsiz ya da
@@ -460,9 +456,9 @@ export function DealsListPage() {
                                   gösterilir (kullanıcı nedenini anlar); izin hiç yoksa zaten gizli kalır. */}
                               {can('deals.update') && (
                                 <IconButton
-                                  label="Düzenle"
+                                  label={t('list.actions.edit')}
                                   disabled={!deal.can.update}
-                                  title={deal.can.update ? 'Düzenle' : 'Bu kaydın sahibi değilsiniz, düzenleyemezsiniz.'}
+                                  title={deal.can.update ? t('list.actions.edit') : t('list.actions.editLockedTooltip')}
                                   onClick={() => setFormModal({ mode: 'edit', deal })}
                                 >
                                   <Pencil className="size-4" aria-hidden="true" />
@@ -472,7 +468,7 @@ export function DealsListPage() {
                                   sahiplik boyutu yok, `can.assign` her zaman modül izniyle birebir aynıdır.
                                   Bu yüzden yalnızca gizleme yeterli, ayrı bir disabled durumu gerekmez. */}
                               {can('deals.assign') && deal.can.assign && (
-                                <IconButton label="Sahip ata" onClick={() => setAssignDeal(deal)}>
+                                <IconButton label={t('list.actions.assign')} onClick={() => setAssignDeal(deal)}>
                                   <Users className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
@@ -481,7 +477,7 @@ export function DealsListPage() {
                                   disabled değil GİZLEME ile ele alınır; istemci artık kendi `isClosed`
                                   kopyasını tutmaz, backend'in `can.delete`'ine güvenir. */}
                               {can('deals.delete') && deal.can.delete && (
-                                <IconButton label="Sil" danger onClick={() => setDeleteDealState(deal)}>
+                                <IconButton label={t('list.actions.delete')} danger onClick={() => setDeleteDealState(deal)}>
                                   <Trash2 className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
@@ -513,12 +509,12 @@ export function DealsListPage() {
       <Modal
         open={!!deleteDealState}
         onClose={() => setDeleteDealState(null)}
-        title="Fırsatı sil"
-        description="Bu işlem geri alınamaz. Fırsat kalıcı olarak silinecek."
+        title={t('list.deleteModal.title')}
+        description={t('list.deleteModal.description')}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setDeleteDealState(null)}>
-              Vazgeç
+              {t('list.deleteModal.cancel')}
             </Button>
             <Button
               variant="danger"
@@ -529,14 +525,14 @@ export function DealsListPage() {
                 setDeleteDealState(null)
               }}
             >
-              Sil
+              {t('list.deleteModal.confirm')}
             </Button>
           </div>
         }
       >
         {deleteDealState && (
           <p className="text-sm text-fg-secondary">
-            <strong className="text-fg">{deleteDealState.title}</strong> adlı fırsatı silmek istediğinize emin misiniz?
+            {t('list.deleteModal.confirmText', { title: deleteDealState.title })}
           </p>
         )}
       </Modal>

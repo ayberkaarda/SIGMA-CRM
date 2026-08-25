@@ -5,10 +5,11 @@
 // listelenir (takvim ızgarasıyla uğraşmak yerine), seçili preset 16px kalın onay işaretiyle
 // işaretlenir, özel aralık alttaki ince çizgi ayıracın ARKASINDA durur.
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Calendar, Check, ChevronDown } from 'lucide-react'
 import { Button, Input } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
-import { DATE_RANGE_PRESETS, formatDateLabel, matchPreset } from '../utils'
+import { dateRangePresets, formatDateLabel, matchPreset } from '../utils'
 
 export type DateRangeFilterProps = {
   from: string
@@ -17,9 +18,11 @@ export type DateRangeFilterProps = {
 }
 
 export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
+  const { t } = useTranslation('reports')
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const activePreset = matchPreset(from, to)
+  const DATE_RANGE_PRESETS = dateRangePresets(t)
 
   useEffect(() => {
     if (!open) return
@@ -57,8 +60,18 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
       {open && (
         <div
           role="menu"
-          aria-label="Tarih aralığı"
-          className="absolute left-0 top-full z-20 mt-2 w-72 overflow-hidden rounded-lg border border-border bg-surface-3 shadow-popover"
+          aria-label={t('reports:dateRange.menuAria')}
+          // KONUMLANDIRMA KARARI: `left-0` yerine `right-0` — bileşen iki yerde kullanılıyor:
+          // Dashboard'da tetikleyici satırın SAĞ ucunda (justify-between ile başlığın karşısında),
+          // Raporlar'da ise SOL ucunda (Dışa Aktar butonunun karşısında). Ölçüm: 1440x900'de
+          // Dashboard tetikleyicisi x≈1234-1289, `left-0` ile panel (w-72=288px) 1522'ye uzayıp
+          // görünür alanı (1424) 98px aşıyordu, "Bitiş" alanı kesiliyordu. `right-0` panelin sağ
+          // kenarını tetikleyicinin sağ kenarına kenetler → Dashboard'da artık taşmıyor; Raporlar'da
+          // tetikleyici sola yakın olsa da (x≈260-415) panel sola doğru 127'ye kadar açılıyor, hâlâ
+          // 0'ın sağında, ekrandan taşmıyor (regresyon yok, doğrulandı). `max-w-[calc(100vw-2rem)]`
+          // ekstra güvenlik: çok dar ekranda w-72 sabit genişliği viewport'u aşarsa panel yine de
+          // görünür alana sıkışsın diye (bu repo mobil öncelikli değil ama ucuz bir kilit).
+          className="absolute right-0 top-full z-20 mt-2 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-lg border border-border bg-surface-3 shadow-popover"
         >
           <div className="py-1">
             {DATE_RANGE_PRESETS.map((preset) => {
@@ -89,7 +102,7 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
             <div className="w-full">
               <Input
                 type="date"
-                label="Başlangıç"
+                label={t('reports:dateRange.fromLabel')}
                 value={from}
                 max={to}
                 onChange={(e) => onChange({ from: e.target.value, to })}
@@ -98,7 +111,7 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
             <div className="w-full">
               <Input
                 type="date"
-                label="Bitiş"
+                label={t('reports:dateRange.toLabel')}
                 value={to}
                 min={from}
                 onChange={(e) => onChange({ from, to: e.target.value })}

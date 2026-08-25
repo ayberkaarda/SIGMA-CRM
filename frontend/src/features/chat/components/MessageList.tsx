@@ -16,6 +16,7 @@
 // useState'leri VE aşağıdaki dört ref'i (prevOldestIdRef, lastNewestIdRef, isAtBottomRef,
 // prevScrollHeightRef) birlikte, garantili şekilde temizler.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ArrowDown } from 'lucide-react'
 import { EmptyState, Skeleton } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
@@ -32,6 +33,7 @@ const SCROLL_TOP_THRESHOLD = 80 // px — bu değere yaklaşınca eski mesajlar 
 const BOTTOM_THRESHOLD = 48 // px — bu değere yaklaşınca "en altta" sayılır
 
 export function MessageList({ conversationId }: MessageListProps) {
+  const { t } = useTranslation('chat')
   const currentUserId = useAuthStore((state) => state.user?.id)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const prevScrollHeightRef = useRef(0)
@@ -123,8 +125,8 @@ export function MessageList({ conversationId }: MessageListProps) {
   if (messages.length === 0) {
     return (
       <EmptyState
-        title="Henüz mesaj yok"
-        description="İlk mesajı göndererek sohbeti başlatın."
+        title={t('messageList.emptyTitle')}
+        description={t('messageList.emptyDescription')}
         className="h-full flex-1 justify-center"
       />
     )
@@ -137,7 +139,7 @@ export function MessageList({ conversationId }: MessageListProps) {
         onScroll={handleScroll}
         role="log"
         aria-live="polite"
-        aria-label="Mesajlar"
+        aria-label={t('messageList.logAria')}
         className="flex h-full flex-col overflow-y-auto overflow-x-hidden px-4 py-3"
       >
         {isLoadingMore && (
@@ -187,7 +189,7 @@ export function MessageList({ conversationId }: MessageListProps) {
           )}
         >
           <ArrowDown className="size-3.5" aria-hidden="true" />
-          Yeni mesaj
+          {t('messageList.newMessage')}
         </button>
       )}
     </div>

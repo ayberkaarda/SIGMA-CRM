@@ -2,6 +2,7 @@
 // Kuyruk/Test/Tohumlama ayrımı yapılır (Canlı Akış sekmesiyle aynı mantık, bkz. `utils.ts` →
 // `contextLabel`). `_context` REST yanıtında yoksa (eski/uyumsuz backend) `contextLabel`
 // varsayılan olarak "Sistem" döner, tablo kırılmaz.
+import { useTranslation } from 'react-i18next'
 import { Eye, ScrollText } from 'lucide-react'
 import {
   Badge,
@@ -45,14 +46,15 @@ export function ActivitiesTable({
   onSortToggle,
   onViewDetail,
 }: ActivitiesTableProps) {
+  const { t } = useTranslation(['logs', 'common'])
   const isEmpty = !isLoading && !isError && data.length === 0
 
   if (isError) {
     return (
       <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
-        <p className="text-sm text-fg-muted">Aksiyon kayıtları yüklenirken bir hata oluştu.</p>
+        <p className="text-sm text-fg-muted">{t('logs:activities.loadError')}</p>
         <Button variant="secondary" onClick={onRetry}>
-          Tekrar dene
+          {t('common:actions.retry')}
         </Button>
       </div>
     )
@@ -62,8 +64,8 @@ export function ActivitiesTable({
     return (
       <EmptyState
         icon={<ScrollText className="size-6" aria-hidden="true" />}
-        title="Aksiyon kaydı bulunamadı"
-        description="Arama veya filtre kriterlerinizle eşleşen aksiyon kaydı yok."
+        title={t('logs:activities.emptyTitle')}
+        description={t('logs:activities.emptyDescription')}
       />
     )
   }
@@ -72,29 +74,29 @@ export function ActivitiesTable({
     <Table>
       <THead>
         <Tr>
-          <Th>Kullanıcı</Th>
+          <Th>{t('logs:activities.columns.user')}</Th>
           <Th
             sortable
             sortDirection={sortDirectionFor('event')}
             onSort={() => onSortToggle('event')}
           >
-            Olay
+            {t('logs:activities.columns.event')}
           </Th>
           <Th
             sortable
             sortDirection={sortDirectionFor('subject_type')}
             onSort={() => onSortToggle('subject_type')}
           >
-            Varlık
+            {t('logs:activities.columns.subject')}
           </Th>
           <Th
             sortable
             sortDirection={sortDirectionFor('created_at')}
             onSort={() => onSortToggle('created_at')}
           >
-            Tarih
+            {t('logs:activities.columns.date')}
           </Th>
-          <Th align="right">Detay</Th>
+          <Th align="right">{t('logs:activities.columns.detail')}</Th>
         </Tr>
       </THead>
       <TBody aria-busy={isLoading}>
@@ -125,17 +127,17 @@ export function ActivitiesTable({
                     <span className="text-sm font-medium text-fg">{activity.causer.name}</span>
                   ) : (
                     <span className="text-sm italic text-fg-muted">
-                      {contextLabel(activity.properties._context ?? 'system')}
+                      {contextLabel(activity.properties._context ?? 'system', t)}
                     </span>
                   )}
                 </Td>
                 <Td>
                   <Badge variant={activityEventBadgeVariant(activity.event)}>
-                    {activityEventLabel(activity.event)}
+                    {activityEventLabel(activity.event, t)}
                   </Badge>
                 </Td>
                 <Td>
-                  <span className="text-sm text-fg">{subjectTypeLabel(activity.subject_type)}</span>
+                  <span className="text-sm text-fg">{subjectTypeLabel(activity.subject_type, t)}</span>
                   <span className="ml-1.5 text-xs text-fg-muted">
                     {activity.subject_label ??
                       (activity.subject_id ? `#${activity.subject_id}` : '')}
@@ -149,7 +151,7 @@ export function ActivitiesTable({
                     leftIcon={<Eye className="size-4" aria-hidden="true" />}
                     onClick={() => onViewDetail(activity)}
                   >
-                    Detay
+                    {t('logs:activities.detailButton')}
                   </Button>
                 </Td>
               </Tr>

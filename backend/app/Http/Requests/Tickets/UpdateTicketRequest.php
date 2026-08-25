@@ -77,25 +77,13 @@ class UpdateTicketRequest extends FormRequest
      */
     public function messages(): array
     {
-        $statusMessage = 'Durum bu uçtan değiştirilemez. '.
-            'PATCH /api/tickets/{ticket}/status ucunu kullanın.';
-
-        $slaMessage = 'SLA alanları elle değiştirilemez; sunucu hesaplar. '.
-            'Durum değişimi için PATCH /api/tickets/{ticket}/status ucunu kullanın.';
+        $statusMessage = __('validation.custom.tickets.status_locked');
+        $slaMessage = __('validation.custom.tickets.sla_locked');
 
         return [
-            'subject.max' => 'Konu en fazla :max karakter olabilir.',
-            'priority.in' => 'Seçilen öncelik geçerli değil.',
-            'contact_id.exists' => 'Seçilen kişi geçerli değil.',
-            'company_id.exists' => 'Seçilen firma geçerli değil.',
-            'tag_ids.array' => 'Etiketler bir liste olmalıdır.',
-            'tag_ids.*.exists' => 'Seçilen etiketlerden biri geçerli değil.',
-            'custom_fields.array' => 'Özel alanlar bir liste olmalıdır.',
-
             'status.missing' => $statusMessage,
-            'assigned_to.missing' => 'Atanan kişi bu uçtan değiştirilemez. '.
-                'PATCH /api/tickets/{ticket}/assign ucunu kullanın.',
-            'ticket_number.missing' => 'Talep numarası sunucu tarafından üretilir ve değiştirilemez.',
+            'assigned_to.missing' => __('validation.custom.tickets.assigned_locked'),
+            'ticket_number.missing' => __('validation.custom.tickets.number_locked'),
             'sla_due_at.missing' => $slaMessage,
             'sla_paused_at.missing' => $slaMessage,
             'sla_paused_seconds.missing' => $slaMessage,

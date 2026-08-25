@@ -8,6 +8,7 @@
 // İptal, "kartı yine de taşı" anlamına GELMEZ: iyimser güncelleme geri alınır ve istek hiç
 // gitmez (bkz. `useDealBoard.cancelReason`).
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button, Modal, Textarea } from '../../../../components/ui'
 import type { PendingReasonMove } from '../../hooks/useDealBoard'
 
@@ -18,6 +19,7 @@ export type StageReasonModalProps = {
 }
 
 export function StageReasonModal({ pending, onSubmit, onCancel }: StageReasonModalProps) {
+  const { t } = useTranslation('deals')
   const [reason, setReason] = useState('')
   const [error, setError] = useState<string | undefined>(undefined)
 
@@ -37,7 +39,7 @@ export function StageReasonModal({ pending, onSubmit, onCancel }: StageReasonMod
 
   function handleSubmit() {
     if (isLost && reason.trim() === '') {
-      setError('Kayıp nedeni zorunludur.')
+      setError(t('stageReason.lostRequired'))
       return
     }
     onSubmit(reason)
@@ -51,25 +53,25 @@ export function StageReasonModal({ pending, onSubmit, onCancel }: StageReasonMod
       // taşımayı iptal etmesine yol açar.
       closeOnBackdrop={!isLost}
       size="md"
-      title={isLost ? 'Kayıp nedeni' : 'Kazanma nedeni'}
+      title={isLost ? t('stageReason.titleLost') : t('stageReason.titleWon')}
       description={
         pending
-          ? `"${pending.dealTitle}" kartı "${pending.stageName}" aşamasına taşınıyor.`
+          ? t('stageReason.description', { dealTitle: pending.dealTitle, stageName: pending.stageName })
           : undefined
       }
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onCancel}>
-            Vazgeç
+            {t('stageReason.cancel')}
           </Button>
           <Button variant={isLost ? 'danger' : 'primary'} onClick={handleSubmit}>
-            {isLost ? 'Kaybedildi olarak taşı' : 'Kazanıldı olarak taşı'}
+            {isLost ? t('stageReason.submitLost') : t('stageReason.submitWon')}
           </Button>
         </div>
       }
     >
       <Textarea
-        label={isLost ? 'Kayıp nedeni' : 'Kazanma nedeni (opsiyonel)'}
+        label={isLost ? t('stageReason.fieldLabelLost') : t('stageReason.fieldLabelWon')}
         value={reason}
         onChange={(event) => {
           setReason(event.target.value)
@@ -78,14 +80,8 @@ export function StageReasonModal({ pending, onSubmit, onCancel }: StageReasonMod
         error={error}
         maxLength={255}
         rows={3}
-        placeholder={
-          isLost ? 'Örn. Fiyat rakip teklifin üzerinde kaldı' : 'Örn. Referans müşteri etkisi'
-        }
-        hint={
-          isLost
-            ? 'Kayıp nedeni satış analitiğinin en değerli verisidir; bu yüzden zorunludur.'
-            : 'Boş bırakabilirsiniz.'
-        }
+        placeholder={isLost ? t('stageReason.placeholderLost') : t('stageReason.placeholderWon')}
+        hint={isLost ? t('stageReason.hintLost') : t('stageReason.hintWon')}
       />
     </Modal>
   )

@@ -13,6 +13,7 @@
 // sunucusu) olduğu için iframe içeriği okunamaz, dolayısıyla 403/422 durumunda ayrıca bir toast
 // gösterilemiyor — ama sayfa asla kırılmıyor/boşalmıyor, ki asıl gereksinim buydu.
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ChevronDown, Download, FileSpreadsheet, FileText } from 'lucide-react'
 import { Button } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
@@ -42,6 +43,7 @@ function triggerDownload(url: string) {
 }
 
 export function ExportMenu({ type, filters }: ExportMenuProps) {
+  const { t } = useTranslation('logs')
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
 
@@ -76,13 +78,13 @@ export function ExportMenu({ type, filters }: ExportMenuProps) {
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        Dışa Aktar
+        {t('logs:exportMenu.button')}
       </Button>
 
       {open && (
         <div
           role="menu"
-          aria-label="Dışa aktarma biçimi"
+          aria-label={t('logs:exportMenu.menuAria')}
           className="absolute right-0 top-full z-20 mt-2 w-44 overflow-hidden rounded-lg border border-border bg-surface-3 py-1 shadow-popover"
         >
           <button
@@ -95,7 +97,7 @@ export function ExportMenu({ type, filters }: ExportMenuProps) {
             )}
           >
             <FileText className="size-4 text-fg-muted" aria-hidden="true" />
-            CSV
+            {t('logs:exportMenu.csv')}
           </button>
           <button
             type="button"
@@ -107,7 +109,7 @@ export function ExportMenu({ type, filters }: ExportMenuProps) {
             )}
           >
             <FileSpreadsheet className="size-4 text-fg-muted" aria-hidden="true" />
-            Excel
+            {t('logs:exportMenu.excel')}
           </button>
         </div>
       )}

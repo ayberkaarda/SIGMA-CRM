@@ -69,16 +69,8 @@ class UpdateTaskRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'title.max' => 'Başlık en fazla :max karakter olabilir.',
-            'reminder_at.before_or_equal' => 'Hatırlatıcı, vade tarihinden sonra olamaz.',
-            'priority.in' => 'Seçilen öncelik geçerli değil.',
-            'status.in' => 'Seçilen durum geçerli değil.',
-            'assigned_to.missing' => 'Atanan kişi bu uçtan değiştirilemez. '.
-                'PATCH /api/tasks/{task}/assign ucunu kullanın.',
-            'taskable_type.in' => 'Seçilen hedef türü geçerli değil.',
-            'taskable_type.required_with' => 'Hedef türü ve hedef kimliği birlikte gönderilmelidir.',
-            'taskable_id.required_with' => 'Hedef türü ve hedef kimliği birlikte gönderilmelidir.',
-            'completed_at.missing' => 'Tamamlanma zamanı bu uçtan değiştirilemez. PATCH /api/tasks/{task}/complete ucunu kullanın.',
+            'assigned_to.missing' => __('validation.custom.tasks.assigned_locked'),
+            'completed_at.missing' => __('validation.custom.tasks.completed_at_locked'),
         ];
     }
 }

@@ -6,6 +6,7 @@
 // `Conversation`u alır (hook'un kendi genel `onSuccess`'ine EK olarak çalışır, bkz.
 // `hooks/useConversationMutations.ts`).
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Search } from 'lucide-react'
 import { Avatar, Button, Checkbox, Input, Modal, Skeleton } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
@@ -29,6 +30,7 @@ export type NewConversationModalProps = {
 // kaybolurdu.
 
 export function NewConversationModal({ open, onClose, onCreated }: NewConversationModalProps) {
+  const { t } = useTranslation(['chat', 'common'])
   const currentUserId = useAuthStore((state) => state.user?.id)
   const createConversation = useCreateConversation()
 
@@ -71,21 +73,25 @@ export function NewConversationModal({ open, onClose, onCreated }: NewConversati
     <Modal
       open={open}
       onClose={onClose}
-      title="Yeni sohbet"
+      title={t('chat:newConversation.title')}
       size="sm"
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Vazgeç
+            {t('common:actions.cancel')}
           </Button>
           <Button type="button" disabled={!isValid} loading={createConversation.isPending} onClick={handleSubmit}>
-            Oluştur
+            {t('common:actions.create')}
           </Button>
         </div>
       }
     >
       <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-1 rounded-md bg-surface-2 p-1" role="tablist" aria-label="Sohbet tipi">
+        <div
+          className="flex items-center gap-1 rounded-md bg-surface-2 p-1"
+          role="tablist"
+          aria-label={t('chat:newConversation.typeAria')}
+        >
           <button
             type="button"
             role="tab"
@@ -99,7 +105,7 @@ export function NewConversationModal({ open, onClose, onCreated }: NewConversati
               type === 'dm' ? 'bg-primary text-primary-fg' : 'text-fg-muted hover:text-fg'
             )}
           >
-            Birebir
+            {t('chat:conversationType.dm')}
           </button>
           <button
             type="button"
@@ -111,26 +117,26 @@ export function NewConversationModal({ open, onClose, onCreated }: NewConversati
               type === 'group' ? 'bg-primary text-primary-fg' : 'text-fg-muted hover:text-fg'
             )}
           >
-            Grup
+            {t('chat:conversationType.group')}
           </button>
         </div>
 
         {type === 'group' && (
           <Input
-            label="Grup adı"
+            label={t('chat:common.groupNameLabel')}
             value={groupName}
             onChange={(event) => setGroupName(event.target.value)}
-            placeholder="Örn. Satış Ekibi"
+            placeholder={t('chat:newConversation.groupNamePlaceholder')}
           />
         )}
 
         <Input
           inputSize="sm"
-          placeholder="Kullanıcı ara…"
+          placeholder={t('chat:common.searchUsersPlaceholder')}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           leftIcon={<Search className="size-4" aria-hidden="true" />}
-          aria-label="Kullanıcı ara"
+          aria-label={t('chat:common.searchUsersAria')}
         />
 
         <div className="flex max-h-64 flex-col gap-1 overflow-y-auto">
@@ -142,7 +148,7 @@ export function NewConversationModal({ open, onClose, onCreated }: NewConversati
               </div>
             ))
           ) : users.length === 0 ? (
-            <p className="px-1 py-4 text-center text-sm text-fg-muted">Kullanıcı bulunamadı.</p>
+            <p className="px-1 py-4 text-center text-sm text-fg-muted">{t('chat:newConversation.noUsersFound')}</p>
           ) : (
             users.map((user) => {
               const checked = selectedIds.includes(user.id)

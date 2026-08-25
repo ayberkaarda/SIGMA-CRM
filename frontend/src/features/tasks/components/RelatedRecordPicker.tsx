@@ -24,6 +24,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import axios from 'axios'
 import { Search, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Select } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
 import { api } from '../../../lib/axios'
@@ -92,9 +93,9 @@ function TicketSearchResults({
   onSelect: (option: SearchOption) => void
 }) {
   const { data, isLoading } = useTickets({ q: q || undefined, per_page: 20 })
-  const options: SearchOption[] = (data?.data ?? []).map((t) => ({
-    id: t.id,
-    label: `${t.ticket_number} — ${t.subject}`,
+  const options: SearchOption[] = (data?.data ?? []).map((ticket) => ({
+    id: ticket.id,
+    label: `${ticket.ticket_number} — ${ticket.subject}`,
   }))
   return <OptionsList isLoading={isLoading} options={options} selectedId={selectedId} onSelect={onSelect} />
 }
@@ -110,8 +111,9 @@ function OptionsList({
   selectedId: number | undefined
   onSelect: (option: SearchOption) => void
 }) {
-  if (isLoading) return <p className="px-3 py-2 text-sm text-fg-muted">Yükleniyor…</p>
-  if (options.length === 0) return <p className="px-3 py-2 text-sm text-fg-muted">Sonuç bulunamadı</p>
+  const { t } = useTranslation('tasks')
+  if (isLoading) return <p className="px-3 py-2 text-sm text-fg-muted">{t('relatedPicker.loading')}</p>
+  if (options.length === 0) return <p className="px-3 py-2 text-sm text-fg-muted">{t('relatedPicker.noResults')}</p>
   return (
     <>
       {options.map((option) => (
@@ -132,6 +134,7 @@ function OptionsList({
 }
 
 export function RelatedRecordPicker({ value, onChange, typeError, idError }: RelatedRecordPickerProps) {
+  const { t } = useTranslation('tasks')
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState('')
   const debouncedDraft = useDebouncedValue(draft, SEARCH_DEBOUNCE_MS)
@@ -146,10 +149,10 @@ export function RelatedRecordPicker({ value, onChange, typeError, idError }: Rel
   const ticketsForbidden = axios.isAxiosError(ticketAccess.error) && ticketAccess.error.response?.status === 403
 
   const typeOptions = [
-    { value: '', label: 'İlgili kayıt yok' },
+    { value: '', label: t('relatedPicker.noneOption') },
     ...RELATED_RECORD_SELECTABLE_TYPES.filter((type) => type !== 'ticket' || !ticketsForbidden).map((type) => ({
       value: type,
-      label: relatedRecordTypeLabel(type),
+      label: relatedRecordTypeLabel(type, t),
     })),
   ]
 
@@ -205,7 +208,7 @@ export function RelatedRecordPicker({ value, onChange, typeError, idError }: Rel
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <Select
-        label="İlgili Kayıt Türü"
+        label={t('relatedPicker.typeLabel')}
         value={selectedType}
         onChange={(e) => handleTypeChange(e.target.value)}
         options={typeOptions}
@@ -213,7 +216,7 @@ export function RelatedRecordPicker({ value, onChange, typeError, idError }: Rel
       />
 
       <div ref={containerRef} className="relative">
-        <label className="mb-1.5 block text-xs font-medium text-fg-muted">Kayıt Ara</label>
+        <label className="mb-1.5 block text-xs font-medium text-fg-muted">{t('relatedPicker.searchLabel')}</label>
         <div className="relative">
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted">
             <Search className="size-4" aria-hidden="true" />
@@ -224,7 +227,7 @@ export function RelatedRecordPicker({ value, onChange, typeError, idError }: Rel
             onFocus={handleFocus}
             onKeyDown={handleKeyDown}
             disabled={!value?.type}
-            placeholder={value?.type ? 'Kayıt ara...' : 'Önce tür seçin'}
+            placeholder={value?.type ? t('relatedPicker.searchPlaceholder') : t('relatedPicker.selectTypeFirst')}
             role="combobox"
             aria-expanded={open}
             aria-autocomplete="list"
@@ -242,7 +245,7 @@ export function RelatedRecordPicker({ value, onChange, typeError, idError }: Rel
               type="button"
               tabIndex={-1}
               onClick={() => handleSelect(null)}
-              aria-label="Seçimi temizle"
+              aria-label={t('relatedPicker.clearSelection')}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-fg"
             >
               <X className="size-4" aria-hidden="true" />

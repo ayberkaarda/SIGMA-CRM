@@ -8,10 +8,11 @@
 // dosyaları DOĞRUDAN kullanılır — kopya YAZILMAZ.
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button, Input, Modal, Select, Textarea } from '../../../components/ui'
 import { getFieldErrors } from '../../../lib/axios'
-import { PRIORITY_OPTIONS } from '../../tasks/components/priorityMeta'
-import { CREATE_STATUS_OPTIONS } from '../../tasks/components/taskStatusMeta'
+import { priorityOptions } from '../../tasks/components/priorityMeta'
+import { createStatusOptions } from '../../tasks/components/taskStatusMeta'
 import { localInputToIso } from '../../tasks/components/dateTimeInput'
 import { useCreateTask, useTaskUserOptions } from '../../tasks/api/tasksApi'
 import type { Task } from '../../tasks/types'
@@ -24,6 +25,7 @@ export type TicketTaskFormModalProps = {
 }
 
 export function TicketTaskFormModal({ open, onClose, ticket }: TicketTaskFormModalProps) {
+  const { t } = useTranslation(['tickets', 'enums'])
   const { data: userOptions, isForbidden: usersForbidden } = useTaskUserOptions()
   const createTask = useCreateTask()
 
@@ -63,10 +65,10 @@ export function TicketTaskFormModal({ open, onClose, ticket }: TicketTaskFormMod
 
   function validate(): boolean {
     const errors: Record<string, string[]> = {}
-    if (!title.trim()) errors.title = ['Başlık zorunludur.']
+    if (!title.trim()) errors.title = [t('tickets:tasks.form.validation.titleRequired')]
     const reminderAfterDue = !!dueAt && !!reminderAt && reminderAt > dueAt
-    setReminderClientError(reminderAfterDue ? 'Hatırlatıcı, vade tarihinden sonra olamaz.' : undefined)
-    if (reminderAfterDue) errors.reminder_at = ['Hatırlatıcı, vade tarihinden sonra olamaz.']
+    setReminderClientError(reminderAfterDue ? t('tickets:tasks.form.validation.reminderAfterDue') : undefined)
+    if (reminderAfterDue) errors.reminder_at = [t('tickets:tasks.form.validation.reminderAfterDue')]
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -95,7 +97,7 @@ export function TicketTaskFormModal({ open, onClose, ticket }: TicketTaskFormMod
   }
 
   const assigneeOptions = [
-    { value: '', label: 'Atanmamış' },
+    { value: '', label: t('tickets:tasks.form.unassignedOption') },
     ...(userOptions ?? []).map((u) => ({ value: String(u.id), label: u.name })),
   ]
 
@@ -103,25 +105,31 @@ export function TicketTaskFormModal({ open, onClose, ticket }: TicketTaskFormMod
     <Modal
       open={open}
       onClose={onClose}
-      title="Talebe Görev Ekle"
+      title={t('tickets:tasks.form.title')}
       description={`${ticket.ticket_number} — ${ticket.subject}`}
       size="lg"
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Vazgeç
+            {t('tickets:tasks.form.cancel')}
           </Button>
           <Button type="submit" form="ticket-task-form" loading={isPending}>
-            Oluştur
+            {t('tickets:tasks.form.submit')}
           </Button>
         </div>
       }
     >
       <form id="ticket-task-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <Input label="Başlık" value={title} onChange={(e) => setTitle(e.target.value)} error={fieldError('title')} required />
+        <Input
+          label={t('tickets:tasks.form.titleFieldLabel')}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          error={fieldError('title')}
+          required
+        />
 
         <Textarea
-          label="Açıklama"
+          label={t('tickets:tasks.form.descriptionLabel')}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           error={fieldError('description')}
@@ -129,7 +137,7 @@ export function TicketTaskFormModal({ open, onClose, ticket }: TicketTaskFormMod
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
-            label="Vade"
+            label={t('tickets:tasks.form.dueLabel')}
             type="datetime-local"
             value={dueAt}
             onChange={(e) => {
@@ -139,7 +147,7 @@ export function TicketTaskFormModal({ open, onClose, ticket }: TicketTaskFormMod
             error={fieldError('due_at')}
           />
           <Input
-            label="Hatırlatıcı"
+            label={t('tickets:tasks.form.reminderLabel')}
             type="datetime-local"
             value={reminderAt}
             onChange={(e) => {
@@ -148,29 +156,29 @@ export function TicketTaskFormModal({ open, onClose, ticket }: TicketTaskFormMod
             }}
             max={dueAt || undefined}
             disabled={!dueAt}
-            hint={!dueAt ? 'Önce vade tarihi seçin.' : undefined}
+            hint={!dueAt ? t('tickets:tasks.form.reminderHint') : undefined}
             error={reminderClientError ?? fieldError('reminder_at')}
           />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Select
-            label="Öncelik"
+            label={t('tickets:tasks.form.priorityLabel')}
             value={priority}
             onChange={(e) => setPriority(e.target.value)}
-            options={PRIORITY_OPTIONS}
+            options={priorityOptions(t)}
             error={fieldError('priority')}
           />
           <Select
-            label="Durum"
+            label={t('tickets:tasks.form.statusLabel')}
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            options={CREATE_STATUS_OPTIONS}
+            options={createStatusOptions(t)}
             error={fieldError('status')}
           />
           {!usersForbidden && (
             <Select
-              label="Atanan"
+              label={t('tickets:tasks.form.assigneeLabel')}
               value={assignedTo}
               onChange={(e) => setAssignedTo(e.target.value)}
               options={assigneeOptions}
@@ -180,7 +188,7 @@ export function TicketTaskFormModal({ open, onClose, ticket }: TicketTaskFormMod
         </div>
 
         <p className="rounded-md bg-surface-2 px-3 py-2 text-xs text-fg-muted">
-          Bu görev otomatik olarak talebe ({ticket.ticket_number}) bağlanır.
+          {t('tickets:tasks.form.autoLinkedHint', { ticketNumber: ticket.ticket_number })}
         </p>
       </form>
     </Modal>

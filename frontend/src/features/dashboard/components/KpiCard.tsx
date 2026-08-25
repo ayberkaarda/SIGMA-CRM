@@ -7,6 +7,8 @@
 // `formatMoney`/`formatMoneyCompact`, sayaçlar `formatNumber`, oran `formatNumber(...,2) + '%'`
 // ile basılır; ARİTMETİK için `Number()`e çevrilmez (backend zaten toplamış).
 import type { ComponentType } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import {
   Activity,
   ArrowDown,
@@ -91,31 +93,39 @@ type KpiConfig = {
   label: string
   icon: ComponentType<{ className?: string }>
   increaseIsGood: boolean
-  format: (metric: KpiMetric) => string
+  format: (metric: KpiMetric, currency: string) => string
 }
 
-const money = (metric: KpiMetric) => formatMoneyCompact(metric.value)
+const money = (metric: KpiMetric, currency: string) => formatMoneyCompact(metric.value, currency)
 const count = (metric: KpiMetric) => formatNumber(metric.value)
 const percent = (metric: KpiMetric) => `${formatNumber(metric.value, 1)}%`
 
-const KPI_CONFIG: KpiConfig[] = [
-  { key: 'revenue', label: 'Gelir', icon: Wallet, increaseIsGood: true, format: money },
-  { key: 'open_deals_count', label: 'Açık Fırsat Sayısı', icon: Target, increaseIsGood: true, format: count },
-  { key: 'open_deals_value', label: 'Açık Fırsat Tutarı', icon: Wallet, increaseIsGood: true, format: money },
-  { key: 'conversion_rate', label: 'Dönüşüm Oranı', icon: Percent, increaseIsGood: true, format: percent },
-  { key: 'activities_count', label: 'Aktivite Sayısı', icon: Activity, increaseIsGood: true, format: count },
-  { key: 'won_count', label: 'Kazanılan', icon: CheckCircle2, increaseIsGood: true, format: count },
-  { key: 'lost_count', label: 'Kaybedilen', icon: XCircle, increaseIsGood: false, format: count },
-  { key: 'avg_deal_size', label: 'Ortalama Anlaşma Büyüklüğü', icon: TrendingUp, increaseIsGood: true, format: money },
-]
+function kpiConfig(t: TFunction): KpiConfig[] {
+  return [
+    { key: 'revenue', label: t('dashboard:kpi.revenue'), icon: Wallet, increaseIsGood: true, format: money },
+    { key: 'open_deals_count', label: t('dashboard:kpi.openDealsCount'), icon: Target, increaseIsGood: true, format: count },
+    { key: 'open_deals_value', label: t('dashboard:kpi.openDealsValue'), icon: Wallet, increaseIsGood: true, format: money },
+    { key: 'conversion_rate', label: t('dashboard:kpi.conversionRate'), icon: Percent, increaseIsGood: true, format: percent },
+    { key: 'activities_count', label: t('dashboard:kpi.activitiesCount'), icon: Activity, increaseIsGood: true, format: count },
+    { key: 'won_count', label: t('dashboard:kpi.wonCount'), icon: CheckCircle2, increaseIsGood: true, format: count },
+    { key: 'lost_count', label: t('dashboard:kpi.lostCount'), icon: XCircle, increaseIsGood: false, format: count },
+    { key: 'avg_deal_size', label: t('dashboard:kpi.avgDealSize'), icon: TrendingUp, increaseIsGood: true, format: money },
+  ]
+}
 
 export type KpiCardGridProps = {
   kpis: DashboardKpis | undefined
   isLoading: boolean
+  /** Görüntü para birimi (`rate_info.display_currency`) — Faz 14 / İz E. Backend zaten bu
+   *  birimde döner, burada yeniden dönüştürme yapılmaz. `rate_info` yoksa (ilk yükleme) temel
+   *  para birimine (TRY) düşülür — `formatMoney`nin kendi varsayılanıyla aynı. */
+  currency?: string
 }
 
 /** Sekiz KPI kartının tek satırlık ızgarası — `DashboardPage` bunu tek başına kullanır. */
-export function KpiCardGrid({ kpis, isLoading }: KpiCardGridProps) {
+export function KpiCardGrid({ kpis, isLoading, currency = 'TRY' }: KpiCardGridProps) {
+  const { t } = useTranslation('dashboard')
+  const KPI_CONFIG = kpiConfig(t)
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {isLoading || !kpis
@@ -126,7 +136,7 @@ export function KpiCardGrid({ kpis, isLoading }: KpiCardGridProps) {
               <KpiCard
                 key={cfg.key}
                 label={cfg.label}
-                value={cfg.format(metric)}
+                value={cfg.format(metric, currency)}
                 deltaPct={metric.delta_pct}
                 increaseIsGood={cfg.increaseIsGood}
                 icon={cfg.icon}

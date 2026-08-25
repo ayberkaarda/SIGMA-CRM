@@ -1,4 +1,5 @@
 // Gezinme sekmesi tablosu — server-side sayfalama/sıralama, yükleme/boş/hata durumları.
+import { useTranslation } from 'react-i18next'
 import { Route } from 'lucide-react'
 import {
   Avatar,
@@ -34,14 +35,15 @@ export function PageVisitsTable({
   sortDirectionFor,
   onSortToggle,
 }: PageVisitsTableProps) {
+  const { t } = useTranslation(['logs', 'common'])
   const isEmpty = !isLoading && !isError && data.length === 0
 
   if (isError) {
     return (
       <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
-        <p className="text-sm text-fg-muted">Gezinme kayıtları yüklenirken bir hata oluştu.</p>
+        <p className="text-sm text-fg-muted">{t('logs:pageVisits.loadError')}</p>
         <Button variant="secondary" onClick={onRetry}>
-          Tekrar dene
+          {t('common:actions.retry')}
         </Button>
       </div>
     )
@@ -51,8 +53,8 @@ export function PageVisitsTable({
     return (
       <EmptyState
         icon={<Route className="size-6" aria-hidden="true" />}
-        title="Gezinme kaydı bulunamadı"
-        description="Arama veya filtre kriterlerinizle eşleşen sayfa ziyareti yok."
+        title={t('logs:pageVisits.emptyTitle')}
+        description={t('logs:pageVisits.emptyDescription')}
       />
     )
   }
@@ -61,32 +63,32 @@ export function PageVisitsTable({
     <Table>
       <THead>
         <Tr>
-          <Th>Kullanıcı</Th>
+          <Th>{t('logs:pageVisits.columns.user')}</Th>
           <Th
             sortable
             sortDirection={sortDirectionFor('route')}
             onSort={() => onSortToggle('route')}
           >
-            Sayfa
+            {t('logs:pageVisits.columns.page')}
           </Th>
           <Th sortable sortDirection={sortDirectionFor('path')} onSort={() => onSortToggle('path')}>
-            Yol
+            {t('logs:pageVisits.columns.path')}
           </Th>
           <Th
             sortable
             sortDirection={sortDirectionFor('entered_at')}
             onSort={() => onSortToggle('entered_at')}
           >
-            Giriş
+            {t('logs:pageVisits.columns.enteredAt')}
           </Th>
           <Th
             sortable
             sortDirection={sortDirectionFor('duration_seconds')}
             onSort={() => onSortToggle('duration_seconds')}
           >
-            Süre
+            {t('logs:pageVisits.columns.duration')}
           </Th>
-          <Th>IP</Th>
+          <Th>{t('logs:pageVisits.columns.ip')}</Th>
         </Tr>
       </THead>
       <TBody aria-busy={isLoading}>
@@ -138,7 +140,7 @@ export function PageVisitsTable({
                   </span>
                 </Td>
                 <Td>{formatDateTime(log.entered_at)}</Td>
-                <Td>{formatDuration(log.duration_seconds)}</Td>
+                <Td>{formatDuration(log.duration_seconds, t)}</Td>
                 <Td className="font-mono text-xs">{log.ip_address ?? '—'}</Td>
               </Tr>
             ))}

@@ -33,3 +33,15 @@ Schedule::command('tasks:dispatch-reminders')->everyMinute();
  * sık koşmanın tekrar gönderim maliyeti yoktur.
  */
 Schedule::command('tickets:scan-sla')->everyFiveMinutes();
+
+/*
+ * Faz 14 / İz E: TCMB günlük döviz kuru çekme (docs/PHASE-INTL.md §2.1,
+ * §2.7). TCMB kurları genelde ~15:30'da yayınlar; 16:00 buna güvenli bir
+ * pay bırakır. Hafta sonu/resmi tatilde TCMB yeni bülten YAYINLAMAZ — bu
+ * HATA DEĞİLDİR: `exchange:fetch-tcmb` böyle günlerde son bilinen kuru
+ * koruyarak `info` loglar ve başarı (exit 0) döner (bkz.
+ * App\Console\Commands\FetchTcmbRates dokümanı). `unique(currency,
+ * rate_date)` çekmeyi idempotent yapar; aynı gün birden fazla tetiklense
+ * bile (bu zamanlayıcı + elle çalıştırma) veri bozulmaz/duplike olmaz.
+ */
+Schedule::command('exchange:fetch-tcmb')->dailyAt('16:00');

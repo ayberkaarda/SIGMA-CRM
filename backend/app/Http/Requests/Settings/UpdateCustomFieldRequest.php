@@ -99,10 +99,12 @@ class UpdateCustomFieldRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.max' => 'Alan adı en fazla :max karakter olabilir.',
-            'type.in' => 'Geçersiz alan tipi. Geçerli değerler: '.implode('|', CustomFieldService::TYPES),
-            'options.array' => 'Seçenekler bir liste olmalıdır.',
-            'entity_type.in' => 'Geçersiz entity_type. Geçerli değerler: '.implode('|', CustomFieldController::ENTITY_TYPES),
+            'type.in' => __('validation.custom.settings.custom_field_type_invalid', [
+                'values' => implode('|', CustomFieldService::TYPES),
+            ]),
+            'entity_type.in' => __('validation.custom.settings.custom_field_entity_type_invalid', [
+                'values' => implode('|', CustomFieldController::ENTITY_TYPES),
+            ]),
         ];
     }
 }

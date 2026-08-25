@@ -64,31 +64,4 @@ class StoreLeadRequest extends FormRequest
     public const STATUSES = [
         'new', 'contacted', 'qualified', 'unqualified', 'converted',
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'first_name.required' => 'Ad alanı zorunludur.',
-            'first_name.max' => 'Ad en fazla :max karakter olabilir.',
-            'last_name.required' => 'Soyad alanı zorunludur.',
-            'last_name.max' => 'Soyad en fazla :max karakter olabilir.',
-            'email.email' => 'Geçerli bir e-posta adresi girin.',
-            'email.max' => 'E-posta en fazla :max karakter olabilir.',
-            'phone.max' => 'Telefon en fazla :max karakter olabilir.',
-            'company_name.max' => 'Şirket adı en fazla :max karakter olabilir.',
-            'position.max' => 'Pozisyon en fazla :max karakter olabilir.',
-            'source.required' => 'Kaynak alanı zorunludur.',
-            'source.in' => 'Seçilen kaynak geçerli değil.',
-            'status.in' => 'Seçilen durum geçerli değil.',
-            'score.integer' => 'Skor tam sayı olmalıdır.',
-            'score.between' => 'Skor :min ile :max arasında olmalıdır.',
-            'owner_id.exists' => 'Seçilen sahip geçerli değil.',
-            'tag_ids.array' => 'Etiketler bir liste olmalıdır.',
-            'tag_ids.*.exists' => 'Seçilen etiketlerden biri geçerli değil.',
-            'custom_fields.array' => 'Özel alanlar bir liste olmalıdır.',
-        ];
-    }
 }

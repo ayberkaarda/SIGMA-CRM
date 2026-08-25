@@ -29,15 +29,4 @@ class UpdateConversationRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
         ];
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'name.required' => 'Grup adı zorunludur.',
-            'name.max' => 'Grup adı en fazla :max karakter olabilir.',
-        ];
-    }
 }

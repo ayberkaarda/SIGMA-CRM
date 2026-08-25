@@ -1,9 +1,10 @@
 import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { changePassword, forgotPassword, login, logout, me } from '../api/authApi'
+import { changePassword, forgotPassword, login, logout, me, updatePreferences } from '../api/authApi'
 import { useAuthStore } from '../store'
 import type { LoginPayload } from '../types'
 import { connectEcho, disconnectEcho } from '../../../lib/echo'
+import { applyUserLocale } from '../../../i18n'
 
 const ME_QUERY_KEY = ['auth', 'me'] as const
 
@@ -35,6 +36,9 @@ export function useAuth() {
     if (meQuery.isSuccess) {
       setUser(meQuery.data)
       setStatus('authenticated')
+      // Sunucudaki kişisel dil tercihi otoritedir (§1.3) — ama bu tarayıcıda elle
+      // seçilmiş bir dil varsa `applyUserLocale` onu EZMEZ (bkz. i18n/index.ts).
+      void applyUserLocale(meQuery.data.locale)
       return
     }
     if (meQuery.isError) {
@@ -63,6 +67,7 @@ export function useAuth() {
     onSuccess: (loggedInUser) => {
       setUser(loggedInUser)
       setStatus('authenticated')
+      void applyUserLocale(loggedInUser.locale)
       void queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY })
     },
   })
@@ -102,6 +107,32 @@ export function useChangePassword() {
 
   return useMutation({
     mutationFn: changePassword,
+    onSuccess: (updatedUser) => {
+      setUser(updatedUser)
+      queryClient.setQueryData(ME_QUERY_KEY, updatedUser)
+    },
+  })
+}
+
+/**
+ * Kişisel görüntüleme para birimi tercihi (`users.preferred_currency`) — Faz 14 / İz E
+ * (docs/PHASE-INTL.md §2.3/§1.8). `CurrencySwitcher` (features/preferences) bunu kullanır.
+ *
+ * DİL SEÇİCİSİNDEN (`LanguageSwitcher`) BİLEREK FARKLI DAVRANIR: `LanguageSwitcher` sunucu
+ * yazması başarısız olsa da sessiz kalır (dil zaten yerel `i18n` çekirdeğinde uygulanmıştır,
+ * localStorage kalıcılığı yeterlidir). Para birimi öyle DEĞİL — rapor/dashboard rakamlarının
+ * HANGİ para biriminde göründüğünü belirleyen bir VERİ eksenidir (§1.8) ve yerelde ayrı bir
+ * kalıcılık mekanizması (localStorage fallback) YOK; sunucudaki `preferred_currency` tek
+ * doğruluk kaynağıdır. Bu yüzden `onError`da çağıran taraf (`useCurrencyPreference`) İYİMSER
+ * GÜNCELLEMEYİ GERİ ALIR + kullanıcıya toast gösterir — sessiz kalınırsa ekran sunucuyla
+ * senkron olmayan, yanlış para biriminde bir rakam göstermeye devam ederdi.
+ */
+export function useUpdatePreferredCurrency() {
+  const queryClient = useQueryClient()
+  const setUser = useAuthStore((state) => state.setUser)
+
+  return useMutation({
+    mutationFn: (preferred_currency: string) => updatePreferences({ preferred_currency }),
     onSuccess: (updatedUser) => {
       setUser(updatedUser)
       queryClient.setQueryData(ME_QUERY_KEY, updatedUser)

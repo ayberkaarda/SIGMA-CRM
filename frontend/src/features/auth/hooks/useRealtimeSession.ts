@@ -9,6 +9,7 @@ import { disconnectEcho, getEcho } from '../../../lib/echo'
 import { toast } from '../../../components/ui'
 import { useAuthStore } from '../store'
 import { router } from '../../../router'
+import i18n from '../../../i18n'
 
 type UserDeactivatedPayload = {
   user_id: number
@@ -40,7 +41,7 @@ export function useRealtimeSession() {
     const channel = echo.private(channelName)
 
     channel.listen('.user.deactivated', (payload: UserDeactivatedPayload) => {
-      toast.error(payload.message || 'Hesabınız pasifleştirildi. Oturumunuz sonlandırıldı.')
+      toast.error(payload.message || i18n.t('auth:session.deactivated'))
       disconnectEcho()
       useAuthStore.getState().clear()
       void router.navigate('/login')

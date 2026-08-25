@@ -49,15 +49,4 @@ class CompleteTaskRequest extends FormRequest
             }
         });
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'completed.required' => 'completed alanı zorunludur.',
-            'completed.boolean' => 'completed alanı doğru/yanlış (boolean) olmalıdır.',
-        ];
-    }
 }

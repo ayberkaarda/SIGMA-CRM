@@ -8,8 +8,11 @@ use App\Http\Resources\DealCardResource;
 use App\Models\Deal;
 use App\Models\PipelineStage;
 use App\Models\User;
+use App\Services\Exchange\ExchangeRateService;
 use App\Support\FractionalIndex;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use RuntimeException;
@@ -56,6 +59,8 @@ use RuntimeException;
  */
 class DealMoveService
 {
+    public function __construct(private readonly ExchangeRateService $rates) {}
+
     /**
      * @param  array{
      *     to_stage_id: int,
@@ -334,6 +339,7 @@ class DealMoveService
             // yeniden sıralamak, girilmiş nedeni silmek anlamına gelmez.
             $deal->won_reason = $this->trimmed($payload['won_reason'] ?? null) ?? $deal->won_reason;
             $deal->lost_reason = null;
+            $this->freezeBaseAmount($deal);
 
             return;
         }
@@ -351,6 +357,7 @@ class DealMoveService
             $deal->closed_at = $deal->closed_at ?? now();
             $deal->lost_reason = $reason;
             $deal->won_reason = null;
+            $this->freezeBaseAmount($deal);
 
             return;
         }
@@ -359,6 +366,104 @@ class DealMoveService
         $deal->closed_at = null;
         $deal->lost_reason = null;
         $deal->won_reason = null;
+        $this->clearBaseAmount($deal);
+    }
+
+    /**
+     * ---------------------------------------------------------------------
+     * KAPANIŞ ANI KURUNUN DONDURULMASI (Faz 14 / İz E, PHASE-INTL §2.3–§2.4)
+     * ---------------------------------------------------------------------
+     * NEDEN BURADA, OBSERVER'DA DEĞİL: bir fırsatın `won`/`lost` olduğu TEK
+     * yer bu metottur (`$deal->status = 'won'|'lost'` başka hiçbir yerde
+     * yazılmaz) ve burası zaten `lockForUpdate` ile kilitlenmiş satırın,
+     * `closed_at`'in belirlendiği transaction'ın İÇİDİR. Donmuş tutarın
+     * dayandığı "kapanış günü" ile `closed_at` aynı satırda, aynı kilidin
+     * altında, aynı anda yazılır — ikisi ASLA sapamaz.
+     *
+     * Bir `saving`/`saved` observer'ı aynı garantiyi veremezdi: observer her
+     * `save()`'de (yeniden sıralama, sahip atama, başlık düzenleme)
+     * tetiklenir ve "bu kaydın hangi işlemin parçası olduğunu" bilmez;
+     * kapanmış bir fırsatın donmuş kurunu ilgisiz bir güncellemede sessizce
+     * tazeleme riski doğardı — tam olarak kaçınmak istediğimiz şey.
+     *
+     * BİR KEZ DONAR, TAZELENMEZ: `closed_at`'in `?? now()` kuralıyla aynı
+     * gerekçe — kazanılmış bir kartı sütun içinde yeniden sıralamak ne
+     * kapanış tarihini ne de kapanış kurunu değiştirmelidir.
+     * (`DealPolicy::update()` zaten kapanmış fırsatta `amount` düzenlemesine
+     * izin vermez, dolayısıyla donmuş tutarın kaydın kendisiyle çelişmesi
+     * mümkün değildir.)
+     *
+     * KUR YOKSA (bilinçli karar, PHASE-INTL §2.4 "sessiz hata" yasağı):
+     *   1. Kapanış gününde geçerli kur → kullanılır (doğru olan).
+     *   2. Yoksa EN SON BİLİNEN kur → kullanılır (ExchangeRateService::
+     *      resolveForFreeze), çünkü elde gerçek bir veri varken tahmin
+     *      üretmenin anlamı yok.
+     *   3. Hiç kur yoksa → ÜÇ ALAN DA null KALIR + `warning` loglanır.
+     *      SIFIR YAZILMAZ: 0.00 "bu iş hiç gelir getirmedi" demektir ve
+     *      raporu sessizce yanıltır; null "bilinmiyor" demektir ve rapor
+     *      bunu `rate_info.unconverted_closed_count` alanıyla GÖRÜNÜR kılar
+     *      (bkz. App\Services\Reports\Support\ReportCurrencyContext).
+     */
+    private function freezeBaseAmount(Deal $deal): void
+    {
+        if ($deal->base_amount !== null) {
+            return;
+        }
+
+        $currency = strtoupper((string) ($deal->currency ?: $this->rates->baseCurrency()));
+        $amount = (string) ($deal->amount ?? '0');
+        $closedOn = CarbonImmutable::parse($deal->closed_at ?? now())->startOfDay();
+
+        if ($this->rates->isBaseCurrency($currency)) {
+            // TRY: kur tanım gereği 1.000000 — DB'de satırı yoktur, olması da
+            // gerekmez (bkz. create_exchange_rates_table göç dokümanı).
+            $deal->base_amount = $amount;
+            $deal->base_rate = '1.000000';
+            $deal->base_rate_date = $closedOn->toDateString();
+
+            return;
+        }
+
+        $rate = $this->rates->resolveForFreeze($currency, $closedOn);
+        // Dönüşüm, kur satırının KENDİ tarihiyle yapılır ($rate->rate_date):
+        // kapanış gününde satır yoksa `resolveForFreeze` en son bilinen kura
+        // düşer ve `toBase($amount, $currency, $closedOn)` o satırı BULAMAZ
+        // (tarihi kapanıştan sonradır) — donmuş kur ile donmuş tutarın farklı
+        // satırlardan gelmesi tam olarak yasaklamak istediğimiz sapmadır.
+        $baseAmount = $rate === null
+            ? null
+            : $this->rates->toBase($amount, $currency, CarbonImmutable::parse($rate->rate_date));
+
+        if ($rate === null || $baseAmount === null) {
+            Log::warning('Fırsat kapanışında kur bulunamadı; donmuş temel tutar yazılmadı.', [
+                'deal_id' => $deal->getKey(),
+                'currency' => $currency,
+                'closed_on' => $closedOn->toDateString(),
+            ]);
+
+            return;
+        }
+
+        $deal->base_amount = $baseAmount;
+        $deal->base_rate = (string) $rate->rate;
+        $deal->base_rate_date = $rate->rate_date->toDateString();
+    }
+
+    /**
+     * YENİDEN AÇILMA (`won`/`lost` → `open`): donmuş alanlar TEMİZLENİR.
+     *
+     * `lost_reason`/`won_reason`'ın temizlenmesiyle aynı gerekçe: artık açık
+     * olan bir fırsatta duran "kapanış anı TRY karşılığı", gerçekleşmemiş bir
+     * geliri gerçekleşmiş gibi gösterir; kayıt kendi içinde çelişkili kalır
+     * ve fırsat ikinci kez kapandığında ESKİ kurun donmuş kalmasına yol
+     * açardı. Fırsat yeniden kapanırsa yeni kapanış anının kuru yazılır
+     * (donma bir kez, ama HER kapanış için yeniden).
+     */
+    private function clearBaseAmount(Deal $deal): void
+    {
+        $deal->base_amount = null;
+        $deal->base_rate = null;
+        $deal->base_rate_date = null;
     }
 
     /**

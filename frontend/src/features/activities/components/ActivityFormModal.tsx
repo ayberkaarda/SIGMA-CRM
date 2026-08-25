@@ -3,12 +3,13 @@
 // backend `StoreActivityRequest` başlığındaki not).
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button, Input, Modal, Select, Textarea } from '../../../components/ui'
 import { getFieldErrors } from '../../../lib/axios'
 import { RelatedRecordPicker } from '../../tasks/components/RelatedRecordPicker'
 import type { RelatedRecordValue } from '../../tasks/components/RelatedRecordPicker'
 import { isoToLocalInput, localInputToIso, nowLocalInput } from '../../tasks/components/dateTimeInput'
-import { ACTIVITY_TYPE_OPTIONS } from './activityTypeMeta'
+import { activityTypeOptions } from './activityTypeMeta'
 import { useCreateActivity, useUpdateActivity } from '../api/activitiesApi'
 import type { Activity } from '../types'
 
@@ -20,6 +21,8 @@ export type ActivityFormModalProps = {
 }
 
 export function ActivityFormModal({ open, onClose, activity }: ActivityFormModalProps) {
+  const { t } = useTranslation('activities')
+  const { t: tEnums } = useTranslation('enums')
   const isEdit = !!activity
 
   const createActivity = useCreateActivity()
@@ -69,13 +72,13 @@ export function ActivityFormModal({ open, onClose, activity }: ActivityFormModal
 
   function validate(): boolean {
     const errors: Record<string, string[]> = {}
-    if (!subject.trim()) errors.subject = ['Konu zorunludur.']
-    if (!occurredAt) errors.occurred_at = ['Gerçekleşme tarihi zorunludur.']
+    if (!subject.trim()) errors.subject = [t('form.validation.subjectRequired')]
+    if (!occurredAt) errors.occurred_at = [t('form.validation.occurredAtRequired')]
     const inFuture = !!occurredAt && occurredAt > nowLocal
-    setOccurredClientError(inFuture ? 'Aktivite tarihi gelecekte olamaz.' : undefined)
-    if (inFuture) errors.occurred_at = ['Aktivite tarihi gelecekte olamaz.']
+    setOccurredClientError(inFuture ? t('form.validation.occurredAtFuture') : undefined)
+    if (inFuture) errors.occurred_at = [t('form.validation.occurredAtFuture')]
     if (durationMinutes !== '' && (Number(durationMinutes) < 0 || Number(durationMinutes) > 1440)) {
-      errors.duration_minutes = ['Süre 0 ile 1440 dakika arasında olmalıdır.']
+      errors.duration_minutes = [t('form.validation.durationRange')]
     }
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
@@ -113,28 +116,28 @@ export function ActivityFormModal({ open, onClose, activity }: ActivityFormModal
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? 'Aktiviteyi Düzenle' : 'Aktivite Kaydet'}
+      title={isEdit ? t('form.titleEdit') : t('form.titleCreate')}
       size="lg"
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Vazgeç
+            {t('form.cancel')}
           </Button>
           <Button type="submit" form="activity-form" loading={isPending}>
-            {isEdit ? 'Kaydet' : 'Oluştur'}
+            {isEdit ? t('form.submitEdit') : t('form.submitCreate')}
           </Button>
         </div>
       }
     >
       <form id="activity-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Select label="Tür" value={type} onChange={(e) => setType(e.target.value)} options={ACTIVITY_TYPE_OPTIONS} error={fieldError('type')} required />
-          <Input label="Konu" value={subject} onChange={(e) => setSubject(e.target.value)} error={fieldError('subject')} required />
+          <Select label={t('form.fields.type')} value={type} onChange={(e) => setType(e.target.value)} options={activityTypeOptions(tEnums)} error={fieldError('type')} required />
+          <Input label={t('form.fields.subject')} value={subject} onChange={(e) => setSubject(e.target.value)} error={fieldError('subject')} required />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
-            label="Gerçekleşme Tarihi"
+            label={t('form.fields.occurredAt')}
             type="datetime-local"
             value={occurredAt}
             onChange={(e) => {
@@ -146,7 +149,7 @@ export function ActivityFormModal({ open, onClose, activity }: ActivityFormModal
             required
           />
           <Input
-            label="Süre (dakika)"
+            label={t('form.fields.durationMinutes')}
             type="number"
             min={0}
             max={1440}
@@ -156,9 +159,9 @@ export function ActivityFormModal({ open, onClose, activity }: ActivityFormModal
           />
         </div>
 
-        <Input label="Sonuç" value={outcome} onChange={(e) => setOutcome(e.target.value)} error={fieldError('outcome')} />
+        <Input label={t('form.fields.outcome')} value={outcome} onChange={(e) => setOutcome(e.target.value)} error={fieldError('outcome')} />
 
-        <Textarea label="Açıklama" value={body} onChange={(e) => setBody(e.target.value)} error={fieldError('body')} />
+        <Textarea label={t('form.fields.body')} value={body} onChange={(e) => setBody(e.target.value)} error={fieldError('body')} />
 
         <RelatedRecordPicker
           value={related}

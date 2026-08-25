@@ -3,6 +3,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, getErrorMessage } from '../../../lib/axios'
 import { toast } from '../../../components/ui'
+import i18n from '../../../i18n'
 import type { Role, User, UsersQuery } from '../types'
 
 type Pagination = {
@@ -121,7 +122,7 @@ export function useCreateUser() {
     mutationFn: createUserRequest,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: usersKeys.all })
-      toast.success('Kullanıcı oluşturuldu.')
+      toast.success(i18n.t('users:toast.created'))
     },
     onError: (error) => {
       toast.error(getErrorMessage(error))
@@ -136,7 +137,7 @@ export function useUpdateUser() {
     onSuccess: (updatedUser) => {
       void queryClient.invalidateQueries({ queryKey: usersKeys.all })
       void queryClient.invalidateQueries({ queryKey: usersKeys.detail(updatedUser.id) })
-      toast.success('Kullanıcı güncellendi.')
+      toast.success(i18n.t('users:toast.updated'))
     },
     onError: (error) => {
       toast.error(getErrorMessage(error))
@@ -150,7 +151,7 @@ export function useDeleteUser() {
     mutationFn: (id: number) => deleteUserRequest(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: usersKeys.all })
-      toast.success('Kullanıcı silindi.')
+      toast.success(i18n.t('users:toast.deleted'))
     },
     onError: (error) => {
       toast.error(getErrorMessage(error))
@@ -165,7 +166,7 @@ export function useToggleActive() {
     onSuccess: (updatedUser) => {
       void queryClient.invalidateQueries({ queryKey: usersKeys.all })
       void queryClient.invalidateQueries({ queryKey: usersKeys.detail(updatedUser.id) })
-      toast.success(updatedUser.is_active ? 'Kullanıcı aktifleştirildi.' : 'Kullanıcı pasifleştirildi.')
+      toast.success(updatedUser.is_active ? i18n.t('users:toast.activated') : i18n.t('users:toast.deactivated'))
     },
     onError: (error) => {
       toast.error(getErrorMessage(error))
@@ -177,7 +178,7 @@ export function useResetPassword() {
   return useMutation({
     mutationFn: ({ id, password }: { id: number; password: string }) => resetPasswordRequest(id, password),
     onSuccess: () => {
-      toast.success('Şifre sıfırlandı.')
+      toast.success(i18n.t('users:toast.passwordReset'))
     },
     onError: (error) => {
       toast.error(getErrorMessage(error))

@@ -1,5 +1,8 @@
 // Tarih aralığı yardımcıları — `DateRangeFilter` ve varsayılan aralık (son 30 gün) burada
 // toplanır ki Dashboard ve Raporlar aynı hesaplamayı paylaşsın.
+import type { TFunction } from 'i18next'
+import { formatDate } from '../../lib/datetime'
+
 function toIsoDate(date: Date): string {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -29,16 +32,25 @@ export type DateRangePreset = {
   range: () => { from: string; to: string }
 }
 
-export const DATE_RANGE_PRESETS: DateRangePreset[] = [
-  { key: 'today', label: 'Bugün', range: () => ({ from: todayIso(), to: todayIso() }) },
-  { key: 'last7', label: 'Son 7 gün', range: () => ({ from: toIsoDate(daysAgo(6)), to: todayIso() }) },
-  { key: 'last30', label: 'Son 30 gün', range: () => ({ from: toIsoDate(daysAgo(29)), to: todayIso() }) },
-  { key: 'last90', label: 'Son 90 gün', range: () => ({ from: toIsoDate(daysAgo(89)), to: todayIso() }) },
+/** `range()` hesaplaması dilden bağımsızdır — `matchPreset` bu ham listeyi kullanır ki `t()`
+ *  gerektirmesin. Etiket metni ayrı olarak `dateRangePresets(t)` ile eklenir. */
+const PRESET_RANGES: Array<{ key: string; labelKey: string; range: () => { from: string; to: string } }> = [
+  { key: 'today', labelKey: 'reports:dateRange.presets.today', range: () => ({ from: todayIso(), to: todayIso() }) },
+  { key: 'last7', labelKey: 'reports:dateRange.presets.last7', range: () => ({ from: toIsoDate(daysAgo(6)), to: todayIso() }) },
+  { key: 'last30', labelKey: 'reports:dateRange.presets.last30', range: () => ({ from: toIsoDate(daysAgo(29)), to: todayIso() }) },
+  { key: 'last90', labelKey: 'reports:dateRange.presets.last90', range: () => ({ from: toIsoDate(daysAgo(89)), to: todayIso() }) },
 ]
+
+/** Faz 14 / İz D: preset etiketleri `reports:dateRange.presets.*` çeviri anahtarından üretilir —
+ *  modül sabiti DEĞİL, `t()` çağrısı gerektirdiğinden fonksiyon olarak sunulur (bkz.
+ *  `features/activities/components/activityTypeMeta.ts`'teki aynı gerekçe). */
+export function dateRangePresets(t: TFunction): DateRangePreset[] {
+  return PRESET_RANGES.map((preset) => ({ key: preset.key, label: t(preset.labelKey), range: preset.range }))
+}
 
 /** Seçili `from`/`to` bir preset'e eşleniyorsa anahtarını döner, yoksa `null` (özel aralık). */
 export function matchPreset(from: string, to: string): string | null {
-  const preset = DATE_RANGE_PRESETS.find((p) => {
+  const preset = PRESET_RANGES.find((p) => {
     const r = p.range()
     return r.from === from && r.to === to
   })
@@ -49,10 +61,8 @@ export function matchPreset(from: string, to: string): string | null {
  * sırayla çizilir (ordinal: sıra anlam taşır, yeniden sıralanmaz). */
 export const LEAD_STATUS_ORDER = ['new', 'contacted', 'qualified', 'unqualified', 'converted'] as const
 
+/** Aktif arayüz diline göre biçimlenir (bkz. `lib/datetime.ts` — Faz 14/İz D §1.8, sabit
+ *  `Intl.DateTimeFormat('tr-TR')` borcu buradan devralınıp merkeze taşındı). */
 export function formatDateLabel(iso: string): string {
-  try {
-    return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium' }).format(new Date(`${iso}T00:00:00`))
-  } catch {
-    return iso
-  }
+  return formatDate(`${iso}T00:00:00`)
 }

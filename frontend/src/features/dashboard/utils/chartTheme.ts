@@ -5,6 +5,7 @@
 // (CSS değişkeni referansı değil, gerçek hesaplanmış değer) her tema değişiminde yeniden okunur.
 import { useMemo } from 'react'
 import { useTheme } from '../../../hooks/useTheme'
+import i18n, { getIntlLocale } from '../../../i18n'
 
 /** `pipeline_stages.color` ile aynı sabit token sözlüğü (bkz. `tokenBadgeVariant.ts`). Dashboard
  * huni ve raporlardaki aşama renkleri bu sözlüğü yeniden kullanır — yeni bir kategorik palet
@@ -94,10 +95,22 @@ const RELATIVE_STEPS: RelativeStep[] = [
   { limitSeconds: 31557600, divisor: 2629800, unit: 'month' },
 ]
 
-const relativeFormatter = new Intl.RelativeTimeFormat('tr', { numeric: 'auto' })
+const relativeFormatterCache = new Map<string, Intl.RelativeTimeFormat>()
+
+function getRelativeFormatter(intlLocale: string): Intl.RelativeTimeFormat {
+  let formatter = relativeFormatterCache.get(intlLocale)
+  if (!formatter) {
+    formatter = new Intl.RelativeTimeFormat(intlLocale, { numeric: 'auto' })
+    relativeFormatterCache.set(intlLocale, formatter)
+  }
+  return formatter
+}
 
 /** ISO-8601 tarihi "5 dakika önce" gibi göreli metne çevirir. Projede `dayjs`/`date-fns` yok —
- * yalnızca yerleşik `Intl.RelativeTimeFormat` (aynı desen: `features/notifications`). */
+ * yalnızca yerleşik `Intl.RelativeTimeFormat` (aynı desen: `features/notifications`). Faz 14/İz D:
+ * aktif arayüz diline göre biçimlenir (bkz. `lib/datetime.ts`), "az önce" eşiği `dashboard`
+ * namespace'inden çözülür — modül seviyesinde sabit DEĞİL, çağrı anında `i18n.t()` ile okunur ki
+ * dil değişince donmuş kalmasın. */
 export function formatRelativeTime(iso: string): string {
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return iso
@@ -105,13 +118,15 @@ export function formatRelativeTime(iso: string): string {
   const diffSeconds = (date.getTime() - Date.now()) / 1000
   const absSeconds = Math.abs(diffSeconds)
 
-  if (absSeconds < 5) return 'az önce'
+  if (absSeconds < 5) return i18n.t('dashboard:relativeTime.justNow')
+
+  const formatter = getRelativeFormatter(getIntlLocale())
 
   for (const { limitSeconds, divisor, unit } of RELATIVE_STEPS) {
     if (absSeconds < limitSeconds) {
-      return relativeFormatter.format(Math.round(diffSeconds / divisor), unit)
+      return formatter.format(Math.round(diffSeconds / divisor), unit)
     }
   }
 
-  return relativeFormatter.format(Math.round(diffSeconds / 31557600), 'year')
+  return formatter.format(Math.round(diffSeconds / 31557600), 'year')
 }

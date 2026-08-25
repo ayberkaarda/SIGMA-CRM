@@ -1,5 +1,6 @@
 // Teklif modülü tipleri — backend sözleşmesi `docs/QUOTE-FINANCIALS.md` ve
 // `App\Http\Resources\QuoteResource` / `QuoteItemResource` ile birebir.
+import type { RelatedGroupData } from '../related/types'
 
 export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired'
 
@@ -79,6 +80,18 @@ export type Quote = {
   /** Yalnızca detay ucunda dolu. */
   tax_breakdown: QuoteTaxBreakdownRow[] | null
   items_count: number
+  /**
+   * Faz 14 / İz F — C3 ilişkili-kayıtlar paneli (docs/PHASE-INTL.md §3).
+   * Yalnızca detay ucunda (`GET /api/quotes/{id}`) dolu ve yalnızca ilgili
+   * modülün izni varsa alt-anahtar mevcuttur — izinsiz modülün anahtarı
+   * `related` nesnesinde HİÇ YOKTUR (bkz. `QuoteController::loadRelatedRecords()`).
+   * Liste ucunda alan tamamen `undefined`'dır.
+   */
+  related?: {
+    company?: RelatedGroupData<{ id: number; name: string }>
+    deal?: RelatedGroupData<{ id: number; title: string }>
+    contact?: RelatedGroupData<{ id: number; full_name: string }>
+  }
   created_at: string
   updated_at: string
 }

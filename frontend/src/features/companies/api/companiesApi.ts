@@ -1,6 +1,7 @@
 // Firmalar modülü API katmanı — backend sözleşmesi görev tanımında belirtildi.
 // Hata gövdesi tüm uçlarda: `{ errors: { message, code, fields? } }` (bkz. `lib/axios.ts`).
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import i18n from '../../../i18n'
 import { api, getErrorMessage } from '../../../lib/axios'
 import { toast } from '../../../components/ui'
 import type { TimelineItem } from '../../../components/shared/Timeline'
@@ -204,7 +205,7 @@ export function useCreateCompany() {
     mutationFn: createCompanyRequest,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: companiesKeys.all })
-      toast.success('Firma oluşturuldu.')
+      toast.success(i18n.t('companies:toast.created'))
     },
     onError: (error) => {
       toast.error(getErrorMessage(error))
@@ -219,7 +220,7 @@ export function useUpdateCompany() {
     onSuccess: (updatedCompany) => {
       void queryClient.invalidateQueries({ queryKey: companiesKeys.all })
       void queryClient.invalidateQueries({ queryKey: companiesKeys.detail(updatedCompany.id) })
-      toast.success('Firma güncellendi.')
+      toast.success(i18n.t('companies:toast.updated'))
     },
     onError: (error) => {
       toast.error(getErrorMessage(error))
@@ -233,7 +234,7 @@ export function useDeleteCompany() {
     mutationFn: (id: number) => deleteCompanyRequest(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: companiesKeys.all })
-      toast.success('Firma silindi.')
+      toast.success(i18n.t('companies:toast.deleted'))
     },
     onError: (error) => {
       // Açık fırsatı (deal) olan firma silinemez (422) — gerçek backend mesajı burada yüzeye çıkar.

@@ -54,6 +54,15 @@ class ContactResource extends JsonResource
             // withCount ile yüklendiyse görünür (detay ucu); listede sessizce atlanır.
             'deals_count' => $this->whenCounted('deals'),
             'tickets_count' => $this->whenCounted('tickets'),
+            // Faz 14 / İz F — C3 ilişkili-kayıtlar paneli (docs/PHASE-INTL.md §3).
+            // `company` burada YOK: yukarıdaki `company` alanı zaten bu yönü
+            // karşılıyor. Her anahtar yalnızca ilgili modülün izniyle
+            // YÜKLENDİYSE var olur (gerekçe ContactController::loadRelatedRecords()).
+            'related' => array_filter([
+                'deals' => $contact->relationLoaded('relatedDeals') ? $contact->relatedDeals : null,
+                'tickets' => $contact->relationLoaded('relatedTickets') ? $contact->relatedTickets : null,
+                'quotes' => $contact->relationLoaded('relatedQuotes') ? $contact->relatedQuotes : null,
+            ], fn ($group) => $group !== null),
             'created_at' => $contact->created_at?->toIso8601String(),
             'updated_at' => $contact->updated_at?->toIso8601String(),
         ];

@@ -421,6 +421,14 @@ class QuoteService
             $data['sent_at'] = null;
             $data['accepted_at'] = null;
             $data['rejected_at'] = null;
+            // Donmuş kur DEVRALINMAZ (PHASE-INTL §2.3): revizyon YENİ bir
+            // ticari tekliftir ve kuru kendi gönderim tarihini yansıtmalıdır;
+            // ebeveyn kendi donmuş kurunu korur. REVISION_COPIED_FIELDS beyaz
+            // listesi bu iki kolonu zaten taşımıyor — buradaki açık null,
+            // listeye ileride yanlışlıkla eklenmelerine karşı ikinci bir
+            // savunma ve niyetin okunur hâlidir.
+            $data['exchange_rate'] = null;
+            $data['exchange_rate_date'] = null;
             $data['subtotal'] = 0;
             $data['discount_amount'] = 0;
             $data['tax_amount'] = 0;

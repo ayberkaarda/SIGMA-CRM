@@ -7,6 +7,7 @@
 // beklenen bir durumdur — route'lar bağlandıkça bu linkler otomatik çalışır hale gelecektir.
 import type { ComponentType } from 'react'
 import { NavLink } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   BarChart3,
   Building2,
@@ -27,7 +28,8 @@ import { cn } from '../../lib/cn'
 import { usePermission } from '../../features/auth/hooks/usePermission'
 
 type NavItem = {
-  label: string
+  /** `common` namespace'indeki anahtar — `label` DEĞİL: metin render anında çözülür (§1.3). */
+  labelKey: string
   to: string
   permission: string
   icon: ComponentType<{ className?: string }>
@@ -35,44 +37,51 @@ type NavItem = {
 }
 
 type NavSection = {
-  title: string
+  titleKey: string
   items: NavItem[]
 }
 
+/*
+ * Menü tablosu ÇEVİRİLMİŞ METİN DEĞİL, ANAHTAR taşır (Faz 14 / İz D).
+ *
+ * Neden: bu sabit modül seviyesinde bir kez değerlendirilir — o an `t()` çağrılsaydı metin
+ * ilk yüklenen dile DONAR ve dil değiştiğinde menü Türkçe kalırdı. Anahtar taşıyıp render
+ * içinde çözmek, `languageChanged` sonrası yeniden render'ın menüyü de tazelemesini sağlar.
+ */
 const NAV_SECTIONS: NavSection[] = [
   {
-    title: 'ANA',
-    items: [{ label: 'Dashboard', to: '/', permission: 'dashboard.view', icon: LayoutDashboard, end: true }],
+    titleKey: 'nav.sections.main',
+    items: [{ labelKey: 'nav.dashboard', to: '/', permission: 'dashboard.view', icon: LayoutDashboard, end: true }],
   },
   {
-    title: 'SATIŞ',
+    titleKey: 'nav.sections.sales',
     items: [
-      { label: 'Müşteri Adayları', to: '/leads', permission: 'leads.view', icon: UserPlus },
-      { label: 'Kişiler', to: '/contacts', permission: 'contacts.view', icon: Users },
-      { label: 'Firmalar', to: '/companies', permission: 'companies.view', icon: Building2 },
-      { label: 'Fırsatlar', to: '/deals', permission: 'deals.view', icon: Target },
-      { label: 'Teklifler', to: '/quotes', permission: 'quotes.view', icon: FileText },
-      { label: 'Ürünler', to: '/products', permission: 'products.view', icon: Package },
+      { labelKey: 'nav.leads', to: '/leads', permission: 'leads.view', icon: UserPlus },
+      { labelKey: 'nav.contacts', to: '/contacts', permission: 'contacts.view', icon: Users },
+      { labelKey: 'nav.companies', to: '/companies', permission: 'companies.view', icon: Building2 },
+      { labelKey: 'nav.deals', to: '/deals', permission: 'deals.view', icon: Target },
+      { labelKey: 'nav.quotes', to: '/quotes', permission: 'quotes.view', icon: FileText },
+      { labelKey: 'nav.products', to: '/products', permission: 'products.view', icon: Package },
     ],
   },
   {
-    title: 'ÇALIŞMA',
+    titleKey: 'nav.sections.work',
     items: [
-      { label: 'Görevler', to: '/tasks', permission: 'tasks.view', icon: CheckSquare },
-      { label: 'Destek Talepleri', to: '/tickets', permission: 'tickets.view', icon: LifeBuoy },
-      { label: 'Sohbet', to: '/chat', permission: 'chat.use', icon: MessageSquare },
+      { labelKey: 'nav.tasks', to: '/tasks', permission: 'tasks.view', icon: CheckSquare },
+      { labelKey: 'nav.tickets', to: '/tickets', permission: 'tickets.view', icon: LifeBuoy },
+      { labelKey: 'nav.chat', to: '/chat', permission: 'chat.use', icon: MessageSquare },
     ],
   },
   {
-    title: 'ANALİZ',
-    items: [{ label: 'Raporlar', to: '/reports', permission: 'reports.view', icon: BarChart3 }],
+    titleKey: 'nav.sections.analysis',
+    items: [{ labelKey: 'nav.reports', to: '/reports', permission: 'reports.view', icon: BarChart3 }],
   },
   {
-    title: 'YÖNETİM',
+    titleKey: 'nav.sections.admin',
     items: [
-      { label: 'Kullanıcılar', to: '/users', permission: 'users.view', icon: UserCog },
-      { label: 'Loglar', to: '/logs', permission: 'logs.view', icon: ScrollText },
-      { label: 'Ayarlar', to: '/settings', permission: 'settings.manage', icon: Settings },
+      { labelKey: 'nav.users', to: '/users', permission: 'users.view', icon: UserCog },
+      { labelKey: 'nav.logs', to: '/logs', permission: 'logs.view', icon: ScrollText },
+      { labelKey: 'nav.settings', to: '/settings', permission: 'settings.manage', icon: Settings },
     ],
   },
 ]
@@ -85,6 +94,7 @@ type SidebarProps = {
 
 export function Sidebar({ collapsed, mobileOpen, onCloseMobile }: SidebarProps) {
   const { can } = usePermission()
+  const { t } = useTranslation('common')
 
   // Her item izin kontrollüdür; bir bölümün tüm item'ları gizliyse bölüm başlığı da gizlenir.
   const visibleSections = NAV_SECTIONS.map((section) => ({
@@ -99,7 +109,7 @@ export function Sidebar({ collapsed, mobileOpen, onCloseMobile }: SidebarProps) 
       )}
 
       <aside
-        aria-label="Ana navigasyon"
+        aria-label={t('nav.aria')}
         className={cn(
           'fixed inset-y-0 left-0 z-50 flex w-60 flex-col overflow-hidden border-r border-border-subtle bg-surface-1',
           'transition-[width,transform] duration-200 ease-in-out motion-reduce:transition-none',
@@ -125,14 +135,14 @@ export function Sidebar({ collapsed, mobileOpen, onCloseMobile }: SidebarProps) 
 
         <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4">
           {visibleSections.map((section) => (
-            <div key={section.title} className="mb-5 last:mb-0">
+            <div key={section.titleKey} className="mb-5 last:mb-0">
               <p
                 className={cn(
                   'mb-2 px-2.5 text-xs font-medium uppercase tracking-wide text-fg-muted',
                   collapsed && 'lg:hidden'
                 )}
               >
-                {section.title}
+                {t(section.titleKey)}
               </p>
               <ul className="flex flex-col gap-1">
                 {section.items.map((item) => (
@@ -141,7 +151,7 @@ export function Sidebar({ collapsed, mobileOpen, onCloseMobile }: SidebarProps) 
                       to={item.to}
                       end={item.end}
                       onClick={onCloseMobile}
-                      title={collapsed ? item.label : undefined}
+                      title={collapsed ? t(item.labelKey) : undefined}
                       className={({ isActive }) =>
                         cn(
                           'flex items-center gap-3 rounded-md px-2.5 py-2 text-base',
@@ -153,7 +163,7 @@ export function Sidebar({ collapsed, mobileOpen, onCloseMobile }: SidebarProps) 
                       }
                     >
                       <item.icon className="size-5 shrink-0" aria-hidden="true" />
-                      <span className={cn('truncate', collapsed && 'lg:hidden')}>{item.label}</span>
+                      <span className={cn('truncate', collapsed && 'lg:hidden')}>{t(item.labelKey)}</span>
                     </NavLink>
                   </li>
                 ))}

@@ -14,6 +14,7 @@
 // yazılır.
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Bell, BellOff, LogOut, MoreVertical, Pencil, Search, Trash2, UserPlus, X } from 'lucide-react'
 import { Avatar, Button, Checkbox, Input, Modal, Skeleton } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
@@ -32,6 +33,7 @@ export type ConversationHeaderProps = {
 
 export function ConversationHeader({ conversation, onBack }: ConversationHeaderProps) {
   const navigate = useNavigate()
+  const { t } = useTranslation(['chat', 'common'])
   const currentUserId = useAuthStore((state) => state.user?.id)
   const members = useConversationMembers(conversation.id)
 
@@ -69,7 +71,7 @@ export function ConversationHeader({ conversation, onBack }: ConversationHeaderP
   }
 
   function handleRemoveMember(userId: number) {
-    if (!window.confirm('Bu üyeyi gruptan çıkarmak istediğinize emin misiniz?')) return
+    if (!window.confirm(t('chat:confirm.removeMember'))) return
     members.removeMember(userId)
   }
 
@@ -92,7 +94,7 @@ export function ConversationHeader({ conversation, onBack }: ConversationHeaderP
           <button
             type="button"
             onClick={onBack}
-            aria-label="Konuşma listesine dön"
+            aria-label={t('chat:header.backAria')}
             className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-fg-muted hover:bg-surface-2 hover:text-fg lg:hidden"
           >
             <ArrowLeft className="size-4" aria-hidden="true" />
@@ -109,7 +111,11 @@ export function ConversationHeader({ conversation, onBack }: ConversationHeaderP
           <Avatar name={conversation.display_name} size="md" />
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-fg">{conversation.display_name}</p>
-            {isGroup && <p className="truncate text-xs text-fg-muted">{conversation.members.length} üye</p>}
+            {isGroup && (
+              <p className="truncate text-xs text-fg-muted">
+                {t('chat:header.membersCount', { count: conversation.members.length })}
+              </p>
+            )}
           </div>
         </button>
       </div>
@@ -120,7 +126,7 @@ export function ConversationHeader({ conversation, onBack }: ConversationHeaderP
         <button
           type="button"
           onClick={() => members.toggleMute()}
-          aria-label={conversation.is_muted ? 'Sesi aç' : 'Sessize al'}
+          aria-label={conversation.is_muted ? t('chat:header.unmuteAria') : t('chat:header.muteAria')}
           aria-pressed={conversation.is_muted}
           className={cn(
             'inline-flex size-9 items-center justify-center rounded-md text-fg-muted hover:bg-surface-2 hover:text-fg',
@@ -142,7 +148,7 @@ export function ConversationHeader({ conversation, onBack }: ConversationHeaderP
               onClick={() => setMenuOpen((prev) => !prev)}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
-              aria-label="Konuşma seçenekleri"
+              aria-label={t('chat:header.optionsAria')}
               className={cn(
                 'inline-flex size-9 items-center justify-center rounded-md text-fg-muted hover:bg-surface-2 hover:text-fg',
                 'transition-colors duration-150 motion-reduce:transition-none',
@@ -154,7 +160,7 @@ export function ConversationHeader({ conversation, onBack }: ConversationHeaderP
             {menuOpen && (
               <div
                 role="menu"
-                aria-label="Konuşma seçenekleri"
+                aria-label={t('chat:header.optionsAria')}
                 className="absolute right-0 top-full z-20 mt-2 w-52 rounded-lg border border-border bg-surface-3 py-1 shadow-popover"
               >
                 <button
@@ -168,7 +174,7 @@ export function ConversationHeader({ conversation, onBack }: ConversationHeaderP
                   className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-fg hover:bg-surface-2"
                 >
                   <UserPlus className="size-4" aria-hidden="true" />
-                  Üye ekle
+                  {t('chat:header.addMember')}
                 </button>
                 <button
                   role="menuitem"
@@ -177,7 +183,7 @@ export function ConversationHeader({ conversation, onBack }: ConversationHeaderP
                   className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-fg hover:bg-surface-2"
                 >
                   <Pencil className="size-4" aria-hidden="true" />
-                  Grup adını değiştir
+                  {t('chat:header.renameGroup')}
                 </button>
                 <button
                   role="menuitem"
@@ -189,7 +195,7 @@ export function ConversationHeader({ conversation, onBack }: ConversationHeaderP
                   className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-fg hover:bg-surface-2"
                 >
                   <LogOut className="size-4" aria-hidden="true" />
-                  Gruptan ayrıl
+                  {t('chat:header.leaveGroup')}
                 </button>
                 {isOwner && (
                   <button
@@ -202,7 +208,7 @@ export function ConversationHeader({ conversation, onBack }: ConversationHeaderP
                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-danger hover:bg-danger-tint"
                   >
                     <Trash2 className="size-4" aria-hidden="true" />
-                    Grubu sil
+                    {t('chat:header.deleteGroup')}
                   </button>
                 )}
               </div>
@@ -215,10 +221,12 @@ export function ConversationHeader({ conversation, onBack }: ConversationHeaderP
         <div
           ref={membersRef}
           role="dialog"
-          aria-label="Üyeler"
+          aria-label={t('chat:header.membersDialogAria')}
           className="absolute left-4 top-full z-20 mt-1 w-64 rounded-lg border border-border bg-surface-3 py-2 shadow-popover"
         >
-          <p className="px-3 pb-1 text-xs font-medium text-fg-muted">{conversation.members.length} üye</p>
+          <p className="px-3 pb-1 text-xs font-medium text-fg-muted">
+            {t('chat:header.membersCount', { count: conversation.members.length })}
+          </p>
           <ul className="max-h-64 overflow-y-auto">
             {conversation.members.map((member) => (
               <li key={member.id} className="flex items-center gap-2 px-3 py-1.5">
@@ -228,7 +236,7 @@ export function ConversationHeader({ conversation, onBack }: ConversationHeaderP
                   <button
                     type="button"
                     onClick={() => handleRemoveMember(member.id)}
-                    aria-label={`${member.name} üyesini çıkar`}
+                    aria-label={t('chat:header.removeMemberAria', { name: member.name })}
                     className="shrink-0 rounded p-1 text-fg-muted hover:bg-danger-tint hover:text-danger"
                   >
                     <X className="size-3.5" aria-hidden="true" />
@@ -243,20 +251,24 @@ export function ConversationHeader({ conversation, onBack }: ConversationHeaderP
       <Modal
         open={renameOpen}
         onClose={() => setRenameOpen(false)}
-        title="Grup adını değiştir"
+        title={t('chat:header.renameGroup')}
         size="sm"
         footer={
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => setRenameOpen(false)}>
-              Vazgeç
+              {t('common:actions.cancel')}
             </Button>
             <Button type="button" onClick={handleRenameSubmit}>
-              Kaydet
+              {t('common:actions.save')}
             </Button>
           </div>
         }
       >
-        <Input label="Grup adı" value={renameValue} onChange={(event) => setRenameValue(event.target.value)} />
+        <Input
+          label={t('chat:common.groupNameLabel')}
+          value={renameValue}
+          onChange={(event) => setRenameValue(event.target.value)}
+        />
       </Modal>
 
       <AddMembersModal
@@ -270,16 +282,16 @@ export function ConversationHeader({ conversation, onBack }: ConversationHeaderP
       <Modal
         open={confirmLeaveOpen}
         onClose={() => setConfirmLeaveOpen(false)}
-        title="Gruptan ayrıl"
-        description="Bu gruptan ayrılmak istediğinize emin misiniz?"
+        title={t('chat:header.leaveGroup')}
+        description={t('chat:header.leaveConfirmDescription')}
         size="sm"
         footer={
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => setConfirmLeaveOpen(false)}>
-              Vazgeç
+              {t('common:actions.cancel')}
             </Button>
             <Button type="button" variant="danger" onClick={handleLeave}>
-              Ayrıl
+              {t('chat:header.leaveConfirmButton')}
             </Button>
           </div>
         }
@@ -290,16 +302,16 @@ export function ConversationHeader({ conversation, onBack }: ConversationHeaderP
       <Modal
         open={confirmDeleteOpen}
         onClose={() => setConfirmDeleteOpen(false)}
-        title="Grubu sil"
-        description="Bu grup kalıcı olarak silinecek. Bu işlem geri alınamaz."
+        title={t('chat:header.deleteGroup')}
+        description={t('chat:header.deleteConfirmDescription')}
         size="sm"
         footer={
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => setConfirmDeleteOpen(false)}>
-              Vazgeç
+              {t('common:actions.cancel')}
             </Button>
             <Button type="button" variant="danger" onClick={handleDeleteGroup}>
-              Sil
+              {t('common:actions.delete')}
             </Button>
           </div>
         }
@@ -321,6 +333,7 @@ type AddMembersModalProps = {
 // çağıran taraf her açılışta `key`i artırarak bu bileşeni yeniden mount eder (bkz. yukarısı
 // `addMembersKey` ve kullanım yeri) — `useState` başlangıç değerleri zaten temiz gelir.
 function AddMembersModal({ open, onClose, existingMemberIds, onAdd }: AddMembersModalProps) {
+  const { t } = useTranslation(['chat', 'common'])
   const currentUserId = useAuthStore((state) => state.user?.id)
   const [search, setSearch] = useState('')
   const [selectedIds, setSelectedIds] = useState<number[]>([])
@@ -343,15 +356,15 @@ function AddMembersModal({ open, onClose, existingMemberIds, onAdd }: AddMembers
     <Modal
       open={open}
       onClose={onClose}
-      title="Üye ekle"
+      title={t('chat:header.addMember')}
       size="sm"
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Vazgeç
+            {t('common:actions.cancel')}
           </Button>
           <Button type="button" disabled={selectedIds.length === 0} onClick={handleSubmit}>
-            Ekle
+            {t('common:actions.add')}
           </Button>
         </div>
       }
@@ -359,17 +372,17 @@ function AddMembersModal({ open, onClose, existingMemberIds, onAdd }: AddMembers
       <div className="flex flex-col gap-3">
         <Input
           inputSize="sm"
-          placeholder="Kullanıcı ara…"
+          placeholder={t('chat:common.searchUsersPlaceholder')}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           leftIcon={<Search className="size-4" aria-hidden="true" />}
-          aria-label="Kullanıcı ara"
+          aria-label={t('chat:common.searchUsersAria')}
         />
         <div className="flex max-h-64 flex-col gap-1 overflow-y-auto">
           {isLoading ? (
             Array.from({ length: 3 }).map((_, index) => <Skeleton key={index} variant="text" />)
           ) : users.length === 0 ? (
-            <p className="px-1 py-4 text-center text-sm text-fg-muted">Eklenecek kullanıcı yok.</p>
+            <p className="px-1 py-4 text-center text-sm text-fg-muted">{t('chat:header.noUsersToAdd')}</p>
           ) : (
             users.map((user) => {
               const checked = selectedIds.includes(user.id)

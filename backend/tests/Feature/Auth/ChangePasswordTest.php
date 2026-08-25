@@ -301,7 +301,7 @@ class ChangePasswordTest extends TestCase
             ->postJson('/api/password/change', $this->payload(['current_password' => 'Yanlis!Sifre2026x']))
             ->assertStatus(422)
             ->assertJsonPath('errors.code', 'VALIDATION_ERROR')
-            ->assertJsonPath('errors.fields.current_password.0', 'Mevcut şifreniz hatalı.');
+            ->assertJsonPath('errors.fields.current_password.0', 'Şifre hatalı.');
 
         $this->assertTrue($user->fresh()->must_change_password);
         $this->assertTrue(Hash::check(self::CURRENT, $user->fresh()->password));
@@ -318,7 +318,7 @@ class ChangePasswordTest extends TestCase
             ]))
             ->assertStatus(422)
             ->assertJsonPath('errors.code', 'VALIDATION_ERROR')
-            ->assertJsonPath('errors.fields.password.0', 'Yeni şifreniz mevcut şifrenizden farklı olmalıdır.');
+            ->assertJsonPath('errors.fields.password.0', 'şifre alanı ve mevcut şifre farklı olmalıdır.');
 
         $this->assertTrue($user->fresh()->must_change_password);
     }

@@ -3,7 +3,9 @@
 use App\Http\Middleware\EnsurePasswordIsChanged;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\SetLocale;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -113,6 +115,45 @@ return Application::configure(basePath: dirname(__DIR__))
         // No API tokens are used anywhere - User does not use HasApiTokens.
         $middleware->statefulApi();
 
+        /*
+         * Dil çözümü (Faz 14 / İz D) — `api` grubunun SONUNA.
+         *
+         * `prepend()`/global yığın DEĞİL: SetLocale `$request->user()`'ı okur ve oturum ancak
+         * `statefulApi()`'nin prepend ettiği EnsureFrontendRequestsAreStateful çalıştıktan
+         * sonra vardır; global yığın ise o grubun tamamından ÖNCE koşar ve orada kullanıcı
+         * her zaman `null` olurdu. Grup içindeki NİHAİ sırayı ise aşağıdaki öncelik kaydı
+         * belirler. Ayrıntılı gerekçe: SetLocale.php.
+         *
+         * SecurityHeaders'ın GLOBAL prepend'i (H1) bundan etkilenmez: o, yığının en
+         * dışında kalmaya devam eder ve SetLocale'in ürettiği yanıtlar da ona geri döner.
+         */
+        $middleware->appendToGroup('api', SetLocale::class);
+
+        /*
+         * ...VE ÖNCELİK LİSTESİNDE KİMLİK DOĞRULAMANIN HEMEN ÖNÜNE (ölçülerek bulundu).
+         *
+         * Yalnız gruba eklemek YETMİYOR: `Router::gatherRouteMiddleware()` grup + rota
+         * middleware'ini birleştirdikten sonra `SortedMiddleware` ile ÖNCELİK listesine göre
+         * yeniden sıralar. `auth:sanctum` o listede olduğu için, listede OLMAYAN SetLocale'in
+         * ÖNÜNE geçiyordu. Ölçülen sonuç: kimliği doğrulanmış isteklerde dil doğru, ama ANONİM
+         * isteklerde `auth` istisnayı SetLocale hiç çalışmadan fırlatıyor ve 401 gövdesi
+         * uygulama varsayılanında kalıyordu — yani `Accept-Language`in tek işe yaradığı yerde
+         * (§1.3: pre-login yanıtlar) çalışmıyordu.
+         *
+         * ÇAPA `Illuminate\Auth\Middleware\Authenticate` DEĞİL, ONUN SÖZLEŞMESİ: Laravel 12'nin
+         * varsayılan öncelik listesi somut sınıfı değil `Contracts\Auth\Middleware\
+         * AuthenticatesRequests` arayüzünü taşır (listenin kendisi dökülerek doğrulandı).
+         * Somut sınıfla çapalamak sessizce başarısız olur — `addToMiddlewarePriorityRelative`
+         * bulamadığı çapada middleware'i listenin SONUNA ekler, ki bu hiçbir şeyi düzeltmez.
+         *
+         * Kimlik doğrulamanın ÖNÜNE koymak iki ihtiyacı birden karşılar: `Authenticate`
+         * çalışmadan da `$request->user()` oturumdaki kullanıcıyı çözer (o middleware kimliği
+         * OKUMAZ, ERİŞİMİ doğrular) — oturum, listenin başındaki
+         * `EnsureFrontendRequestsAreStateful` sayesinde zaten açıktır; anonim istekte ise dil,
+         * istisna fırlamadan ÖNCE ayarlanmış olur.
+         */
+        $middleware->prependToPriorityList(AuthenticatesRequests::class, SetLocale::class);
+
         $middleware->alias([
             'active' => EnsureUserIsActive::class,
             'password.changed' => EnsurePasswordIsChanged::class,
@@ -138,23 +179,28 @@ return Application::configure(basePath: dirname(__DIR__))
                 $fields = $e->errors();
 
                 return $apiError(
-                    (string) (Arr::first(Arr::flatten($fields)) ?: 'Gönderilen bilgiler geçersiz.'),
+                    (string) (Arr::first(Arr::flatten($fields)) ?: __('errors.validation_failed')),
                     'VALIDATION_ERROR',
                     422,
                     $fields,
                 );
             }
 
+            /*
+             * Faz 14 / İz D: sabit Türkçe cümleler `lang/{tr,en,de,fr}/errors.php`'ye
+             * taşındı ve dil `SetLocale` middleware'inden gelir — kimlik/yetki/bulunamadı
+             * üçlüsü, aşağıdaki `match` bloğu (405/419/429/genel) ve 5xx metni dahil TAMAMI.
+             */
             if ($e instanceof AuthenticationException) {
-                return $apiError('Bu işlem için oturum açmanız gerekiyor.', 'UNAUTHENTICATED', 401);
+                return $apiError(__('errors.unauthenticated'), 'UNAUTHENTICATED', 401);
             }
 
             if ($e instanceof AccessDeniedHttpException) {
-                return $apiError('Bu işlem için yetkiniz yok.', 'FORBIDDEN', 403);
+                return $apiError(__('errors.forbidden'), 'FORBIDDEN', 403);
             }
 
             if ($e instanceof NotFoundHttpException) {
-                return $apiError('Kayıt bulunamadı.', 'NOT_FOUND', 404);
+                return $apiError(__('errors.not_found'), 'NOT_FOUND', 404);
             }
 
             if ($e instanceof HttpExceptionInterface) {
@@ -162,14 +208,14 @@ return Application::configure(basePath: dirname(__DIR__))
                 $code = $statusCodes[$status] ?? 'HTTP_ERROR';
 
                 $message = match ($status) {
-                    403 => 'Bu işlem için yetkiniz yok.',
-                    404 => 'Kayıt bulunamadı.',
-                    405 => 'Bu adres için geçersiz istek yöntemi.',
-                    419 => 'Oturum doğrulaması başarısız. Sayfayı yenileyip tekrar deneyin.',
-                    429 => 'Çok fazla deneme yapıldı. Lütfen bir süre sonra tekrar deneyin.',
+                    403 => __('errors.forbidden'),
+                    404 => __('errors.not_found'),
+                    405 => __('errors.method_not_allowed'),
+                    419 => __('errors.session_expired'),
+                    429 => __('errors.too_many_attempts'),
                     default => $e->getMessage() !== '' && $status < 500
                         ? $e->getMessage()
-                        : 'İstek işlenemedi.',
+                        : __('errors.request_failed'),
                 };
 
                 // Preserves Retry-After (and the X-RateLimit-* headers) that the
@@ -180,7 +226,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // Anything unexpected: never leak the message, stack trace, SQL or
             // file paths to the client when debug mode is off.
             $payload = [
-                'message' => 'Beklenmeyen bir sunucu hatası oluştu.',
+                'message' => __('errors.server_error'),
                 'code' => 'SERVER_ERROR',
             ];
 

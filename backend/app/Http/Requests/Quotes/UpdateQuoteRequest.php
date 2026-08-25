@@ -87,35 +87,23 @@ class UpdateQuoteRequest extends FormRequest
      */
     public function messages(): array
     {
-        $totalsMessage = 'Teklif toplamları sunucu tarafından kalemlerden hesaplanır ve gönderilemez.';
+        $totalsMessage = __('validation.custom.quotes.totals_locked');
 
         return array_merge([
-            'title.max' => 'Teklif başlığı en fazla :max karakter olabilir.',
-            'deal_id.exists' => 'Seçilen fırsat geçerli değil.',
-            'company_id.exists' => 'Seçilen firma geçerli değil.',
-            'contact_id.exists' => 'Seçilen kişi geçerli değil.',
-            'valid_until.date' => 'Geçerlilik tarihi geçerli bir tarih olmalıdır.',
-            'discount_type.in' => 'İndirim tipi yalnızca "amount" veya "percent" olabilir.',
-            'discount_value.numeric' => 'İndirim değeri sayısal olmalıdır.',
-            'discount_value.min' => 'İndirim değeri negatif olamaz.',
-            'currency.size' => 'Para birimi 3 harfli olmalıdır (ör. TRY).',
-            'items.array' => 'Kalemler bir liste olmalıdır.',
-            'items.max' => 'Bir teklif en fazla :max kalem taşıyabilir.',
+            'discount_type.in' => __('validation.custom.quotes.discount_type_invalid'),
 
-            'status.missing' => 'Durum bu uçtan değiştirilemez. '.
-                'PATCH /api/quotes/{quote}/status veya POST /api/quotes/{quote}/send ucunu kullanın.',
-            'quote_number.missing' => 'Teklif numarası sunucu tarafından üretilir ve değiştirilemez.',
+            'status.missing' => __('validation.custom.quotes.status_locked'),
+            'quote_number.missing' => __('validation.custom.quotes.quote_number_locked'),
             'subtotal.missing' => $totalsMessage,
-            'discount_amount.missing' => 'İndirim tutarı, discount_type + discount_value girdisinden '.
-                'sunucu tarafından hesaplanır ve doğrudan gönderilemez.',
+            'discount_amount.missing' => __('validation.custom.quotes.discount_amount_locked'),
             'tax_amount.missing' => $totalsMessage,
             'total.missing' => $totalsMessage,
-            'sent_at.missing' => 'Gönderim tarihi sunucu tarafından yazılır.',
-            'accepted_at.missing' => 'Kabul tarihi sunucu tarafından yazılır.',
-            'rejected_at.missing' => 'Red tarihi sunucu tarafından yazılır.',
-            'created_by.missing' => 'Teklifi oluşturan kullanıcı değiştirilemez.',
-            'parent_quote_id.missing' => 'Revizyon zinciri yalnızca POST /api/quotes/{quote}/revise ucundan kurulur.',
-            'revision.missing' => 'Revizyon numarası sunucu tarafından üretilir.',
+            'sent_at.missing' => __('validation.custom.quotes.sent_at_locked'),
+            'accepted_at.missing' => __('validation.custom.quotes.accepted_at_locked'),
+            'rejected_at.missing' => __('validation.custom.quotes.rejected_at_locked'),
+            'created_by.missing' => __('validation.custom.quotes.created_by_locked'),
+            'parent_quote_id.missing' => __('validation.custom.quotes.parent_quote_id_locked'),
+            'revision.missing' => __('validation.custom.quotes.revision_locked'),
         ], QuoteItemRules::messages());
     }
 }

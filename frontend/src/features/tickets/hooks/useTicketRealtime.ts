@@ -22,6 +22,7 @@
 // bu yüzden burada ayrıca bir "referans sıfırlama" çağrısına gerek YOKTUR.
 import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { getEcho, onConnectionStateChange } from '../../../lib/echo'
 import type { EchoConnectionState } from '../../../lib/echo'
 import { toast } from '../../../components/ui'
@@ -43,6 +44,7 @@ function patchTicket(ticket: Ticket, patch: Partial<Ticket>): Ticket {
 
 export function useTicketRealtime(): UseTicketRealtimeResult {
   const queryClient = useQueryClient()
+  const { t } = useTranslation('tickets')
 
   const [connectionState, setConnectionState] = useState<EchoConnectionState>('unavailable')
   const [echoAvailable, setEchoAvailable] = useState<boolean>(() => getEcho() !== null)
@@ -110,7 +112,7 @@ export function useTicketRealtime(): UseTicketRealtimeResult {
         status: payload.status,
         priority: payload.priority,
       })
-      toast.warning(`${payload.ticket_number} — SLA hedefi yaklaşıyor: ${payload.subject}`)
+      toast.warning(t('toast.slaWarning', { ticketNumber: payload.ticket_number, subject: payload.subject }))
     })
 
     channel.listen(BREACHED_EVENT, (payload: TicketSlaBreachedEvent) => {
@@ -122,13 +124,13 @@ export function useTicketRealtime(): UseTicketRealtimeResult {
         status: payload.status,
         priority: payload.priority,
       })
-      toast.error(`${payload.ticket_number} — SLA ihlal edildi: ${payload.subject}`)
+      toast.error(t('toast.slaBreached', { ticketNumber: payload.ticket_number, subject: payload.subject }))
     })
 
     return () => {
       echo.leave(CHANNEL_NAME)
     }
-  }, [echoAvailable, queryClient])
+  }, [echoAvailable, queryClient, t])
 
   return { connectionState, isConnected: connectionState === 'connected' }
 }

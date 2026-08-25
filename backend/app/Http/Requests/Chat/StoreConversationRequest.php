@@ -54,23 +54,6 @@ class StoreConversationRequest extends FormRequest
         ];
     }
 
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'type.required' => 'Sohbet türü zorunludur.',
-            'type.in' => 'Sohbet türü yalnızca dm veya group olabilir.',
-            'name.required' => 'Grup sohbeti için ad zorunludur.',
-            'name.max' => 'Grup adı en fazla :max karakter olabilir.',
-            'member_ids.required' => 'En az bir katılımcı seçmelisiniz.',
-            'member_ids.array' => 'Katılımcılar bir liste olmalıdır.',
-            'member_ids.*.distinct' => 'Aynı kullanıcı birden fazla kez eklenemez.',
-            'member_ids.*.exists' => 'Seçilen katılımcılardan biri geçerli değil.',
-        ];
-    }
-
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {

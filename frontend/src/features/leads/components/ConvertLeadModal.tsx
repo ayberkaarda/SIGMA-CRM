@@ -14,6 +14,7 @@
 // LeadConversionService::resolveContact).
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { AlertCircle } from 'lucide-react'
 import { Button, Checkbox, Input, Modal } from '../../../components/ui'
 import { getErrorMessage } from '../../../lib/axios'
@@ -28,6 +29,7 @@ export type ConvertLeadModalProps = {
 }
 
 export function ConvertLeadModal({ open, onClose, lead }: ConvertLeadModalProps) {
+  const { t } = useTranslation('leads')
   const navigate = useNavigate()
   const checkDuplicates = useCheckDuplicates()
   const convertLead = useConvertLead()
@@ -104,34 +106,43 @@ export function ConvertLeadModal({ open, onClose, lead }: ConvertLeadModalProps)
     }
   }
 
-  const companyLabel = lead.company_name ? `Firma: ${lead.company_name}` : 'Firma oluşturulmayacak'
+  const companyLabel = lead.company_name
+    ? t('leads:convertModal.companyLabel', { name: lead.company_name })
+    : t('leads:convertModal.companyNone')
 
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title="Müşteri Adayını Dönüştür"
+      title={t('leads:convertModal.title')}
       size="md"
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Vazgeç
+            {t('leads:convertModal.cancel')}
           </Button>
           <Button type="button" loading={convertLead.isPending} onClick={handleConvert}>
-            Dönüştür
+            {t('leads:convertModal.submit')}
           </Button>
         </div>
       }
     >
       <div className="flex flex-col gap-4">
         <div className="rounded-md bg-surface-2 p-3 text-sm text-fg">
-          <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-fg-muted">Oluşacak kayıtlar</p>
+          <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
+            {t('leads:convertModal.willCreateTitle')}
+          </p>
           <ul className="flex flex-col gap-1">
             <li>
-              Kişi: <strong className="font-medium">{lead.full_name}</strong>
+              {t('leads:convertModal.personLabel')}: <strong className="font-medium">{lead.full_name}</strong>
             </li>
             <li>{companyLabel}</li>
-            <li>Fırsat: {createDeal ? dealTitle.trim() || '(varsayılan başlıkla oluşturulacak)' : '(opsiyonel)'}</li>
+            <li>
+              {t('leads:convertModal.dealLabel')}:{' '}
+              {createDeal
+                ? dealTitle.trim() || t('leads:convertModal.dealDefaultTitle')
+                : t('leads:convertModal.dealOptional')}
+            </li>
           </ul>
         </div>
 
@@ -141,9 +152,7 @@ export function ConvertLeadModal({ open, onClose, lead }: ConvertLeadModalProps)
 
         {strongContactMatches.length > 0 && (
           <div className="flex flex-col gap-2 rounded-md border border-border-subtle p-3">
-            <p className="text-xs font-medium text-fg-muted">
-              Güçlü bir kişi eşleşmesi bulundu. Yeni kişi mi oluşturulsun, yoksa mevcut kayda mı bağlansın?
-            </p>
+            <p className="text-xs font-medium text-fg-muted">{t('leads:convertModal.strongMatchQuestion')}</p>
             <label className="flex items-center gap-2 text-sm text-fg">
               <input
                 type="radio"
@@ -152,7 +161,7 @@ export function ConvertLeadModal({ open, onClose, lead }: ConvertLeadModalProps)
                 onChange={() => setContactChoice('new')}
                 className="size-4"
               />
-              Yeni kişi oluştur
+              {t('leads:convertModal.createNewPerson')}
             </label>
             {strongContactMatches.map((candidate) => (
               <label key={candidate.id} className="flex items-center gap-2 text-sm text-fg">
@@ -163,14 +172,14 @@ export function ConvertLeadModal({ open, onClose, lead }: ConvertLeadModalProps)
                   onChange={() => setContactChoice(String(candidate.id))}
                   className="size-4"
                 />
-                Mevcut kişiye bağla ({candidate.name})
+                {t('leads:convertModal.linkExisting', { name: candidate.name })}
               </label>
             ))}
           </div>
         )}
 
         <Checkbox
-          label="Fırsat da oluştur"
+          label={t('leads:convertModal.createDealCheckbox')}
           checked={createDeal}
           onChange={(e) => setCreateDeal(e.target.checked)}
         />
@@ -178,13 +187,13 @@ export function ConvertLeadModal({ open, onClose, lead }: ConvertLeadModalProps)
         {createDeal && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input
-              label="Fırsat Başlığı"
+              label={t('leads:convertModal.dealTitleLabel')}
               value={dealTitle}
               onChange={(e) => setDealTitle(e.target.value)}
               placeholder={`${lead.full_name}${lead.company_name ? ' — ' + lead.company_name : ''}`}
             />
             <Input
-              label="Tutar"
+              label={t('leads:convertModal.dealAmountLabel')}
               type="number"
               min={0}
               step="0.01"

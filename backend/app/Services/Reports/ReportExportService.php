@@ -2,7 +2,9 @@
 
 namespace App\Services\Reports;
 
+use App\Services\Exchange\ExchangeRateService;
 use App\Services\Reports\Support\DateRange;
+use App\Services\Reports\Support\ReportCurrencyContext;
 use App\Support\CsvFormulaGuard;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Validation\ValidationException;
@@ -37,11 +39,26 @@ class ReportExportService
         private readonly UserPerformanceReport $userPerformance,
         private readonly SourceAnalysisReport $sourceAnalysis,
         private readonly ConversionReport $conversion,
+        private readonly ExchangeRateService $rates,
     ) {}
 
-    public function export(string $slug, DateRange $range, ?int $userId, string $format): StreamedResponse|BinaryFileResponse
-    {
-        [$headings, $rows] = $this->tabular($slug, $range, $userId);
+    public function export(
+        string $slug,
+        DateRange $range,
+        ?int $userId,
+        string $format,
+        ?ReportCurrencyContext $currency = null,
+    ): StreamedResponse|BinaryFileResponse {
+        $currency ??= ReportCurrencyContext::make($this->rates);
+
+        [$headings, $rows, $rateInfo] = $this->tabular($slug, $range, $userId, $currency);
+
+        // KUR DİPNOTU (PHASE-INTL §2.4 son madde): dışa aktarılan dosya,
+        // ekrandaki raporla AYNI rakamları taşır — dolayısıyla o rakamların
+        // hangi kurla üretildiğini de taşımak ZORUNDADIR. Aksi hâlde dosya
+        // e-postayla dolaşırken rakamlar bağlamını kaybeder ve "bu tutar
+        // hangi güne ait?" sorusunun cevabı hiçbir yerde yazmaz.
+        $rows = array_merge($rows, $this->rateFootnoteRows($rateInfo));
 
         // Faz 13/H2 (F1): tek merkezî kapı — CSV/XLSX ayrımından ÖNCE, tüm
         // rapor tiplerini kapsayacak şekilde burada nötrlenir. Bu raporlardaki
@@ -64,31 +81,75 @@ class ReportExportService
     }
 
     /**
-     * @return array{0: array<int, string>, 1: array<int, array<int, mixed>>}
+     * @return array{0: array<int, string>, 1: array<int, array<int, mixed>>, 2: array<string, mixed>|null}
      */
-    private function tabular(string $slug, DateRange $range, ?int $userId): array
+    private function tabular(string $slug, DateRange $range, ?int $userId, ReportCurrencyContext $currency): array
     {
-        return match ($slug) {
-            'sales-performance' => $this->fromKeyedRows(
-                SalesPerformanceReport::exportHeadings(),
-                $this->salesPerformance->run($range, 'day', $userId)['data'],
-            ),
-            'user-performance' => $this->fromKeyedRows(
-                UserPerformanceReport::exportHeadings(),
-                $this->userPerformance->run($range)['data'],
-            ),
-            'source-analysis' => $this->fromKeyedRows(
-                SourceAnalysisReport::exportHeadings(),
-                $this->sourceAnalysis->run($range)['data'],
-            ),
-            'conversion' => $this->fromKeyedRows(
-                ConversionReport::exportHeadings(),
-                [ConversionReport::flattenForExport($this->conversion->run($range))],
-            ),
+        $result = match ($slug) {
+            'sales-performance' => $this->salesPerformance->run($range, 'day', $userId, $currency),
+            'user-performance' => $this->userPerformance->run($range, $currency),
+            'source-analysis' => $this->sourceAnalysis->run($range, $currency),
+            'conversion' => $this->conversion->run($range),
             default => throw ValidationException::withMessages([
                 'report' => ['Geçersiz rapor türü. Kabul edilen değerler: '.implode(', ', self::SLUGS).'.'],
             ]),
         };
+
+        [$headings, $rows] = match ($slug) {
+            'sales-performance' => $this->fromKeyedRows(SalesPerformanceReport::exportHeadings(), $result['data']),
+            'user-performance' => $this->fromKeyedRows(UserPerformanceReport::exportHeadings(), $result['data']),
+            'source-analysis' => $this->fromKeyedRows(SourceAnalysisReport::exportHeadings(), $result['data']),
+            'conversion' => $this->fromKeyedRows(
+                ConversionReport::exportHeadings(),
+                [ConversionReport::flattenForExport($result)],
+            ),
+        };
+
+        // `conversion` raporu para taşımaz (yalnız lead sayıları) — kur
+        // dipnotu eklemek yanıltıcı olurdu, bu yüzden null.
+        return [$headings, $rows, $result['rate_info'] ?? null];
+    }
+
+    /**
+     * Dosyanın SONUNA eklenen kur dipnotu satırları. Veri satırlarından boş
+     * bir satırla ayrılır ki elektronik tabloda tabloyla karışmasın; etiket
+     * + değer biçimi (2 kolon) hem CSV hem XLSX'te okunaklıdır.
+     *
+     * @param  array<string, mixed>|null  $rateInfo
+     * @return array<int, array<int, mixed>>
+     */
+    private function rateFootnoteRows(?array $rateInfo): array
+    {
+        if ($rateInfo === null) {
+            return [];
+        }
+
+        $rows = [
+            [],
+            ['Görüntü para birimi', $rateInfo['display_currency']],
+            ['Kapanmış fırsatlar', $rateInfo['closed_basis'] === 'frozen_base'
+                ? 'Kapanış anı kuruyla donduruldu ('.$rateInfo['base_currency'].')'
+                : 'Kapanış anı kuruyla donduruldu, gösterim için güncel kurla çevrildi'],
+            ['Açık fırsatlar', $rateInfo['as_of'] === null
+                ? 'Dönüşüm gerekmedi'
+                : 'Güncel kurla çevrildi (kur tarihi: '.$rateInfo['as_of'].')'],
+        ];
+
+        if ($rateInfo['is_stale']) {
+            $rows[] = ['UYARI', 'Kullanılan kur '.$rateInfo['days_stale'].' gün eski.'];
+        }
+
+        if ($rateInfo['unconverted_closed_count'] > 0) {
+            $rows[] = ['UYARI', $rateInfo['unconverted_closed_count'].
+                ' kapanmış fırsat kur bulunamadığı için gelire dahil edilmedi.'];
+        }
+
+        foreach ($rateInfo['unconverted_open'] as $bucket) {
+            $rows[] = ['UYARI', $bucket['currency'].' cinsinden '.$bucket['amount'].
+                ' tutarındaki açık fırsat kur bulunamadığı için çevrilemedi.'];
+        }
+
+        return $rows;
     }
 
     /**

@@ -38,6 +38,11 @@ class UserResource extends JsonResource
             'name' => $user->name,
             'email' => $user->email,
             'department' => $user->department,
+            // Kişisel arayüz tercihleri (Faz 14). SPA açılışta `/api/me`'den okur ve
+            // i18n'i buna göre ayarlar — `users.locale` istemcideki localStorage'ın
+            // OTORİTESİDİR (docs/PHASE-INTL.md §1.3).
+            'locale' => (string) $user->locale,
+            'preferred_currency' => (string) $user->preferred_currency,
             'is_active' => (bool) $user->is_active,
             'must_change_password' => (bool) $user->must_change_password,
             'last_login_at' => $user->last_login_at?->toIso8601String(),

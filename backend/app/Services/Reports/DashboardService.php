@@ -6,9 +6,11 @@ use App\Models\Activity;
 use App\Models\Deal;
 use App\Models\PipelineStage;
 use App\Models\Task;
+use App\Services\Exchange\ExchangeRateService;
 use App\Services\Reports\Support\DateRange;
 use App\Services\Reports\Support\GroupByPeriod;
 use App\Services\Reports\Support\MoneyFormatter;
+use App\Services\Reports\Support\ReportCurrencyContext;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
@@ -18,19 +20,35 @@ use Illuminate\Support\Str;
  * `/api/dashboard/*` uçlarının veri katmanı. Her metod tek/az sayıda
  * agregasyon sorgusu çalıştırır — sonuçlar PHP tarafında yalnızca
  * BİRLEŞTİRİLİR (merge), asla satır satır toplanmaz (N+1 yok kuralı).
+ *
+ * ÇOKLU PARA BİRİMİ (Faz 14 / İz E, PHASE-INTL §2.4) — iki AYRI kural:
+ *   · KAPANMIŞ (won/lost) fırsat → `SUM(base_amount)`, kapanış anında TRY'ye
+ *     çevrilip DONDURULMUŞ tutar. Dönüşüm yok, rakam KARARLI.
+ *   · AÇIK fırsat → tek sorguda `GROUP BY currency`, her kova PHP'de GÜNCEL
+ *     kurla hedef para birimine çevrilir (en fazla 4 kova → N+1 yok).
+ * Kullanılan kur ve tarihi, çağıranın (DashboardController) yanıta eklediği
+ * `rate_info` bloğunda taşınır — bkz. ReportCurrencyContext::rateInfo().
  */
 class DashboardService
 {
+    public function __construct(private readonly ExchangeRateService $rates) {}
+
     /**
      * `GET /api/dashboard/kpis` — VERİ SÖZLEŞMESİ'ndeki 8 metrik, her biri
      * `{ value, previous, delta_pct }` zarfında.
      *
      * @return array<string, array{value: mixed, previous: mixed, delta_pct: float|null}>
      */
-    public function kpis(DateRange $range, ?int $userId = null): array
+    public function kpis(DateRange $range, ?int $userId = null, ?ReportCurrencyContext $currency = null): array
     {
-        $current = $this->periodMetrics($range->from, $range->to, $userId);
-        $previous = $this->periodMetrics($range->previousFrom, $range->previousTo, $userId);
+        $currency ??= ReportCurrencyContext::make($this->rates);
+
+        // Çevrilemeyen kapanmış fırsat sayısı YALNIZCA mevcut dönem için
+        // sayılır: `previous` yalnızca delta hesabının girdisidir, arayüzde
+        // ayrı bir dipnotu yoktur — iki dönemi toplamak sayıyı ikiye
+        // katlayıp uyarıyı yanlış gösterirdi.
+        $current = $this->periodMetrics($range->from, $range->to, $userId, $currency, true);
+        $previous = $this->periodMetrics($range->previousFrom, $range->previousTo, $userId, $currency, false);
 
         return [
             'revenue' => [
@@ -88,27 +106,54 @@ class DashboardService
      *
      * @return array{revenue: string, open_deals_count: int, open_deals_value: string, conversion_rate: float, activities_count: int, won_count: int, lost_count: int, avg_deal_size: string}
      */
-    private function periodMetrics(CarbonInterface $from, CarbonInterface $to, ?int $userId): array
-    {
+    private function periodMetrics(
+        CarbonInterface $from,
+        CarbonInterface $to,
+        ?int $userId,
+        ReportCurrencyContext $currency,
+        bool $countUnconverted,
+    ): array {
+        // KAPANMIŞ: donmuş TRY tutarı — `amount` DEĞİL (PHASE-INTL §2.4).
         $closedAgg = Deal::query()
             ->whereIn('status', ['won', 'lost'])
             ->whereBetween('closed_at', [$from, $to])
             ->when($userId !== null, fn ($q) => $q->where('owner_id', $userId))
-            ->selectRaw('status, COUNT(*) as cnt, COALESCE(SUM(amount), 0) as amt')
+            ->selectRaw('status, COUNT(*) as cnt, COALESCE(SUM(base_amount), 0) as amt')
             ->groupBy('status')
             ->get()
             ->keyBy('status');
 
         $wonCount = (int) ($closedAgg->get('won')->cnt ?? 0);
         $lostCount = (int) ($closedAgg->get('lost')->cnt ?? 0);
-        $revenue = MoneyFormatter::normalize($closedAgg->get('won')->amt ?? 0);
+        $revenue = $currency->fromFrozenBase($closedAgg->get('won')->amt ?? 0);
 
-        $openRow = Deal::query()
+        if ($countUnconverted) {
+            $currency->noteUnconvertedClosed(
+                Deal::query()
+                    ->where('status', 'won')
+                    ->whereBetween('closed_at', [$from, $to])
+                    ->when($userId !== null, fn ($q) => $q->where('owner_id', $userId))
+                    ->whereNull('base_amount')
+                    ->count()
+            );
+        }
+
+        // AÇIK: para birimi kovaları, TEK sorgu; dönüşüm PHP'de güncel kurla.
+        $openRows = Deal::query()
             ->where('status', 'open')
             ->whereBetween('created_at', [$from, $to])
             ->when($userId !== null, fn ($q) => $q->where('owner_id', $userId))
-            ->selectRaw('COUNT(*) as cnt, COALESCE(SUM(amount), 0) as amt')
-            ->first();
+            ->selectRaw('currency, COUNT(*) as cnt, COALESCE(SUM(amount), 0) as amt')
+            ->groupBy('currency')
+            ->get();
+
+        $openCount = 0;
+        $openValue = '0.00';
+
+        foreach ($openRows as $row) {
+            $openCount += (int) $row->cnt;
+            $openValue = bcadd($openValue, $currency->convertOpen($row->amt, $row->currency), 2);
+        }
 
         $activitiesCount = Activity::query()
             ->whereBetween('occurred_at', [$from, $to])
@@ -117,8 +162,8 @@ class DashboardService
 
         return [
             'revenue' => $revenue,
-            'open_deals_count' => (int) ($openRow->cnt ?? 0),
-            'open_deals_value' => MoneyFormatter::normalize($openRow->amt ?? 0),
+            'open_deals_count' => $openCount,
+            'open_deals_value' => $openValue,
             'conversion_rate' => MoneyFormatter::ratio($wonCount, $wonCount + $lostCount),
             'activities_count' => (int) $activitiesCount,
             'won_count' => $wonCount,
@@ -133,32 +178,53 @@ class DashboardService
      * aşamada duran deal'lardır (kazanılan/kaybedilen aşamalar dahil —
      * huni "şu an nerede duruyorlar" sorusuna cevap verir).
      *
+     * PARA BİRİMİ: huni hem açık hem kapanmış aşamaları içerir, bu yüzden
+     * gruplama `(aşama, durum, para birimi)` üçlüsüyle yapılır — kapanmış
+     * satırlar donmuş `base_amount`'tan, açık satırlar `amount`'tan güncel
+     * kurla toplanır. Kova sayısı aşama × 3 durum × ≤4 para birimi ile
+     * SINIRLIDIR (sabit), sorgu hâlâ TEKTİR ve satır başına dönüşüm yoktur.
+     *
      * @return array<int, array{stage_id: int, stage_name: string, color: ?string, count: int, value: string}>
      */
-    public function funnel(DateRange $range): array
+    public function funnel(DateRange $range, ?ReportCurrencyContext $currency = null): array
     {
+        $currency ??= ReportCurrencyContext::make($this->rates);
+
         $stages = PipelineStage::query()
             ->active()
             ->orderBy('position')
             ->get(['id', 'name', 'color']);
 
-        $counts = Deal::query()
+        $rows = Deal::query()
             ->whereBetween('created_at', [$range->from, $range->to])
             ->whereIn('pipeline_stage_id', $stages->pluck('id'))
-            ->selectRaw('pipeline_stage_id, COUNT(*) as cnt, COALESCE(SUM(amount), 0) as amt')
-            ->groupBy('pipeline_stage_id')
-            ->get()
-            ->keyBy('pipeline_stage_id');
+            ->selectRaw('pipeline_stage_id, status, currency, COUNT(*) as cnt, COALESCE(SUM(amount), 0) as amt, COALESCE(SUM(base_amount), 0) as base_amt')
+            ->groupBy('pipeline_stage_id', 'status', 'currency')
+            ->get();
 
-        return $stages->map(function (PipelineStage $stage) use ($counts) {
-            $row = $counts->get($stage->id);
+        $byStage = [];
+
+        foreach ($rows as $row) {
+            $stageId = (int) $row->pipeline_stage_id;
+            $byStage[$stageId] ??= ['count' => 0, 'value' => '0.00'];
+            $byStage[$stageId]['count'] += (int) $row->cnt;
+
+            $converted = in_array($row->status, ['won', 'lost'], true)
+                ? $currency->fromFrozenBase($row->base_amt)
+                : $currency->convertOpen($row->amt, $row->currency);
+
+            $byStage[$stageId]['value'] = bcadd($byStage[$stageId]['value'], $converted, 2);
+        }
+
+        return $stages->map(function (PipelineStage $stage) use ($byStage) {
+            $aggregate = $byStage[(int) $stage->id] ?? ['count' => 0, 'value' => '0.00'];
 
             return [
                 'stage_id' => (int) $stage->id,
                 'stage_name' => $stage->name,
                 'color' => $stage->color,
-                'count' => (int) ($row->cnt ?? 0),
-                'value' => MoneyFormatter::normalize($row->amt ?? 0),
+                'count' => $aggregate['count'],
+                'value' => $aggregate['value'],
             ];
         })->all();
     }
@@ -169,10 +235,14 @@ class DashboardService
      * sıfır dolgusu YAPILMAZ — VERİ SÖZLEŞMESİ boş sonuçta boş dizi ister,
      * sahte "0 gelir" satırları üretmek yanıltıcı olurdu.
      *
+     * PARA BİRİMİ: gelir DAİMA donmuş `base_amount`'tan gelir — bir trend
+     * grafiğinin geçmiş noktaları her gün oynamamalıdır (PHASE-INTL §2.4).
+     *
      * @return array<int, array{period: string, revenue: string, won_count: int}>
      */
-    public function revenueTrend(DateRange $range, string $groupBy): array
+    public function revenueTrend(DateRange $range, ?string $groupBy, ?ReportCurrencyContext $currency = null): array
     {
+        $currency ??= ReportCurrencyContext::make($this->rates);
         $groupBy = GroupByPeriod::validate($groupBy);
         $format = GroupByPeriod::dateFormat($groupBy);
 
@@ -180,14 +250,22 @@ class DashboardService
         $rows = Deal::query()
             ->where('status', 'won')
             ->whereBetween('closed_at', [$range->from, $range->to])
-            ->selectRaw("DATE_FORMAT(closed_at, '{$format}') as period, COALESCE(SUM(amount), 0) as revenue, COUNT(*) as won_count")
+            ->selectRaw("DATE_FORMAT(closed_at, '{$format}') as period, COALESCE(SUM(base_amount), 0) as revenue, COUNT(*) as won_count")
             ->groupBy('period')
             ->orderBy('period')
             ->get();
 
+        $currency->noteUnconvertedClosed(
+            Deal::query()
+                ->where('status', 'won')
+                ->whereBetween('closed_at', [$range->from, $range->to])
+                ->whereNull('base_amount')
+                ->count()
+        );
+
         return $rows->map(fn ($row) => [
             'period' => (string) $row->period,
-            'revenue' => MoneyFormatter::normalize($row->revenue),
+            'revenue' => $currency->fromFrozenBase($row->revenue),
             'won_count' => (int) $row->won_count,
         ])->all();
     }

@@ -67,16 +67,4 @@ class StoreAttachmentRequest extends FormRequest
             }
         });
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'file.required' => 'Yüklenecek bir dosya seçmelisiniz.',
-            'file.file' => 'Geçerli bir dosya yüklemelisiniz.',
-            'file.max' => 'Dosya boyutu izin verilen en fazla boyutu aşıyor.',
-        ];
-    }
 }

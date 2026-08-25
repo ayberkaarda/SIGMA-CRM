@@ -35,6 +35,18 @@ class DealResource extends JsonResource
             'description' => $deal->description,
             'amount' => (float) $deal->amount,
             'currency' => $deal->currency,
+            // --- Kapanışta DONMUŞ temel-para-birimi karşılığı (Faz 14/İz E) ---
+            // Açık fırsatta ve kuru bulunamamış kapanışta null'dır; arayüz
+            // null gördüğünde "kapanış kuru" satırını hiç basmaz.
+            // `(float)` cast'i yalnızca GÖSTERİM sınırıdır — mevcut `amount`
+            // sözleşmesiyle aynı (otoriter para matematiği sunucuda, bcmath
+            // ile ve decimal string üzerinde yapılır).
+            'base_amount' => $deal->base_amount === null ? null : (float) $deal->base_amount,
+            'base_currency' => $deal->base_amount === null
+                ? null
+                : strtoupper((string) config('exchange.base_currency', 'TRY')),
+            'base_rate' => $deal->base_rate === null ? null : (float) $deal->base_rate,
+            'base_rate_date' => $deal->base_rate_date?->toDateString(),
             'position' => $deal->position,
             'version' => $deal->version,
             'probability' => $deal->probability,
@@ -70,6 +82,13 @@ class DealResource extends JsonResource
             'is_overdue' => $deal->status === 'open'
                 && $deal->expected_close_date !== null
                 && $deal->expected_close_date->lt(today()),
+            // Faz 14 / İz F — C3 ilişkili-kayıtlar paneli (docs/PHASE-INTL.md §3).
+            // `company`/`contact` burada YOK: yukarıdaki alanlar zaten bu yönleri
+            // karşılıyor. `quotes.view` izni yoksa anahtar hiç eklenmez (gerekçe
+            // DealController::loadRelatedRecords()).
+            'related' => array_filter([
+                'quotes' => $deal->relationLoaded('relatedQuotes') ? $deal->relatedQuotes : null,
+            ], fn ($group) => $group !== null),
             'created_at' => $deal->created_at?->toIso8601String(),
             'updated_at' => $deal->updated_at?->toIso8601String(),
             // Bu kullanıcının bu kayıtta neyi YAPABİLDİĞİ — arayüz kuralı

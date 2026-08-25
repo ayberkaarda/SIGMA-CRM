@@ -12,6 +12,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import { LifeBuoy, Pencil, Plus, Search, Trash2, UserCog, Users } from 'lucide-react'
 import {
   Avatar,
@@ -34,11 +35,13 @@ import {
   Tr,
 } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
+import { formatDate } from '../../../lib/datetime'
 import { usePermission } from '../../auth/hooks/usePermission'
+import { SavedViewsBar } from '../../saved-views/components/SavedViewsBar'
 import { TicketPriorityBadge } from '../components/TicketPriorityBadge'
 import { TicketStatusBadge } from '../components/TicketStatusBadge'
-import { STATUS_OPTIONS } from '../components/ticketStatusMeta'
-import { PRIORITY_OPTIONS } from '../components/ticketPriorityMeta'
+import { statusLabel, statusOptions } from '../components/ticketStatusMeta'
+import { priorityOptions } from '../components/ticketPriorityMeta'
 import { TICKET_CATEGORY_OPTIONS } from '../components/ticketCategoryOptions'
 import { SlaCountdownInline } from '../components/SlaCountdown'
 import { TicketFormModal } from '../components/TicketFormModal'
@@ -47,30 +50,25 @@ import { useTicketCompanyOptions, useTicketTags, useTicketUserOptions } from '..
 import { useDeleteTicket, useTickets, useTicketStats } from '../api/ticketsApi'
 import { useTicketRealtime } from '../hooks/useTicketRealtime'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
-import type { Ticket, TicketsQuery } from '../types'
+import type { Ticket, TicketsQuery, TicketStatus } from '../types'
 
 const DEFAULT_PER_PAGE = 10
 const SEARCH_DEBOUNCE_MS = 300
 const DEFAULT_SORT = 'sla_due_at'
 
-function formatDate(iso: string | null): string {
-  if (!iso) return '—'
-  try {
-    return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium' }).format(new Date(iso))
-  } catch {
-    return iso
-  }
-}
-
-function formatHours(hours: number | null): string {
-  if (hours === null) return 'Veri yok'
-  if (hours < 1) return `${Math.round(hours * 60)} dk`
-  return `${hours.toFixed(1)} saat`
-}
+const STATUS_ORDER: TicketStatus[] = ['open', 'pending', 'in_progress', 'resolved', 'closed']
 
 type FormModalState = { mode: 'create' } | { mode: 'edit'; ticket: Ticket } | null
 
 export function TicketsListPage() {
+  const { t } = useTranslation(['tickets', 'enums'])
+
+  function formatHours(hours: number | null): string {
+    if (hours === null) return t('tickets:list.avgResolutionNoData')
+    if (hours < 1) return t('tickets:list.avgResolutionMinutes', { count: Math.round(hours * 60) })
+    return t('tickets:list.avgResolutionHours', { hours: hours.toFixed(1) })
+  }
+
   const [searchParams, setSearchParams] = useSearchParams()
   const { can } = usePermission()
 
@@ -146,19 +144,19 @@ export function TicketsListPage() {
     updateParams({ sort: nextSort ?? DEFAULT_SORT, page: '1' })
   }
 
-  const statusFilterOptions = [{ value: '', label: 'Tüm durumlar' }, ...STATUS_OPTIONS]
-  const priorityFilterOptions = [{ value: '', label: 'Tüm öncelikler' }, ...PRIORITY_OPTIONS]
+  const statusFilterOptions = [{ value: '', label: t('tickets:filters.allStatuses') }, ...statusOptions(t)]
+  const priorityFilterOptions = [{ value: '', label: t('tickets:filters.allPriorities') }, ...priorityOptions(t)]
   const assigneeFilterOptions = [
-    { value: '', label: 'Tüm atananlar' },
+    { value: '', label: t('tickets:filters.allAssignees') },
     ...(userOptions ?? []).map((u) => ({ value: String(u.id), label: u.name })),
   ]
   const companyFilterOptions = [
-    { value: '', label: 'Tüm firmalar' },
+    { value: '', label: t('tickets:filters.allCompanies') },
     ...(companyOptions ?? []).map((c) => ({ value: String(c.id), label: c.name })),
   ]
-  const categoryFilterOptions = [{ value: '', label: 'Tüm kategoriler' }, ...TICKET_CATEGORY_OPTIONS]
+  const categoryFilterOptions = [{ value: '', label: t('tickets:filters.allCategories') }, ...TICKET_CATEGORY_OPTIONS]
   const tagFilterOptions = [
-    { value: '', label: 'Tüm etiketler' },
+    { value: '', label: t('tickets:filters.allTags') },
     ...(tags ?? []).map((tag) => ({ value: String(tag.id), label: tag.name })),
   ]
 
@@ -169,45 +167,58 @@ export function TicketsListPage() {
   return (
     <div className="flex flex-col gap-4">
       <nav aria-label="breadcrumb" className="text-xs text-fg-muted">
-        <span>Anasayfa</span>
+        <span>{t('tickets:list.breadcrumbHome')}</span>
         <span className="mx-1.5">/</span>
-        <span className="text-primary">Destek Talepleri</span>
+        <span className="text-primary">{t('tickets:list.breadcrumbCurrent')}</span>
       </nav>
 
       <Card>
         <CardHeader
-          title="Destek Talepleri"
-          subtitle={`${total} talep (filtrelenmiş)`}
+          title={t('tickets:list.title')}
+          subtitle={t('tickets:list.subtitle', { count: total })}
           action={
-            can('tickets.create') && (
-              <Button leftIcon={<Plus className="size-4" aria-hidden="true" />} onClick={() => setFormModal({ mode: 'create' })}>
-                Yeni Talep
-              </Button>
-            )
+            <div className="flex items-center gap-2">
+              <SavedViewsBar
+                module="tickets"
+                filterKeys={['status', 'priority', 'assigned_to', 'company_id', 'category', 'tag_id', 'sla_breached', 'from', 'to']}
+              />
+              {can('tickets.create') && (
+                <Button leftIcon={<Plus className="size-4" aria-hidden="true" />} onClick={() => setFormModal({ mode: 'create' })}>
+                  {t('tickets:list.newTicket')}
+                </Button>
+              )}
+            </div>
           }
         />
         <CardBody noPadding>
           {/* Özet kutuları FİLTRELERDEN BAĞIMSIZDIR (backend `stats` ucu, görev tanımı) —
               kullanıcıya bunun genel bir özet olduğunu belirtiyoruz. */}
           <div className="flex flex-col gap-1 border-b border-border-subtle px-4 py-3">
-            <p className="text-xs text-fg-muted">Genel özet (aktif filtrelerden bağımsız):</p>
+            <p className="text-xs text-fg-muted">{t('tickets:list.summaryLabel')}</p>
             {!stats ? (
               <Skeleton variant="text" width={320} />
             ) : (
               <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
                 <span className="text-fg-secondary">
-                  Toplam <strong className="text-fg">{stats.total}</strong>
+                  {t('tickets:list.stats.total')} <strong className="text-fg">{stats.total}</strong>
                 </span>
                 <span className="text-fg-secondary">
-                  Açık <strong className="text-fg">{stats.by_status.open}</strong> · Beklemede{' '}
-                  <strong className="text-fg">{stats.by_status.pending}</strong> · Devam Ediyor{' '}
-                  <strong className="text-fg">{stats.by_status.in_progress}</strong> · Çözüldü{' '}
-                  <strong className="text-fg">{stats.by_status.resolved}</strong> · Kapandı{' '}
-                  <strong className="text-fg">{stats.by_status.closed}</strong>
+                  {STATUS_ORDER.map((status, index) => (
+                    <span key={status}>
+                      {index > 0 && ' · '}
+                      {statusLabel(status, t)} <strong className="text-fg">{stats.by_status[status]}</strong>
+                    </span>
+                  ))}
                 </span>
-                <span className="font-medium text-danger">SLA ihlali: {stats.breached_count}</span>
-                <span className="font-medium text-warning">Risk altında: {stats.at_risk_count}</span>
-                <span className="text-fg-secondary">Ort. çözüm süresi: {formatHours(stats.avg_resolution_hours)}</span>
+                <span className="font-medium text-danger">
+                  {t('tickets:list.stats.breached')}: {stats.breached_count}
+                </span>
+                <span className="font-medium text-warning">
+                  {t('tickets:list.stats.atRisk')}: {stats.at_risk_count}
+                </span>
+                <span className="text-fg-secondary">
+                  {t('tickets:list.stats.avgResolution')}: {formatHours(stats.avg_resolution_hours)}
+                </span>
               </div>
             )}
           </div>
@@ -218,9 +229,9 @@ export function TicketsListPage() {
                 <Input
                   value={searchDraft}
                   onChange={(e) => setSearchDraft(e.target.value)}
-                  placeholder="Talep no, konu ara..."
+                  placeholder={t('tickets:filters.searchPlaceholder')}
                   leftIcon={<Search className="size-4" aria-hidden="true" />}
-                  aria-label="Talep ara"
+                  aria-label={t('tickets:filters.searchAria')}
                 />
               </div>
               <div className="w-full lg:w-40">
@@ -228,7 +239,7 @@ export function TicketsListPage() {
                   value={query.status ?? ''}
                   onChange={(e) => updateParams({ status: e.target.value || null, page: '1' })}
                   options={statusFilterOptions}
-                  aria-label="Durum filtresi"
+                  aria-label={t('tickets:filters.statusAria')}
                 />
               </div>
               <div className="w-full lg:w-40">
@@ -236,7 +247,7 @@ export function TicketsListPage() {
                   value={query.priority ?? ''}
                   onChange={(e) => updateParams({ priority: e.target.value || null, page: '1' })}
                   options={priorityFilterOptions}
-                  aria-label="Öncelik filtresi"
+                  aria-label={t('tickets:filters.priorityAria')}
                 />
               </div>
               {!usersForbidden && (
@@ -245,7 +256,7 @@ export function TicketsListPage() {
                     value={query.assigned_to ? String(query.assigned_to) : ''}
                     onChange={(e) => updateParams({ assigned_to: e.target.value || null, page: '1' })}
                     options={assigneeFilterOptions}
-                    aria-label="Atanan filtresi"
+                    aria-label={t('tickets:filters.assignedAria')}
                   />
                 </div>
               )}
@@ -254,7 +265,7 @@ export function TicketsListPage() {
                   value={query.company_id ? String(query.company_id) : ''}
                   onChange={(e) => updateParams({ company_id: e.target.value || null, page: '1' })}
                   options={companyFilterOptions}
-                  aria-label="Firma filtresi"
+                  aria-label={t('tickets:filters.companyAria')}
                 />
               </div>
               <div className="w-full lg:w-44">
@@ -262,7 +273,7 @@ export function TicketsListPage() {
                   value={query.category ?? ''}
                   onChange={(e) => updateParams({ category: e.target.value || null, page: '1' })}
                   options={categoryFilterOptions}
-                  aria-label="Kategori filtresi"
+                  aria-label={t('tickets:filters.categoryAria')}
                 />
               </div>
               <div className="w-full lg:w-44">
@@ -270,13 +281,13 @@ export function TicketsListPage() {
                   value={query.tag_id ? String(query.tag_id) : ''}
                   onChange={(e) => updateParams({ tag_id: e.target.value || null, page: '1' })}
                   options={tagFilterOptions}
-                  aria-label="Etiket filtresi"
+                  aria-label={t('tickets:filters.tagAria')}
                 />
               </div>
             </div>
             <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
               <Checkbox
-                label="Sadece SLA ihlalleri"
+                label={t('tickets:filters.slaBreachedOnly')}
                 checked={!!query.sla_breached}
                 onChange={(e) => updateParams({ sla_breached: e.target.checked ? '1' : null, page: '1' })}
               />
@@ -286,7 +297,7 @@ export function TicketsListPage() {
                     type="date"
                     value={query.from ?? ''}
                     onChange={(e) => updateParams({ from: e.target.value || null, page: '1' })}
-                    aria-label="Başlangıç tarihi"
+                    aria-label={t('tickets:filters.fromDateAria')}
                     max={query.to || undefined}
                   />
                 </div>
@@ -296,7 +307,7 @@ export function TicketsListPage() {
                     type="date"
                     value={query.to ?? ''}
                     onChange={(e) => updateParams({ to: e.target.value || null, page: '1' })}
-                    aria-label="Bitiş tarihi"
+                    aria-label={t('tickets:filters.toDateAria')}
                     min={query.from || undefined}
                   />
                 </div>
@@ -306,42 +317,42 @@ export function TicketsListPage() {
 
           {isError ? (
             <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
-              <p className="text-sm text-fg-muted">Talepler yüklenirken bir hata oluştu.</p>
+              <p className="text-sm text-fg-muted">{t('tickets:list.loadError')}</p>
               <Button variant="secondary" onClick={() => refetch()}>
-                Tekrar dene
+                {t('tickets:list.retry')}
               </Button>
             </div>
           ) : isEmpty ? (
             <EmptyState
               icon={<LifeBuoy className="size-6" aria-hidden="true" />}
-              title="Talep bulunamadı"
-              description="Arama veya filtre kriterlerinizle eşleşen destek talebi yok."
+              title={t('tickets:list.empty.title')}
+              description={t('tickets:list.empty.description')}
             />
           ) : (
             <Table>
               <THead>
                 <Tr>
                   <Th sortable sortDirection={sortDirectionFor('ticket_number')} onSort={() => toggleSort('ticket_number')}>
-                    Talep No
+                    {t('tickets:list.columns.ticketNumber')}
                   </Th>
                   <Th sortable sortDirection={sortDirectionFor('subject')} onSort={() => toggleSort('subject')}>
-                    Konu
+                    {t('tickets:list.columns.subject')}
                   </Th>
                   <Th sortable sortDirection={sortDirectionFor('priority')} onSort={() => toggleSort('priority')}>
-                    Öncelik
+                    {t('tickets:list.columns.priority')}
                   </Th>
                   <Th sortable sortDirection={sortDirectionFor('status')} onSort={() => toggleSort('status')}>
-                    Durum
+                    {t('tickets:list.columns.status')}
                   </Th>
                   <Th sortable sortDirection={sortDirectionFor('sla_due_at')} onSort={() => toggleSort('sla_due_at')}>
-                    SLA
+                    {t('tickets:list.columns.sla')}
                   </Th>
-                  <Th>Firma / Kişi</Th>
-                  <Th>Atanan</Th>
+                  <Th>{t('tickets:list.columns.companyContact')}</Th>
+                  <Th>{t('tickets:list.columns.assignee')}</Th>
                   <Th sortable sortDirection={sortDirectionFor('created_at')} onSort={() => toggleSort('created_at')}>
-                    Oluşturma
+                    {t('tickets:list.columns.created')}
                   </Th>
-                  <Th align="right">İşlemler</Th>
+                  <Th align="right">{t('tickets:list.columns.actions')}</Th>
                 </Tr>
               </THead>
               <TBody aria-busy={isLoading}>
@@ -403,16 +414,16 @@ export function TicketsListPage() {
                           <Td className="whitespace-nowrap">{formatDate(ticket.created_at)}</Td>
                           <Td align="right">
                             <div className="flex items-center justify-end gap-1">
-                              <IconLinkButton label="Detay" to={`/tickets/${ticket.id}`}>
+                              <IconLinkButton label={t('tickets:list.actions.detail')} to={`/tickets/${ticket.id}`}>
                                 <UserCog className="size-4" aria-hidden="true" />
                               </IconLinkButton>
                               {/* Faz 13: izin var ama `can.update` false ise (sahiplik) buton GİZLENMEZ,
                                   devre dışı + tooltip gösterilir. */}
                               {can('tickets.update') && (
                                 <IconButton
-                                  label="Düzenle"
+                                  label={t('tickets:list.actions.edit')}
                                   disabled={!ticket.can.update}
-                                  title={ticket.can.update ? 'Düzenle' : 'Bu talebin sahibi değilsiniz, düzenleyemezsiniz.'}
+                                  title={ticket.can.update ? t('tickets:list.actions.edit') : t('tickets:list.actions.editLockedTooltip')}
                                   onClick={() => setFormModal({ mode: 'edit', ticket })}
                                 >
                                   <Pencil className="size-4" aria-hidden="true" />
@@ -420,14 +431,14 @@ export function TicketsListPage() {
                               )}
                               {/* `tickets.assign` saf izin kontrolüdür — sahiplik boyutu yok. */}
                               {can('tickets.assign') && ticket.can.assign && (
-                                <IconButton label="Ata" onClick={() => setAssignTicket(ticket)}>
+                                <IconButton label={t('tickets:list.actions.assign')} onClick={() => setAssignTicket(ticket)}>
                                   <Users className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
                               {/* Çözülmüş/kapanmış talep silinemez — durum kuralı, GİZLEME ile ele
                                   alınır (bkz. `TicketPolicy::delete`). */}
                               {can('tickets.delete') && ticket.can.delete && (
-                                <IconButton label="Sil" danger onClick={() => setDeleteTicketState(ticket)}>
+                                <IconButton label={t('tickets:list.actions.delete')} danger onClick={() => setDeleteTicketState(ticket)}>
                                   <Trash2 className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
@@ -459,12 +470,12 @@ export function TicketsListPage() {
       <Modal
         open={!!deleteTicketState}
         onClose={() => setDeleteTicketState(null)}
-        title="Talebi sil"
-        description="Bu işlem geri alınamaz. Talep kalıcı olarak silinecek."
+        title={t('tickets:list.deleteModal.title')}
+        description={t('tickets:list.deleteModal.description')}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setDeleteTicketState(null)}>
-              Vazgeç
+              {t('tickets:list.deleteModal.cancel')}
             </Button>
             <Button
               variant="danger"
@@ -475,17 +486,18 @@ export function TicketsListPage() {
                 setDeleteTicketState(null)
               }}
             >
-              Sil
+              {t('tickets:list.deleteModal.confirm')}
             </Button>
           </div>
         }
       >
         {deleteTicketState && (
           <p className="text-sm text-fg-secondary">
-            <strong className="text-fg">
-              {deleteTicketState.ticket_number} — {deleteTicketState.subject}
-            </strong>{' '}
-            adlı talebi silmek istediğinize emin misiniz?
+            <Trans
+              i18nKey="tickets:list.deleteModal.confirmText"
+              values={{ ticketNumber: deleteTicketState.ticket_number, subject: deleteTicketState.subject }}
+              components={{ bold: <strong className="text-fg" /> }}
+            />
           </p>
         )}
       </Modal>

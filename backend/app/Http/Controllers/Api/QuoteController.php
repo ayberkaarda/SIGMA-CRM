@@ -9,6 +9,9 @@ use App\Http\Requests\Quotes\StatusQuoteRequest;
 use App\Http\Requests\Quotes\StoreQuoteRequest;
 use App\Http\Requests\Quotes\UpdateQuoteRequest;
 use App\Http\Resources\QuoteResource;
+use App\Models\Company;
+use App\Models\Contact;
+use App\Models\Deal;
 use App\Models\Quote;
 use App\Services\Quotes\QuoteCalculationException;
 use App\Services\Quotes\QuoteCalculator;
@@ -161,7 +164,11 @@ class QuoteController extends Controller
     {
         Gate::authorize('view', $quote);
 
-        return (new QuoteResource($this->quotes->find((int) $quote->id)))->response();
+        $quote = $this->quotes->find((int) $quote->id);
+
+        $this->loadRelatedRecords($quote);
+
+        return (new QuoteResource($quote))->response();
     }
 
     public function update(UpdateQuoteRequest $request, Quote $quote): JsonResponse
@@ -268,5 +275,72 @@ class QuoteController extends Controller
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="'.$pdfs->filename($quote).'"',
         ]);
+    }
+
+    /**
+     * =========================================================================
+     * Faz 14 / İz F — C3 çift-yönlü "ilişkili kayıtlar" paneli (docs/PHASE-INTL.md
+     * §3, docs/PHASE-AUDIT.md §5.1 C3 satırı)
+     * =========================================================================
+     *
+     * Bu şeridin kapattığı tek yön: `teklif → firma` / `teklif → fırsat` /
+     * `teklif → kişi`. Ters yönler (`firma → teklifler`, `fırsat → teklifler`)
+     * ZATEN CompanyController/DealController::loadRelatedRecords()'ta var —
+     * burada TEKRARLANMAZ (bkz. o dosyaların "Quote → company/deal BASILMAZ"
+     * notu, bu şerit onu kapatıyor). `teklif → kişi` yönünün bir eşleniği
+     * (ContactController'da "kişi → teklifler") şu an YOK — bu şeridin dosya
+     * sahipliği `ContactController`/`ContactResource`'ı kapsamıyor, o yön
+     * atlandı (bkz. görev raporu).
+     *
+     * NEDEN YENİ SORGU YOK: `Quote::company()`/`deal()`/`contact()` GERÇEK
+     * `BelongsTo` ilişkileridir ve `QuoteRepository::DETAIL_RELATIONS` zaten
+     * `show()`'un çağırdığı `QuoteService::find()` içinde bunları `with()`
+     * ile eager-load ediyor (bkz. o repository sabiti). Bu metot burada
+     * SIFIR ek sorgu ekler — yalnızca zaten bellekte olan ilişkiyi, izinliyse,
+     * `RelatedGroupData` sözleşmesine (`{total, items}`) sarar.
+     *
+     * Desen `LeadController::loadRelatedRecords()`'un tekil (to-one) ilişki
+     * biçimiyle BİREBİR aynıdır (count() + limitli get() yerine tek satır —
+     * zaten en fazla 1 kayıt olabilecek bir ilişki için o iki sorgu de
+     * anlamsız olurdu): FK `null` değilse VE ilgili modülün `viewAny`
+     * Policy'si (`Gate::allows`) `true` dönerse `setRelation()` ile sahte
+     * "ilişki" eklenir; aksi halde `relationLoaded()` false kalır ve
+     * `QuoteResource` o anahtarı `related` altına HİÇ KOYMAZ (§5.1 C1 ile
+     * aynı kural — boş grup başlığı bile sızıntıdır).
+     */
+    private function loadRelatedRecords(Quote $quote): void
+    {
+        if ($quote->company_id !== null && $quote->relationLoaded('company') && $quote->company
+            && Gate::allows('viewAny', Company::class)) {
+            $quote->setRelation('relatedCompany', [
+                'total' => 1,
+                'items' => [[
+                    'id' => $quote->company->id,
+                    'name' => $quote->company->name,
+                ]],
+            ]);
+        }
+
+        if ($quote->deal_id !== null && $quote->relationLoaded('deal') && $quote->deal
+            && Gate::allows('viewAny', Deal::class)) {
+            $quote->setRelation('relatedDeal', [
+                'total' => 1,
+                'items' => [[
+                    'id' => $quote->deal->id,
+                    'title' => $quote->deal->title,
+                ]],
+            ]);
+        }
+
+        if ($quote->contact_id !== null && $quote->relationLoaded('contact') && $quote->contact
+            && Gate::allows('viewAny', Contact::class)) {
+            $quote->setRelation('relatedContact', [
+                'total' => 1,
+                'items' => [[
+                    'id' => $quote->contact->id,
+                    'full_name' => $quote->contact->full_name,
+                ]],
+            ]);
+        }
     }
 }

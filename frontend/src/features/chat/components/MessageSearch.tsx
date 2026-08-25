@@ -11,6 +11,7 @@
 // Mesaj listesinde belirli bir mesaja kaydırma desteği (`MessageList`/`useMessages`
 // sözleşmesinde böyle bir parametre yok) bu sürümde YOK — yalnızca ilgili konuşma açılır.
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Search } from 'lucide-react'
 import { EmptyState, Skeleton } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
@@ -24,6 +25,7 @@ export type MessageSearchProps = {
 }
 
 export function MessageSearch({ conversationId, onSelectResult }: MessageSearchProps) {
+  const { t } = useTranslation('chat')
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
 
@@ -46,7 +48,7 @@ export function MessageSearch({ conversationId, onSelectResult }: MessageSearchP
         onClick={() => setOpen((prev) => !prev)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label={conversationId ? 'Bu sohbette ara' : 'Mesajlarda ara'}
+        aria-label={conversationId ? t('search.conversationAria') : t('search.globalAria')}
         className={cn(
           'inline-flex size-9 shrink-0 items-center justify-center rounded-md text-fg-muted hover:bg-surface-2 hover:text-fg',
           'transition-colors duration-150 motion-reduce:transition-none',
@@ -59,7 +61,7 @@ export function MessageSearch({ conversationId, onSelectResult }: MessageSearchP
       {open && (
         <div
           role="dialog"
-          aria-label={conversationId ? 'Bu sohbette ara' : 'Mesajlarda ara'}
+          aria-label={conversationId ? t('search.conversationAria') : t('search.globalAria')}
           className="absolute right-0 top-full z-30 mt-2 w-80 rounded-lg border border-border bg-surface-3 py-2 shadow-popover"
         >
           <div className="px-3 pb-2">
@@ -67,8 +69,8 @@ export function MessageSearch({ conversationId, onSelectResult }: MessageSearchP
               autoFocus
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder={conversationId ? 'Bu sohbette ara…' : 'Tüm mesajlarda ara…'}
-              aria-label="Arama metni"
+              placeholder={conversationId ? t('search.conversationPlaceholder') : t('search.globalPlaceholder')}
+              aria-label={t('search.inputAria')}
               className={cn(
                 'h-9 w-full rounded-md border border-border-strong bg-surface-2 px-3 text-sm text-fg placeholder:text-fg-muted',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary'
@@ -79,7 +81,7 @@ export function MessageSearch({ conversationId, onSelectResult }: MessageSearchP
           <div className="max-h-80 overflow-y-auto border-t border-border-subtle">
             {!hasEnoughQuery ? (
               <p className="px-3 py-6 text-center text-xs text-fg-muted">
-                Aramak için en az {MIN_SEARCH_LENGTH} karakter yazın.
+                {t('search.minLength', { count: MIN_SEARCH_LENGTH })}
               </p>
             ) : isLoading ? (
               <div className="flex flex-col gap-3 px-3 py-3">
@@ -90,8 +92,8 @@ export function MessageSearch({ conversationId, onSelectResult }: MessageSearchP
             ) : results.length === 0 ? (
               <EmptyState
                 icon={<Search className="size-5" aria-hidden="true" />}
-                title="Sonuç yok"
-                description="Aramanızla eşleşen bir mesaj bulunamadı."
+                title={t('search.noResultsTitle')}
+                description={t('search.noResultsDescription')}
                 className="px-4 py-6"
               />
             ) : (
@@ -103,7 +105,7 @@ export function MessageSearch({ conversationId, onSelectResult }: MessageSearchP
                       onClick={() => handleSelect(message)}
                       className="flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left hover:bg-surface-2"
                     >
-                      <span className="text-xs font-medium text-fg">{message.user?.name ?? 'Bilinmeyen'}</span>
+                      <span className="text-xs font-medium text-fg">{message.user?.name ?? t('message.unknownUser')}</span>
                       <span className="line-clamp-2 text-xs text-fg-muted">{message.body}</span>
                       <span className="text-[11px] text-fg-disabled">{formatRelativeTime(message.created_at)}</span>
                     </button>

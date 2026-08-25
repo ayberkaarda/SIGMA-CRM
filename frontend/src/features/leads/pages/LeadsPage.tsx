@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import { Pencil, Plus, Repeat, Search, Trash2, Upload, UserCog, Users } from 'lucide-react'
 import {
   Avatar,
@@ -26,6 +27,7 @@ import {
 } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
 import { usePermission } from '../../auth/hooks/usePermission'
+import { SavedViewsBar } from '../../saved-views/components/SavedViewsBar'
 import { useDeleteLead, useLeads, useOwnerOptions, useTags } from '../api/leadsApi'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { LeadFormModal } from '../components/LeadFormModal'
@@ -33,27 +35,28 @@ import { ConvertLeadModal } from '../components/ConvertLeadModal'
 import { AssignOwnerModal } from '../components/AssignOwnerModal'
 import { ImportLeadsModal } from '../components/ImportLeadsModal'
 import { ScoreIndicator } from '../components/ScoreIndicator'
-import { SOURCE_LABELS, SOURCE_OPTIONS, STATUS_BADGE_VARIANT, STATUS_LABELS } from '../utils'
+import { SOURCE_LABEL_KEY, STATUS_BADGE_VARIANT, STATUS_LABEL_KEY, leadSourceOptions } from '../utils'
 import type { Lead, LeadsQuery } from '../types'
 
 const DEFAULT_PER_PAGE = 10
 const SEARCH_DEBOUNCE_MS = 300
 
-const STATUS_FILTER_OPTIONS = [
-  { value: '', label: 'Tüm durumlar' },
-  ...(Object.keys(STATUS_LABELS) as Array<keyof typeof STATUS_LABELS>).map((value) => ({
-    value,
-    label: STATUS_LABELS[value],
-  })),
-]
-
-const SOURCE_FILTER_OPTIONS = [{ value: '', label: 'Tüm kaynaklar' }, ...SOURCE_OPTIONS]
-
 type FormModalState = { mode: 'create' } | { mode: 'edit'; lead: Lead } | null
 
 export function LeadsPage() {
+  const { t } = useTranslation(['leads', 'common', 'enums'])
   const [searchParams, setSearchParams] = useSearchParams()
   const { can } = usePermission()
+
+  const STATUS_FILTER_OPTIONS = [
+    { value: '', label: t('leads:list.allStatuses') },
+    ...(Object.keys(STATUS_LABEL_KEY) as Array<keyof typeof STATUS_LABEL_KEY>).map((value) => ({
+      value,
+      label: t(STATUS_LABEL_KEY[value], { ns: 'enums' }),
+    })),
+  ]
+
+  const SOURCE_FILTER_OPTIONS = [{ value: '', label: t('leads:list.allSources') }, ...leadSourceOptions(t)]
 
   const [searchDraft, setSearchDraft] = useState(searchParams.get('q') ?? '')
   const debouncedSearch = useDebouncedValue(searchDraft, SEARCH_DEBOUNCE_MS)
@@ -124,11 +127,11 @@ export function LeadsPage() {
   }
 
   const ownerFilterOptions = [
-    { value: '', label: 'Tüm sahipler' },
+    { value: '', label: t('leads:list.allOwners') },
     ...(ownerOptions ?? []).map((owner) => ({ value: String(owner.id), label: owner.name })),
   ]
   const tagFilterOptions = [
-    { value: '', label: 'Tüm etiketler' },
+    { value: '', label: t('leads:list.allTags') },
     ...(tags ?? []).map((tag) => ({ value: String(tag.id), label: tag.name })),
   ]
 
@@ -139,25 +142,29 @@ export function LeadsPage() {
   return (
     <div className="flex flex-col gap-4">
       <nav aria-label="breadcrumb" className="text-xs text-fg-muted">
-        <span>Anasayfa</span>
+        <span>{t('leads:breadcrumb.home')}</span>
         <span className="mx-1.5">/</span>
-        <span className="text-primary">Müşteri Adayları</span>
+        <span className="text-primary">{t('leads:breadcrumb.leads')}</span>
       </nav>
 
       <Card>
         <CardHeader
-          title="Müşteri Adayları"
-          subtitle={`${total} aday`}
+          title={t('leads:list.title')}
+          subtitle={t('leads:list.subtitle', { count: total })}
           action={
             <div className="flex items-center gap-2">
+              <SavedViewsBar
+                module="leads"
+                filterKeys={['status', 'source', 'owner_id', 'tag_id', 'score_min', 'score_max', 'from', 'to']}
+              />
               {can('leads.import') && (
                 <Button variant="secondary" leftIcon={<Upload className="size-4" aria-hidden="true" />} onClick={() => setImportOpen(true)}>
-                  İçe Aktar
+                  {t('leads:list.importButton')}
                 </Button>
               )}
               {can('leads.create') && (
                 <Button leftIcon={<Plus className="size-4" aria-hidden="true" />} onClick={() => setFormModal({ mode: 'create' })}>
-                  Yeni Aday
+                  {t('leads:list.createButton')}
                 </Button>
               )}
             </div>
@@ -170,9 +177,9 @@ export function LeadsPage() {
                 <Input
                   value={searchDraft}
                   onChange={(e) => setSearchDraft(e.target.value)}
-                  placeholder="İsim, e-posta veya firma ara..."
+                  placeholder={t('leads:list.searchPlaceholder')}
                   leftIcon={<Search className="size-4" aria-hidden="true" />}
-                  aria-label="Aday ara"
+                  aria-label={t('leads:list.searchAria')}
                 />
               </div>
               <div className="w-full lg:w-44">
@@ -180,7 +187,7 @@ export function LeadsPage() {
                   value={query.status ?? ''}
                   onChange={(e) => updateParams({ status: e.target.value || null, page: '1' })}
                   options={STATUS_FILTER_OPTIONS}
-                  aria-label="Durum filtresi"
+                  aria-label={t('leads:list.statusFilterAria')}
                 />
               </div>
               <div className="w-full lg:w-48">
@@ -188,7 +195,7 @@ export function LeadsPage() {
                   value={query.source ?? ''}
                   onChange={(e) => updateParams({ source: e.target.value || null, page: '1' })}
                   options={SOURCE_FILTER_OPTIONS}
-                  aria-label="Kaynak filtresi"
+                  aria-label={t('leads:list.sourceFilterAria')}
                 />
               </div>
               {!ownersForbidden && (
@@ -197,7 +204,7 @@ export function LeadsPage() {
                     value={query.owner_id ? String(query.owner_id) : ''}
                     onChange={(e) => updateParams({ owner_id: e.target.value || null, page: '1' })}
                     options={ownerFilterOptions}
-                    aria-label="Sahip filtresi"
+                    aria-label={t('leads:list.ownerFilterAria')}
                   />
                 </div>
               )}
@@ -206,7 +213,7 @@ export function LeadsPage() {
                   value={query.tag_id ? String(query.tag_id) : ''}
                   onChange={(e) => updateParams({ tag_id: e.target.value || null, page: '1' })}
                   options={tagFilterOptions}
-                  aria-label="Etiket filtresi"
+                  aria-label={t('leads:list.tagFilterAria')}
                 />
               </div>
             </div>
@@ -219,8 +226,8 @@ export function LeadsPage() {
                     max={100}
                     value={query.score_min ?? ''}
                     onChange={(e) => updateParams({ score_min: e.target.value || null, page: '1' })}
-                    placeholder="Min skor"
-                    aria-label="Minimum skor"
+                    placeholder={t('leads:list.scoreMinPlaceholder')}
+                    aria-label={t('leads:list.scoreMinAria')}
                   />
                 </div>
                 <span className="pb-2.5 text-xs text-fg-muted">—</span>
@@ -231,8 +238,8 @@ export function LeadsPage() {
                     max={100}
                     value={query.score_max ?? ''}
                     onChange={(e) => updateParams({ score_max: e.target.value || null, page: '1' })}
-                    placeholder="Maks skor"
-                    aria-label="Maksimum skor"
+                    placeholder={t('leads:list.scoreMaxPlaceholder')}
+                    aria-label={t('leads:list.scoreMaxAria')}
                   />
                 </div>
               </div>
@@ -242,7 +249,7 @@ export function LeadsPage() {
                     type="date"
                     value={query.from ?? ''}
                     onChange={(e) => updateParams({ from: e.target.value || null, page: '1' })}
-                    aria-label="Başlangıç tarihi"
+                    aria-label={t('leads:list.fromDateAria')}
                     max={query.to || undefined}
                   />
                 </div>
@@ -252,7 +259,7 @@ export function LeadsPage() {
                     type="date"
                     value={query.to ?? ''}
                     onChange={(e) => updateParams({ to: e.target.value || null, page: '1' })}
-                    aria-label="Bitiş tarihi"
+                    aria-label={t('leads:list.toDateAria')}
                     min={query.from || undefined}
                   />
                 </div>
@@ -262,43 +269,43 @@ export function LeadsPage() {
 
           {isError ? (
             <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
-              <p className="text-sm text-fg-muted">Müşteri adayları yüklenirken bir hata oluştu.</p>
+              <p className="text-sm text-fg-muted">{t('leads:list.loadError')}</p>
               <Button variant="secondary" onClick={() => refetch()}>
-                Tekrar dene
+                {t('leads:list.retry')}
               </Button>
             </div>
           ) : isEmpty ? (
             <EmptyState
               icon={<Users className="size-6" aria-hidden="true" />}
-              title="Müşteri adayı bulunamadı"
-              description="Arama veya filtre kriterlerinizle eşleşen aday yok."
+              title={t('leads:list.emptyTitle')}
+              description={t('leads:list.emptyDescription')}
             />
           ) : (
             <Table>
               <THead>
                 <Tr>
                   <Th sortable sortDirection={sortDirectionFor('first_name')} onSort={() => toggleSort('first_name')}>
-                    Ad Soyad
+                    {t('leads:list.columns.name')}
                   </Th>
                   <Th sortable sortDirection={sortDirectionFor('company_name')} onSort={() => toggleSort('company_name')}>
-                    Firma
+                    {t('leads:list.columns.company')}
                   </Th>
                   <Th sortable sortDirection={sortDirectionFor('email')} onSort={() => toggleSort('email')}>
-                    E-posta
+                    {t('leads:list.columns.email')}
                   </Th>
-                  <Th>Telefon</Th>
+                  <Th>{t('leads:list.columns.phone')}</Th>
                   <Th sortable sortDirection={sortDirectionFor('source')} onSort={() => toggleSort('source')}>
-                    Kaynak
+                    {t('leads:list.columns.source')}
                   </Th>
                   <Th sortable sortDirection={sortDirectionFor('status')} onSort={() => toggleSort('status')}>
-                    Durum
+                    {t('leads:list.columns.status')}
                   </Th>
                   <Th sortable sortDirection={sortDirectionFor('score')} onSort={() => toggleSort('score')}>
-                    Skor
+                    {t('leads:list.columns.score')}
                   </Th>
-                  <Th>Sahip</Th>
-                  <Th>Etiketler</Th>
-                  <Th align="right">İşlemler</Th>
+                  <Th>{t('leads:list.columns.owner')}</Th>
+                  <Th>{t('leads:list.columns.tags')}</Th>
+                  <Th align="right">{t('leads:list.columns.actions')}</Th>
                 </Tr>
               </THead>
               <TBody aria-busy={isLoading}>
@@ -330,10 +337,12 @@ export function LeadsPage() {
                           <Td className="text-fg-secondary">{lead.email ?? '—'}</Td>
                           <Td className="text-fg-secondary">{lead.phone ?? '—'}</Td>
                           <Td>
-                            <Badge variant="neutral">{SOURCE_LABELS[lead.source]}</Badge>
+                            <Badge variant="neutral">{t(SOURCE_LABEL_KEY[lead.source], { ns: 'enums' })}</Badge>
                           </Td>
                           <Td>
-                            <Badge variant={STATUS_BADGE_VARIANT[lead.status]}>{STATUS_LABELS[lead.status]}</Badge>
+                            <Badge variant={STATUS_BADGE_VARIANT[lead.status]}>
+                              {t(STATUS_LABEL_KEY[lead.status], { ns: 'enums' })}
+                            </Badge>
                           </Td>
                           <Td>
                             <ScoreIndicator score={lead.score} />
@@ -360,7 +369,7 @@ export function LeadsPage() {
                           </Td>
                           <Td align="right">
                             <div className="flex items-center justify-end gap-1">
-                              <IconLinkButton label="Detay" to={`/leads/${lead.id}`}>
+                              <IconLinkButton label={t('leads:actions.detail')} to={`/leads/${lead.id}`}>
                                 <UserCog className="size-4" aria-hidden="true" />
                               </IconLinkButton>
                               {/* Faz 13: `!isConverted` durum kuralını korur (dönüşmüş lead zaten policy'de
@@ -369,9 +378,9 @@ export function LeadsPage() {
                                   GİZLENMEZ, devre dışı + tooltip gösterilir. */}
                               {!isConverted && can('leads.update') && (
                                 <IconButton
-                                  label="Düzenle"
+                                  label={t('leads:actions.edit')}
                                   disabled={!lead.can.update}
-                                  title={lead.can.update ? 'Düzenle' : 'Bu kaydın sahibi değilsiniz, düzenleyemezsiniz.'}
+                                  title={lead.can.update ? t('leads:actions.edit') : t('leads:actions.editDisabledTitle')}
                                   onClick={() => setFormModal({ mode: 'edit', lead })}
                                 >
                                   <Pencil className="size-4" aria-hidden="true" />
@@ -379,9 +388,9 @@ export function LeadsPage() {
                               )}
                               {!isConverted && can('leads.convert') && (
                                 <IconButton
-                                  label="Dönüştür"
+                                  label={t('leads:actions.convert')}
                                   disabled={!lead.can.convert}
-                                  title={lead.can.convert ? 'Dönüştür' : 'Bu kaydın sahibi değilsiniz, dönüştüremezsiniz.'}
+                                  title={lead.can.convert ? t('leads:actions.convert') : t('leads:actions.convertDisabledTitle')}
                                   onClick={() => setConvertLead(lead)}
                                 >
                                   <Repeat className="size-4" aria-hidden="true" />
@@ -390,7 +399,7 @@ export function LeadsPage() {
                               {/* `leads.assign` saf izin kontrolüdür (sahiplik boyutu yok) — `can.assign`
                                   her zaman modül izniyle aynıdır, gizlemek yeterli. */}
                               {can('leads.assign') && lead.can.assign && (
-                                <IconButton label="Sahip ata" onClick={() => setAssignLead(lead)}>
+                                <IconButton label={t('leads:actions.assign')} onClick={() => setAssignLead(lead)}>
                                   <Users className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
@@ -398,7 +407,7 @@ export function LeadsPage() {
                                   bir durum kuralı (bkz. `LeadPolicy::delete`); GİZLEME ile ele alınır,
                                   istemci kendi `isConverted` kopyasını bu koşulda tutmaz. */}
                               {can('leads.delete') && lead.can.delete && (
-                                <IconButton label="Sil" danger onClick={() => setDeleteLeadState(lead)}>
+                                <IconButton label={t('leads:actions.delete')} danger onClick={() => setDeleteLeadState(lead)}>
                                   <Trash2 className="size-4" aria-hidden="true" />
                                 </IconButton>
                               )}
@@ -432,12 +441,12 @@ export function LeadsPage() {
       <Modal
         open={!!deleteLead}
         onClose={() => setDeleteLeadState(null)}
-        title="Müşteri adayını sil"
-        description="Bu işlem geri alınamaz. Aday kalıcı olarak silinecek."
+        title={t('leads:deleteModal.title')}
+        description={t('leads:deleteModal.description')}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setDeleteLeadState(null)}>
-              Vazgeç
+              {t('leads:deleteModal.cancel')}
             </Button>
             <Button
               variant="danger"
@@ -448,15 +457,18 @@ export function LeadsPage() {
                 setDeleteLeadState(null)
               }}
             >
-              Sil
+              {t('leads:deleteModal.confirm')}
             </Button>
           </div>
         }
       >
         {deleteLead && (
           <p className="text-sm text-fg-secondary">
-            <strong className="text-fg">{deleteLead.full_name}</strong> adlı müşteri adayını silmek istediğinize
-            emin misiniz?
+            <Trans
+              i18nKey="leads:deleteModal.confirmText"
+              values={{ name: deleteLead.full_name }}
+              components={{ bold: <strong className="text-fg" /> }}
+            />
           </p>
         )}
       </Modal>

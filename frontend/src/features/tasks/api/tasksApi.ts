@@ -4,6 +4,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import axios from 'axios'
 import { api, getErrorMessage } from '../../../lib/axios'
 import { toast } from '../../../components/ui'
+import i18n from '../../../i18n'
 import type {
   Task,
   TaskPayload,
@@ -127,7 +128,7 @@ export function useCreateTask() {
     mutationFn: createTaskRequest,
     onSuccess: (task) => {
       invalidateTaskCaches(queryClient, task.id)
-      toast.success('Görev oluşturuldu.')
+      toast.success(i18n.t('tasks:toast.created'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -139,7 +140,7 @@ export function useUpdateTask() {
     mutationFn: ({ id, payload }: { id: number; payload: Partial<TaskPayload> }) => updateTaskRequest(id, payload),
     onSuccess: (task) => {
       invalidateTaskCaches(queryClient, task.id)
-      toast.success('Görev güncellendi.')
+      toast.success(i18n.t('tasks:toast.updated'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -151,7 +152,7 @@ export function useDeleteTask() {
     mutationFn: (id: number) => deleteTaskRequest(id),
     onSuccess: () => {
       invalidateTaskCaches(queryClient)
-      toast.success('Görev silindi.')
+      toast.success(i18n.t('tasks:toast.deleted'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -169,7 +170,7 @@ export function useCompleteTask() {
     mutationFn: ({ id, completed }: { id: number; completed: boolean }) => completeTaskRequest(id, completed),
     onSuccess: (task) => {
       invalidateTaskCaches(queryClient, task.id)
-      toast.success(task.status === 'completed' ? 'Görev tamamlandı.' : 'Görev tamamlanmamış olarak işaretlendi.')
+      toast.success(task.status === 'completed' ? i18n.t('tasks:toast.completed') : i18n.t('tasks:toast.uncompleted'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -181,7 +182,7 @@ export function useAssignTask() {
     mutationFn: ({ id, assignedTo }: { id: number; assignedTo: number | null }) => assignTaskRequest(id, assignedTo),
     onSuccess: (task) => {
       invalidateTaskCaches(queryClient, task.id)
-      toast.success('Görev ataması güncellendi.')
+      toast.success(i18n.t('tasks:toast.assigned'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })

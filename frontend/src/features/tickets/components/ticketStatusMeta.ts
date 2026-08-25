@@ -1,5 +1,5 @@
 // Talep durumu sabitleri — `TicketStatusBadge.tsx`'ten AYRI (bkz. `ticketPriorityMeta.ts`
-// başındaki aynı gerekçe).
+// başındaki aynı gerekçe, i18n dahil).
 //
 // `STATUS_TRANSITIONS` — `docs/SLA-DESIGN.md` §4'teki `TicketStatusMachine::TRANSITIONS`
 // sabitinin İSTEMCİ TARAFI AYNASI. Backend'de geçiş kararı `PATCH /api/tickets/{id}/status`
@@ -12,6 +12,10 @@
 //
 // `closed` TERMİNALDİR (boş dizi): §4 gerekçesiyle aynı — kapanmış dönem raporları geriye dönük
 // değişmez kalmalı, bu yüzden yeniden açılamaz.
+//
+// Etiket metinleri `enums:ticket.status.*` anahtarındadır (Faz 14 / İz D) — bkz.
+// `ticketPriorityMeta.ts` başındaki `t` parametre geçişi gerekçesi.
+import type { TFunction } from 'i18next'
 import type { TicketStatus } from '../types'
 import type { BadgeProps } from '../../../components/ui'
 
@@ -31,18 +35,15 @@ export const STATUS_VARIANT: Record<TicketStatus, NonNullable<BadgeProps['varian
   closed: 'neutral',
 }
 
-export const STATUS_LABEL: Record<TicketStatus, string> = {
-  open: 'Açık',
-  pending: 'Beklemede',
-  in_progress: 'Devam Ediyor',
-  resolved: 'Çözüldü',
-  closed: 'Kapandı',
+const STATUS_ORDER: TicketStatus[] = ['open', 'pending', 'in_progress', 'resolved', 'closed']
+
+export function statusLabel(status: TicketStatus, t: TFunction): string {
+  return t(`enums:ticket.status.${status}`)
 }
 
-export const STATUS_OPTIONS = (Object.keys(STATUS_LABEL) as TicketStatus[]).map((value) => ({
-  value,
-  label: STATUS_LABEL[value],
-}))
+export function statusOptions(t: TFunction) {
+  return STATUS_ORDER.map((value) => ({ value, label: statusLabel(value, t) }))
+}
 
 export function allowedTransitions(from: TicketStatus): TicketStatus[] {
   return STATUS_TRANSITIONS[from]

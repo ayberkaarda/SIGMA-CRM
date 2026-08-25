@@ -9,12 +9,19 @@
 import axios from 'axios'
 import { api } from '../../lib/axios'
 import type {
+  AutomationRule,
+  AutomationRuleCreatePayload,
+  AutomationRuleUpdatePayload,
+  AutomationRulesResponse,
   CustomField,
   CustomFieldCreatePayload,
   CustomFieldUpdatePayload,
   CustomFieldsResponse,
   EmailTemplate,
   EmailTemplatePayload,
+  ExchangeRate,
+  ExchangeRatesResponse,
+  ManualExchangeRatePayload,
   PermissionMatrix,
   PipelineStage,
   PipelineStageCreatePayload,
@@ -32,6 +39,9 @@ export const settingsKeys = {
   customFields: ['settings', 'custom-fields'] as const,
   emailTemplates: ['settings', 'email-templates'] as const,
   permissionMatrix: ['settings', 'permission-matrix'] as const,
+  exchangeRates: ['settings', 'exchange-rates'] as const,
+  automationRules: ['settings', 'automation-rules'] as const,
+  automationRuleUserOptions: ['settings', 'automation-rules', 'user-options'] as const,
 }
 
 // ---------------------------------------------------------------------------
@@ -188,5 +198,57 @@ export async function updateRolePermissionsRequest(roleId: number, permissions: 
   const { data } = await api.patch<{ data: RoleUpdateResult }>(`/api/settings/roles/${roleId}/permissions`, {
     permissions,
   })
+  return data.data
+}
+
+// ---------------------------------------------------------------------------
+// Kur (döviz) — Faz 14 / İz E (docs/PHASE-INTL.md §2.1, §2.6)
+// ---------------------------------------------------------------------------
+
+/** Desteklenen HER para birimi için bir satır döner (henüz kur girilmemişse `rate: null`,
+ *  bkz. `types.ts` → `ExchangeRateRow`). */
+export async function fetchExchangeRates(): Promise<ExchangeRatesResponse> {
+  const { data } = await api.get<ExchangeRatesResponse>('/api/settings/exchange-rates')
+  return data
+}
+
+/** Aynı gün + aynı para birimi için ikinci giriş UPSERT'tir (backend `unique(currency,
+ *  rate_date)` üzerinden) — istemci tarafında ayrı bir "zaten var" kontrolü GEREKMEZ. */
+export async function createManualExchangeRateRequest(payload: ManualExchangeRatePayload): Promise<ExchangeRate> {
+  const { data } = await api.post<{ data: ExchangeRate }>('/api/settings/exchange-rates', payload)
+  return data.data
+}
+
+// ---------------------------------------------------------------------------
+// Otomasyon kuralları — Faz 14 / İz F, Attio C4 (docs/PHASE-INTL.md §3)
+// ---------------------------------------------------------------------------
+
+export async function fetchAutomationRules(): Promise<AutomationRulesResponse> {
+  const { data } = await api.get<AutomationRulesResponse>('/api/settings/automation-rules')
+  return data
+}
+
+export async function createAutomationRuleRequest(payload: AutomationRuleCreatePayload): Promise<AutomationRule> {
+  const { data } = await api.post<{ data: AutomationRule }>('/api/settings/automation-rules', payload)
+  return data.data
+}
+
+export async function updateAutomationRuleRequest(id: number, payload: AutomationRuleUpdatePayload): Promise<AutomationRule> {
+  const { data } = await api.patch<{ data: AutomationRule }>(`/api/settings/automation-rules/${id}`, payload)
+  return data.data
+}
+
+/** GERÇEK silme (204) — e-posta şablonlarıyla AYNI semantik, pasifleştirme DEĞİL. */
+export async function deleteAutomationRuleRequest(id: number): Promise<void> {
+  await api.delete(`/api/settings/automation-rules/${id}`)
+}
+
+export type AutomationUserOption = { id: number; name: string }
+
+/** `/api/users` `users.view` ister — izni olmayan kullanıcı 403 alır; çağıran taraf
+ *  `isForbidden` ile "sabit kullanıcı" seçeneğini gizler (bkz. `useDealOwnerOptions`
+ *  ile AYNI desen, `features/deals/api/boardApi.ts`). */
+export async function fetchAutomationUserOptions(): Promise<AutomationUserOption[]> {
+  const { data } = await api.get<{ data: AutomationUserOption[] }>('/api/users', { params: { per_page: 100 } })
   return data.data
 }

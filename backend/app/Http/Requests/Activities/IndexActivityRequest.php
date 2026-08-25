@@ -38,21 +38,6 @@ class IndexActivityRequest extends FormRequest
     }
 
     /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'per_page.max' => 'Sayfa başına kayıt sayısı en fazla :max olabilir.',
-            'filter.type.in' => 'Seçilen tür filtresi geçerli değil.',
-            'filter.user_id.exists' => 'Seçilen kullanıcı filtresi geçerli değil.',
-            'filter.activityable_type.in' => 'Seçilen hedef türü filtresi geçerli değil.',
-            'filter.from.date' => 'Başlangıç tarihi geçerli bir tarih olmalıdır.',
-            'filter.to.date' => 'Bitiş tarihi geçerli bir tarih olmalıdır.',
-        ];
-    }
-
-    /**
      * Repository/Service katmanının beklediği düz filtre dizisini üretir.
      *
      * @return array<string, mixed>

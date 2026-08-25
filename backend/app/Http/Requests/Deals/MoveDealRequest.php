@@ -57,12 +57,9 @@ class MoveDealRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'to_stage_id.required' => 'Hedef aşama zorunludur.',
-            'version.required' => 'Kartın versiyonu gönderilmelidir; eşzamanlı düzenlemeler bu alanla tespit edilir.',
-            'after_deal_id.different' => 'Alt ve üst komşu aynı kart olamaz.',
-            'position.prohibited' => 'Sıralama anahtarı istemciden alınmaz; sunucu tarafından üretilir.',
-            'lost_reason.max' => 'Kayıp nedeni en fazla :max karakter olabilir.',
-            'won_reason.max' => 'Kazanma nedeni en fazla :max karakter olabilir.',
+            'version.required' => __('validation.custom.deals.version_required'),
+            'after_deal_id.different' => __('validation.custom.deals.neighbor_conflict'),
+            'position.prohibited' => __('validation.custom.deals.position_prohibited'),
         ];
     }
 

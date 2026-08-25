@@ -10,6 +10,9 @@ use App\Notifications\Support\Money;
  * `deal.won` — bir fırsatın `status`'ü `won`'a döndüğünde
  * `App\Observers\Notifications\DealNotificationObserver` tarafından fırsatın
  * SAHİBİNE üretilir.
+ *
+ * FAZ 14 / İz D — anahtar moduna dönüştürüldü (bkz. DealAssignedNotification
+ * aynı desen).
  */
 class DealWonNotification extends CrmNotification
 {
@@ -18,12 +21,12 @@ class DealWonNotification extends CrmNotification
         return new self(
             recipientId: (int) $deal->owner_id,
             notificationType: 'deal.won',
-            notificationTitle: 'Fırsat kazanıldı',
-            notificationBody: sprintf(
-                '%s — %s',
-                $deal->company?->name ?? $deal->title,
-                Money::format((string) $deal->amount, (string) $deal->currency),
-            ),
+            titleKey: 'notifications.deal_won.title',
+            bodyKey: 'notifications.deal_won.body',
+            params: [
+                'subject' => (string) ($deal->company?->name ?? $deal->title),
+                'amount' => Money::format((string) $deal->amount, (string) $deal->currency),
+            ],
             notificationLink: '/deals/'.$deal->getKey(),
             meta: [
                 'deal_id' => (int) $deal->getKey(),

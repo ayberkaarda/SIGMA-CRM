@@ -67,20 +67,6 @@ class CalendarTaskRequest extends FormRequest
     }
 
     /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'from.required' => "'from' tarihi zorunludur.",
-            'to.required' => "'to' tarihi zorunludur.",
-            'filter.assigned_to.exists' => 'Seçilen atanan kişi filtresi geçerli değil.',
-            'filter.status.in' => 'Seçilen durum filtresi geçerli değil.',
-            'filter.priority.in' => 'Seçilen öncelik filtresi geçerli değil.',
-        ];
-    }
-
-    /**
      * Repository/Service katmanının beklediği düz filtre dizisini üretir.
      *
      * @return array<string, mixed>

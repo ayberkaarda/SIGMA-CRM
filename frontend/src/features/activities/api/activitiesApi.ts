@@ -3,6 +3,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, getErrorMessage } from '../../../lib/axios'
 import { toast } from '../../../components/ui'
+import i18n from '../../../i18n'
 import type { Activity, ActivitiesListResponse, ActivitiesQuery, ActivityPayload } from '../types'
 
 export const activitiesKeys = {
@@ -65,7 +66,7 @@ export function useCreateActivity() {
     mutationFn: createActivityRequest,
     onSuccess: () => {
       invalidateActivityCaches(queryClient)
-      toast.success('Aktivite kaydedildi.')
+      toast.success(i18n.t('activities:toast.created'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -78,7 +79,7 @@ export function useUpdateActivity() {
       updateActivityRequest(id, payload),
     onSuccess: (activity) => {
       invalidateActivityCaches(queryClient, activity.id)
-      toast.success('Aktivite güncellendi.')
+      toast.success(i18n.t('activities:toast.updated'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -90,7 +91,7 @@ export function useDeleteActivity() {
     mutationFn: (id: number) => deleteActivityRequest(id),
     onSuccess: () => {
       invalidateActivityCaches(queryClient)
-      toast.success('Aktivite silindi.')
+      toast.success(i18n.t('activities:toast.deleted'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })

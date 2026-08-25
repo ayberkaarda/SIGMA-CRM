@@ -40,8 +40,7 @@ class CheckDuplicatesRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'email.email' => 'Geçerli bir e-posta adresi girin.',
-            'email.required_without_all' => 'Duplicate kontrolü için en az bir alan doldurulmalıdır.',
+            'email.required_without_all' => __('validation.custom.leads.duplicate_required'),
         ];
     }
 

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Conversation;
 use App\Models\User;
+use App\Notifications\Support\NotificationText;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -20,8 +21,12 @@ use Tests\TestCase;
  * MentionResolver dokümanı — sınır/çakışma/sessiz başarısızlık).
  *
  * Bildirimler Faz 10 altyapısını kullanır: `CrmNotification` taban sınıfı,
- * `notifications` tablosu, `{type,title,body,link,meta}` payload sözleşmesi ve
- * tek gönderim kapısı `NotificationDispatcher`.
+ * `notifications` tablosu, `{type,link,meta}` + (Faz 14 / İz D'den itibaren)
+ * `title_key`/`body_key`/`params` payload sözleşmesi ve tek gönderim kapısı
+ * `NotificationDispatcher`. `title`/`body` artık DB satırında saklanmaz —
+ * bu dosyadaki testler ham `data`'yı `NotificationText::resolve()` ile aynı
+ * (uygulama varsayılanı `tr`) dilde render edip iddialarını ona karşı yapar,
+ * `NotificationResource`'un okuma anında yaptığıyla birebir aynı yolu izleyerek.
  */
 class ChatMentionTest extends TestCase
 {
@@ -74,6 +79,19 @@ class ChatMentionTest extends TestCase
             ->all();
     }
 
+    /**
+     * `notifications.data`'nın anahtar+parametresini `NotificationResource` ile AYNI
+     * yolla (`NotificationText::resolve()`) okuma-anı metnine çevirir — bkz. sınıf
+     * dokümanı.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{title: ?string, body: ?string}
+     */
+    protected function resolvedText(array $data): array
+    {
+        return NotificationText::resolve($data, app()->getLocale());
+    }
+
     // -------------------------------------------------------------------
 
     public function test_a_mentioned_member_receives_a_chat_mention_notification(): void
@@ -98,7 +116,7 @@ class ChatMentionTest extends TestCase
         $this->assertCount(1, $notifications);
         $this->assertSame('chat.mention', $notifications[0]['type']);
         $this->assertSame('/chat/'.$conversation->id, $notifications[0]['link']);
-        $this->assertStringContainsString($sender->name, $notifications[0]['title']);
+        $this->assertStringContainsString($sender->name, $this->resolvedText($notifications[0])['title']);
         $this->assertSame($conversation->id, $notifications[0]['meta']['conversation_id']);
         $this->assertSame($messageId, $notifications[0]['meta']['message_id']);
         $this->assertSame($sender->id, $notifications[0]['meta']['actor_id']);
@@ -276,8 +294,9 @@ class ChatMentionTest extends TestCase
             ->assertStatus(201);
 
         $notifications = $this->chatNotificationsFor($mentioned);
+        $text = $this->resolvedText($notifications[0]);
 
-        $this->assertSame('Sözleşme taslağını bugün göndermemiz gerekiyor.', $notifications[0]['body']);
-        $this->assertStringContainsString('Satış Ekibi', $notifications[0]['title']);
+        $this->assertSame('Sözleşme taslağını bugün göndermemiz gerekiyor.', $text['body']);
+        $this->assertStringContainsString('Satış Ekibi', $text['title']);
     }
 }

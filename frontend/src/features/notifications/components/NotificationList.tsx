@@ -3,6 +3,7 @@
 // `link`'e gidilir. Boş durum `EmptyState`, yükleniyor `Skeleton` (desen:
 // `features/presence/components/OnlineUsersPopover.tsx`).
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Bell } from 'lucide-react'
 import { EmptyState, Skeleton } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
@@ -19,6 +20,7 @@ export type NotificationListProps = {
 }
 
 export function NotificationList({ onNavigate }: NotificationListProps) {
+  const { t } = useTranslation('notifications')
   const navigate = useNavigate()
   const { data, isLoading } = useNotifications({})
   const markRead = useMarkRead()
@@ -52,8 +54,8 @@ export function NotificationList({ onNavigate }: NotificationListProps) {
     return (
       <EmptyState
         icon={<Bell className="size-6" aria-hidden="true" />}
-        title="Bildirim yok"
-        description="Yeni bir gelişme olduğunda burada görünecek."
+        title={t('notifications:list.emptyTitle')}
+        description={t('notifications:list.emptyDescription')}
         className="px-4 py-6"
       />
     )

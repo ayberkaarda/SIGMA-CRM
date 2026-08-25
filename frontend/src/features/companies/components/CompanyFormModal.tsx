@@ -1,6 +1,7 @@
 // Firma oluşturma/düzenleme modalı. `company` prop'u verilmezse (null/undefined) oluşturma modu.
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Info } from 'lucide-react'
 import { Button, Input, Modal, Select, Textarea } from '../../../components/ui'
 import { getFieldErrors } from '../../../lib/axios'
@@ -43,6 +44,7 @@ function toNumberOrNull(raw: string): number | null {
 }
 
 export function CompanyFormModal({ open, onClose, company }: CompanyFormModalProps) {
+  const { t } = useTranslation(['companies', 'common'])
   const isEdit = !!company
   const { can } = usePermission()
   const canViewUsers = can('users.view')
@@ -103,8 +105,8 @@ export function CompanyFormModal({ open, onClose, company }: CompanyFormModalPro
 
   function validate(): boolean {
     const errors: Record<string, string[]> = {}
-    if (!name.trim()) errors.name = ['Firma adı zorunludur.']
-    if (!isValidWebsite(website)) errors.website = ['Geçerli bir web sitesi adresi girin.']
+    if (!name.trim()) errors.name = [t('companies:form.nameRequired')]
+    if (!isValidWebsite(website)) errors.website = [t('companies:form.invalidWebsite')]
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -144,7 +146,7 @@ export function CompanyFormModal({ open, onClose, company }: CompanyFormModalPro
   }
 
   const ownerOptions = [
-    { value: '', label: 'Sahip seçilmedi' },
+    { value: '', label: t('companies:form.ownerNotSelected') },
     ...(userOptions ?? []).map((user) => ({ value: String(user.id), label: user.name })),
   ]
 
@@ -152,22 +154,22 @@ export function CompanyFormModal({ open, onClose, company }: CompanyFormModalPro
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? 'Firmayı Düzenle' : 'Yeni Firma'}
+      title={isEdit ? t('companies:form.titleEdit') : t('companies:form.titleCreate')}
       size="lg"
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Vazgeç
+            {t('common:actions.cancel')}
           </Button>
           <Button type="submit" form="company-form" loading={isPending}>
-            {isEdit ? 'Kaydet' : 'Oluştur'}
+            {isEdit ? t('common:actions.save') : t('companies:form.create')}
           </Button>
         </div>
       }
     >
       <form id="company-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Input
-          label="Firma Adı"
+          label={t('companies:form.name')}
           value={name}
           onChange={(e) => setName(e.target.value)}
           error={fieldError('name')}
@@ -176,26 +178,26 @@ export function CompanyFormModal({ open, onClose, company }: CompanyFormModalPro
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
-            label="E-posta"
+            label={t('companies:form.email')}
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             error={fieldError('email')}
           />
-          <Input label="Telefon" value={phone} onChange={(e) => setPhone(e.target.value)} error={fieldError('phone')} />
+          <Input label={t('companies:form.phone')} value={phone} onChange={(e) => setPhone(e.target.value)} error={fieldError('phone')} />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
-            label="Website"
+            label={t('companies:form.website')}
             value={website}
             onChange={(e) => setWebsite(e.target.value)}
             error={fieldError('website')}
-            placeholder="acme.com"
-            hint={!fieldError('website') ? 'Protokol (https://) girmezseniz otomatik eklenir.' : undefined}
+            placeholder={t('companies:form.websitePlaceholder')}
+            hint={!fieldError('website') ? t('companies:form.websiteHint') : undefined}
           />
           <Input
-            label="Sektör"
+            label={t('companies:form.industry')}
             value={industry}
             onChange={(e) => setIndustry(e.target.value)}
             error={fieldError('industry')}
@@ -204,7 +206,7 @@ export function CompanyFormModal({ open, onClose, company }: CompanyFormModalPro
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
-            label="Çalışan Sayısı"
+            label={t('companies:form.employeeCount')}
             type="number"
             min={0}
             value={employeeCount}
@@ -212,7 +214,7 @@ export function CompanyFormModal({ open, onClose, company }: CompanyFormModalPro
             error={fieldError('employee_count')}
           />
           <Input
-            label="Yıllık Ciro"
+            label={t('companies:form.annualRevenue')}
             type="number"
             min={0}
             value={annualRevenue}
@@ -221,16 +223,16 @@ export function CompanyFormModal({ open, onClose, company }: CompanyFormModalPro
           />
         </div>
 
-        <Input label="Adres" value={address} onChange={(e) => setAddress(e.target.value)} error={fieldError('address')} />
+        <Input label={t('companies:form.address')} value={address} onChange={(e) => setAddress(e.target.value)} error={fieldError('address')} />
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Input label="Şehir" value={city} onChange={(e) => setCity(e.target.value)} error={fieldError('city')} />
-          <Input label="Ülke" value={country} onChange={(e) => setCountry(e.target.value)} error={fieldError('country')} />
+          <Input label={t('companies:form.city')} value={city} onChange={(e) => setCity(e.target.value)} error={fieldError('city')} />
+          <Input label={t('companies:form.country')} value={country} onChange={(e) => setCountry(e.target.value)} error={fieldError('country')} />
         </div>
 
         {canViewUsers && (
           <Select
-            label="Sahip"
+            label={t('companies:form.owner')}
             value={ownerId}
             onChange={(e) => setOwnerId(e.target.value)}
             options={ownerOptions}
@@ -238,11 +240,17 @@ export function CompanyFormModal({ open, onClose, company }: CompanyFormModalPro
           />
         )}
 
-        <TagMultiSelect label="Etiketler" tags={tags ?? []} selectedIds={tagIds} onChange={setTagIds} error={fieldError('tag_ids')} />
+        <TagMultiSelect
+          label={t('companies:form.tags')}
+          tags={tags ?? []}
+          selectedIds={tagIds}
+          onChange={setTagIds}
+          error={fieldError('tag_ids')}
+        />
 
         {customFields && customFields.length > 0 && (
           <div className="flex flex-col gap-4 rounded-md border border-border-subtle p-3">
-            <p className="text-xs font-medium text-fg-muted">Özel Alanlar</p>
+            <p className="text-xs font-medium text-fg-muted">{t('companies:form.customFieldsTitle')}</p>
             {customFields.map((field) => (
               <Input
                 key={field.key}
@@ -255,12 +263,12 @@ export function CompanyFormModal({ open, onClose, company }: CompanyFormModalPro
           </div>
         )}
 
-        <Textarea label="Notlar" value={notes} onChange={(e) => setNotes(e.target.value)} error={fieldError('notes')} rows={4} />
+        <Textarea label={t('companies:form.notes')} value={notes} onChange={(e) => setNotes(e.target.value)} error={fieldError('notes')} rows={4} />
 
         {!isEdit && (
           <div className="flex items-start gap-2 rounded-md bg-primary-tint p-3 text-xs text-primary">
             <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            <p>Firma oluşturulduktan sonra kişiler ve fırsatlar bu firmaya bağlanabilir.</p>
+            <p>{t('companies:form.createHint')}</p>
           </div>
         )}
       </form>

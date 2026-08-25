@@ -81,14 +81,7 @@ class StoreEmailTemplateRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'key.required' => 'Şablon anahtarı (key) zorunludur.',
-            'key.regex' => 'Anahtar küçük harfle başlamalı; yalnızca küçük harf, rakam ve alt çizgi içerebilir (ör. "teklif_gonderildi").',
-            'key.unique' => 'Bu anahtara sahip bir şablon zaten var.',
-            'name.required' => 'Şablon adı zorunludur.',
-            'subject.required' => 'E-posta konusu zorunludur.',
-            'subject.max' => 'E-posta konusu en fazla :max karakter olabilir.',
-            'body_html.required' => 'Şablon gövdesi zorunludur.',
-            'variables.array' => 'Değişken listesi bir dizi olmalıdır.',
+            'key.regex' => __('validation.custom.settings.key_format'),
         ];
     }
 }

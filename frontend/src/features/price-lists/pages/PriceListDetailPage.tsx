@@ -13,6 +13,7 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import { AlertTriangle, ArrowLeft, Check, Info, ListChecks, Pencil, Plus, Trash2, X } from 'lucide-react'
 import {
   Badge,
@@ -49,6 +50,7 @@ function computeDiff(item: PriceListItem): { amount: number; percent: number | n
 }
 
 export function PriceListDetailPage() {
+  const { t } = useTranslation()
   const params = useParams<{ id: string }>()
   const priceListId = Number(params.id)
   const { can } = usePermission()
@@ -94,12 +96,12 @@ export function PriceListDetailPage() {
   async function handleAddProduct() {
     setAddError(undefined)
     if (!addProduct) {
-      setAddError('Bir ürün seçin.')
+      setAddError(t('priceLists:detail.addProductRequired'))
       return
     }
     const value = Number(addPrice)
     if (addPrice === '' || Number.isNaN(value) || value < 0) {
-      setAddError('Geçerli, negatif olmayan bir fiyat girin.')
+      setAddError(t('priceLists:detail.addPriceInvalid'))
       return
     }
     await setPrice.mutateAsync({ productId: addProduct.id, unitPrice: value })
@@ -127,9 +129,9 @@ export function PriceListDetailPage() {
   if (isError || !priceList) {
     return (
       <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-fg-muted">Fiyat listesi yüklenirken bir hata oluştu.</p>
+        <p className="text-sm text-fg-muted">{t('priceLists:detail.loadError')}</p>
         <Button variant="secondary" onClick={() => refetch()}>
-          Tekrar dene
+          {t('priceLists:retry')}
         </Button>
       </div>
     )
@@ -144,7 +146,7 @@ export function PriceListDetailPage() {
       <nav aria-label="breadcrumb" className="flex items-center gap-1.5 text-xs text-fg-muted">
         <Link to="/price-lists" className="inline-flex items-center gap-1 hover:text-fg">
           <ArrowLeft className="size-3.5" aria-hidden="true" />
-          Fiyat Listeleri
+          {t('priceLists:breadcrumb.priceLists')}
         </Link>
         <span className="mx-1">/</span>
         <span className="text-primary">{priceList.name}</span>
@@ -157,21 +159,23 @@ export function PriceListDetailPage() {
             <span className="flex flex-wrap items-center gap-2">
               <span className="font-mono text-fg-muted">{priceList.code}</span>
               <span>
-                · Geçerlilik:{' '}
+                · {t('priceLists:detail.validityLabel')}:{' '}
                 {priceList.valid_from || priceList.valid_until
                   ? `${formatDate(priceList.valid_from)} – ${formatDate(priceList.valid_until)}`
-                  : 'Süresiz'}
+                  : t('priceLists:unlimited')}
               </span>
               <span>· {priceList.currency}</span>
             </span>
           }
           action={
             <div className="flex items-center gap-2">
-              {priceList.is_default && <Badge variant="primary">Varsayılan</Badge>}
-              <Badge variant={priceList.is_active ? 'success' : 'neutral'}>{priceList.is_active ? 'Aktif' : 'Pasif'}</Badge>
+              {priceList.is_default && <Badge variant="primary">{t('priceLists:defaultBadge')}</Badge>}
+              <Badge variant={priceList.is_active ? 'success' : 'neutral'}>
+                {priceList.is_active ? t('priceLists:status.active') : t('priceLists:status.inactive')}
+              </Badge>
               {canManage && (
                 <Button variant="secondary" leftIcon={<Pencil className="size-4" aria-hidden="true" />} onClick={() => setEditOpen(true)}>
-                  Düzenle
+                  {t('priceLists:actions.edit')}
                 </Button>
               )}
             </div>
@@ -186,7 +190,7 @@ export function PriceListDetailPage() {
               </div>
               <div className="w-full sm:w-40">
                 <Input
-                  label="Liste Fiyatı"
+                  label={t('priceLists:detail.addProductPriceLabel')}
                   type="number"
                   min={0}
                   step="0.01"
@@ -200,13 +204,11 @@ export function PriceListDetailPage() {
                 loading={setPrice.isPending}
                 onClick={handleAddProduct}
               >
-                Ekle / Güncelle
+                {t('priceLists:detail.addOrUpdateAction')}
               </Button>
             </div>
             {addError && <p className="mt-1.5 text-xs text-danger">{addError}</p>}
-            <p className="mt-1.5 text-xs text-fg-muted">
-              Zaten listede olan bir ürün seçilirse mevcut fiyatı bu değerle güncellenir.
-            </p>
+            <p className="mt-1.5 text-xs text-fg-muted">{t('priceLists:detail.addHint')}</p>
           </CardBody>
         )}
 
@@ -214,18 +216,18 @@ export function PriceListDetailPage() {
           {isEmpty ? (
             <EmptyState
               icon={<ListChecks className="size-6" aria-hidden="true" />}
-              title="Bu listede henüz ürün fiyatı yok"
-              description="Katalog fiyatları geçerli — yukarıdan bir ürün ekleyerek bu liste için özel bir fiyat tanımlayabilirsiniz."
+              title={t('priceLists:detail.emptyTitle')}
+              description={t('priceLists:detail.emptyDescription')}
             />
           ) : (
             <Table>
               <THead>
                 <Tr>
-                  <Th>Ürün</Th>
-                  <Th align="right">Katalog Fiyatı</Th>
-                  <Th align="right">Liste Fiyatı</Th>
-                  <Th align="right">Fark</Th>
-                  {canManage && <Th align="right">İşlemler</Th>}
+                  <Th>{t('priceLists:detail.columns.product')}</Th>
+                  <Th align="right">{t('priceLists:detail.columns.catalogPrice')}</Th>
+                  <Th align="right">{t('priceLists:detail.columns.listPrice')}</Th>
+                  <Th align="right">{t('priceLists:detail.columns.diff')}</Th>
+                  {canManage && <Th align="right">{t('priceLists:detail.columns.actions')}</Th>}
                 </Tr>
               </THead>
               <TBody aria-busy={itemsLoading}>
@@ -265,7 +267,9 @@ export function PriceListDetailPage() {
                                   onChange={(e) => setEditValue(e.target.value)}
                                   inputSize="sm"
                                   className="w-28 text-right"
-                                  aria-label={`${item.product_name ?? 'Ürün'} liste fiyatı`}
+                                  aria-label={t('priceLists:detail.priceInputAria', {
+                                    name: item.product_name ?? t('priceLists:detail.productFallback'),
+                                  })}
                                 />
                               </div>
                             ) : (
@@ -276,7 +280,7 @@ export function PriceListDetailPage() {
                             {diff === null ? (
                               <span className="text-fg-muted">—</span>
                             ) : diff.amount === 0 ? (
-                              <span className="text-fg-muted">Fark yok</span>
+                              <span className="text-fg-muted">{t('priceLists:detail.noDiff')}</span>
                             ) : (
                               <span className={diff.amount < 0 ? 'text-success' : 'text-warning'}>
                                 {diff.amount < 0 ? '−' : '+'}
@@ -290,19 +294,19 @@ export function PriceListDetailPage() {
                               <div className="flex items-center justify-end gap-1">
                                 {isEditing ? (
                                   <>
-                                    <IconButton label="Kaydet" onClick={() => saveEdit(item.product_id)}>
+                                    <IconButton label={t('common:actions.save')} onClick={() => saveEdit(item.product_id)}>
                                       <Check className="size-4" aria-hidden="true" />
                                     </IconButton>
-                                    <IconButton label="Vazgeç" onClick={cancelEdit}>
+                                    <IconButton label={t('common:actions.cancel')} onClick={cancelEdit}>
                                       <X className="size-4" aria-hidden="true" />
                                     </IconButton>
                                   </>
                                 ) : (
                                   <>
-                                    <IconButton label="Fiyatı düzenle" onClick={() => startEdit(item)}>
+                                    <IconButton label={t('priceLists:detail.editPrice')} onClick={() => startEdit(item)}>
                                       <Pencil className="size-4" aria-hidden="true" />
                                     </IconButton>
-                                    <IconButton label="Kaldır" danger onClick={() => setRemoveState(item)}>
+                                    <IconButton label={t('priceLists:detail.removeAction')} danger onClick={() => setRemoveState(item)}>
                                       <Trash2 className="size-4" aria-hidden="true" />
                                     </IconButton>
                                   </>
@@ -330,11 +334,11 @@ export function PriceListDetailPage() {
       <Modal
         open={!!removeState}
         onClose={() => setRemoveState(null)}
-        title="Ürünü listeden kaldır"
+        title={t('priceLists:detail.removeModal.title')}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setRemoveState(null)}>
-              Vazgeç
+              {t('common:actions.cancel')}
             </Button>
             <Button
               variant="danger"
@@ -345,7 +349,7 @@ export function PriceListDetailPage() {
                 setRemoveState(null)
               }}
             >
-              Kaldır
+              {t('priceLists:detail.removeAction')}
             </Button>
           </div>
         }
@@ -353,12 +357,15 @@ export function PriceListDetailPage() {
         {removeState && (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-fg-secondary">
-              <strong className="text-fg">{removeState.product_name ?? `#${removeState.product_id}`}</strong> ürününü bu
-              fiyat listesinden kaldırmak istediğinize emin misiniz?
+              <Trans
+                i18nKey="priceLists:detail.removeModal.confirmText"
+                values={{ name: removeState.product_name ?? `#${removeState.product_id}` }}
+                components={{ bold: <strong className="text-fg" /> }}
+              />
             </p>
             <div className="flex items-start gap-2 rounded-md bg-warning-tint px-3 py-2 text-xs text-warning">
               <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-              <span>Kaldırıldıktan sonra bu ürün için katalog fiyatı geçerli olacak.</span>
+              <span>{t('priceLists:detail.removeModal.warning')}</span>
             </div>
           </div>
         )}
@@ -367,7 +374,7 @@ export function PriceListDetailPage() {
       {!canManage && (
         <div className="flex items-center gap-2 text-xs text-fg-muted">
           <Info className="size-3.5" aria-hidden="true" />
-          Fiyatları düzenlemek için yetkiniz yok, yalnızca görüntüleyebilirsiniz.
+          {t('priceLists:detail.readOnlyHint')}
         </div>
       )}
     </div>

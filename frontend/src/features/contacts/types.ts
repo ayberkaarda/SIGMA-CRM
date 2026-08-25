@@ -1,5 +1,8 @@
 // Kişiler modülü tipleri — backend sözleşmesiyle birebir eşleşir.
 
+// Faz 14 / İz F — C3 ilişkili-kayıtlar paneli (docs/PHASE-INTL.md §3).
+import type { DealRelatedItem, QuoteRelatedItem, RelatedGroupData, TicketRelatedItem } from '../related/types'
+
 export type Tag = {
   id: number
   name: string
@@ -44,6 +47,13 @@ export type Contact = {
   custom_fields: Record<string, string>
   deals_count?: number
   tickets_count?: number
+  // Faz 14 / İz F — C3 ilişkili-kayıtlar paneli. `company` burada YOK: yukarıdaki `company`
+  // alanı zaten bu yönü karşılıyor (bkz. `ContactController::loadRelatedRecords()`).
+  related?: {
+    deals?: RelatedGroupData<DealRelatedItem>
+    tickets?: RelatedGroupData<TicketRelatedItem>
+    quotes?: RelatedGroupData<QuoteRelatedItem>
+  }
   created_at: string
   updated_at: string
 }

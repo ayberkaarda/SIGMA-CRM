@@ -7,8 +7,12 @@
 // izni olmayan bir kullanıcı için seçeneği GİZLEME kararı bu sabit listede DEĞİL, kullanım
 // yerinde (`RelatedRecordPicker`, 403 tespitiyle) verilir — bu dosya salt statik bir eşleme,
 // izin durumundan haberi yok.
+//
+// Etiket metinleri `tasks:relatedType.*` anahtarındadır (Faz 14 / İz D). Bu dosya bir React
+// component'i DEĞİL — çağıran component kendi `t` fonksiyonunu parametre olarak geçirir.
 import { Building2, Handshake, Ticket, User, UserPlus } from 'lucide-react'
 import type { ComponentType, SVGProps } from 'react'
+import type { TFunction } from 'i18next'
 import type { TaskableType } from '../types'
 
 export const RELATED_RECORD_SELECTABLE_TYPES: TaskableType[] = ['deal', 'lead', 'contact', 'company', 'ticket']
@@ -19,18 +23,26 @@ type RelatedRecordMeta = {
   path: (id: number) => string
 }
 
-const RELATED_RECORD_META: Record<TaskableType, RelatedRecordMeta> = {
-  deal: { label: 'Fırsat', icon: Handshake, path: (id) => `/deals/${id}` },
-  lead: { label: 'Müşteri Adayı', icon: UserPlus, path: (id) => `/leads/${id}` },
-  contact: { label: 'Kişi', icon: User, path: (id) => `/contacts/${id}` },
-  company: { label: 'Firma', icon: Building2, path: (id) => `/companies/${id}` },
-  ticket: { label: 'Talep', icon: Ticket, path: (id) => `/tickets/${id}` },
+const RELATED_RECORD_ICON: Record<TaskableType, ComponentType<SVGProps<SVGSVGElement>>> = {
+  deal: Handshake,
+  lead: UserPlus,
+  contact: User,
+  company: Building2,
+  ticket: Ticket,
 }
 
-export function relatedRecordMeta(type: TaskableType): RelatedRecordMeta {
-  return RELATED_RECORD_META[type]
+const RELATED_RECORD_PATH: Record<TaskableType, (id: number) => string> = {
+  deal: (id) => `/deals/${id}`,
+  lead: (id) => `/leads/${id}`,
+  contact: (id) => `/contacts/${id}`,
+  company: (id) => `/companies/${id}`,
+  ticket: (id) => `/tickets/${id}`,
 }
 
-export function relatedRecordTypeLabel(type: TaskableType): string {
-  return RELATED_RECORD_META[type].label
+export function relatedRecordTypeLabel(type: TaskableType, t: TFunction): string {
+  return t(`tasks:relatedType.${type}`)
+}
+
+export function relatedRecordMeta(type: TaskableType, t: TFunction): RelatedRecordMeta {
+  return { label: relatedRecordTypeLabel(type, t), icon: RELATED_RECORD_ICON[type], path: RELATED_RECORD_PATH[type] }
 }

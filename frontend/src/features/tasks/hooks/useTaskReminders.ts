@@ -15,13 +15,14 @@ import { getEcho } from '../../../lib/echo'
 import { toast } from '../../../components/ui'
 import { useAuthStore } from '../../auth/store'
 import { router } from '../../../router'
+import i18n, { getIntlLocale } from '../../../i18n'
 import type { TaskReminderEvent } from '../types'
 
 const EVENT_NAME = '.task.reminder'
 
 function formatDueAt(iso: string): string {
   try {
-    return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
+    return new Intl.DateTimeFormat(getIntlLocale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
   } catch {
     return iso
   }
@@ -40,13 +41,13 @@ export function useTaskReminders() {
     const channel = echo.private(channelName)
 
     channel.listen(EVENT_NAME, (payload: TaskReminderEvent) => {
-      const descriptionParts = [`Vade: ${formatDueAt(payload.due_at)}`]
+      const descriptionParts = [i18n.t('tasks:reminders.dueLabel', { date: formatDueAt(payload.due_at) })]
       if (payload.taskable_label) descriptionParts.push(payload.taskable_label)
 
       toast.info(payload.title, {
         description: descriptionParts.join(' · '),
         action: {
-          label: 'Göreve git',
+          label: i18n.t('tasks:reminders.goToTask'),
           // `?highlight=<task_id>` — `TasksPage`'in liste görünümü bu parametreyi tüketip
           // ilgili satırı kısa süreliğine vurgular (bkz. o dosyadaki efekt). Başlıkla arama
           // (`?q=`) YERİNE id kullanılır: aynı başlıklı iki görev varsa arama ikisini de

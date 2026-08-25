@@ -9,6 +9,7 @@
 //   Yani "en yeni mesaj" = `pages[0].data[0]`; yeni gelen mesaj oraya EKLENİR (unshift).
 //   UI'nin gördüğü düz liste `flattenMessages()` ile ESKİDEN YENİYE çevrilir.
 import type { InfiniteData } from '@tanstack/react-query'
+import i18n from '../../i18n'
 import type {
   Attachment,
   ChatMessage,
@@ -333,7 +334,7 @@ export function patchConversationPreview(
 
 /** Bir mesajın liste önizlemesinde nasıl görüneceği (ek varsa dosya adı, silinmişse tire). */
 export function previewOf(message: Pick<Message, 'body' | 'attachment' | 'deleted_at'>): string {
-  if (message.deleted_at) return 'Bu mesaj silindi'
+  if (message.deleted_at) return i18n.t('chat:message.deletedPreview')
   if (message.body && message.body.trim().length > 0) return message.body
   if (message.attachment) return message.attachment.original_name
   return ''

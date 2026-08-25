@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { LogOut, Menu, Monitor, Moon, Search, Sun, User as UserIcon, WifiOff } from 'lucide-react'
-import { Avatar, Input } from '../ui'
+import { useTranslation } from 'react-i18next'
+import { Avatar } from '../ui'
 import { cn } from '../../lib/cn'
 import { useAuth } from '../../features/auth/hooks/useAuth'
 import { useTheme } from '../../hooks/useTheme'
@@ -11,22 +12,34 @@ import type { Theme } from '../../stores/themeStore'
 import { onConnectionStateChange } from '../../lib/echo'
 import { OnlineUsersPopover } from '../../features/presence/components/OnlineUsersPopover'
 import { NotificationBell } from '../../features/notifications'
+import { LanguageSwitcher } from '../../i18n/LanguageSwitcher'
+import { CurrencySwitcher } from '../../features/preferences'
 
 const THEME_SEQUENCE: Theme[] = ['light', 'dark', 'system']
 
-const THEME_META: Record<Theme, { icon: typeof Sun; label: string }> = {
-  light: { icon: Sun, label: 'Açık tema' },
-  dark: { icon: Moon, label: 'Koyu tema' },
-  system: { icon: Monitor, label: 'Sistem teması' },
+// Klavye kısayolu ipucu — bir dil metni DEĞİL, klavye gösterimi (bkz. features/search); bu
+// yüzden çeviri anahtarı gerektirmez, yalnızca platforma göre değişir.
+const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform)
+const SEARCH_SHORTCUT_HINT = IS_MAC ? '⌘K' : 'Ctrl K'
+
+// Etiketler ANAHTAR olarak durur, çevrilmiş metin olarak değil — modül seviyesindeki bir
+// sabit `t()` çağırsaydı metin ilk dile donardı (aynı gerekçe: Sidebar NAV_SECTIONS).
+const THEME_META: Record<Theme, { icon: typeof Sun; labelKey: string }> = {
+  light: { icon: Sun, labelKey: 'layout.theme.light' },
+  dark: { icon: Moon, labelKey: 'layout.theme.dark' },
+  system: { icon: Monitor, labelKey: 'layout.theme.system' },
 }
 
 type TopbarProps = {
   onToggleSidebar: () => void
   sidebarCollapsed: boolean
+  /** Global komut paletini açar (Faz 14 / İz F / C1) — bkz. `AppLayout.tsx` tek mount noktası. */
+  onOpenSearch: () => void
 }
 
-export function Topbar({ onToggleSidebar, sidebarCollapsed }: TopbarProps) {
+export function Topbar({ onToggleSidebar, sidebarCollapsed, onOpenSearch }: TopbarProps) {
   const { user, logout } = useAuth()
+  const { t } = useTranslation('common')
   const { theme, setTheme } = useTheme()
   const [menuOpen, setMenuOpen] = useState(false)
   const [realtimeConnected, setRealtimeConnected] = useState(false)
@@ -98,29 +111,41 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed }: TopbarProps) {
       <button
         type="button"
         onClick={onToggleSidebar}
-        aria-label="Kenar çubuğunu aç/kapat"
+        aria-label={t('layout.toggleSidebar')}
         aria-expanded={!sidebarCollapsed}
         className={iconButtonClass}
       >
         <Menu className="size-5" aria-hidden="true" />
       </button>
 
-      {/* Not: arama kutusu şimdilik görsel yer tutucu — global arama sonraki bir fazda bağlanacak. */}
-      <div className="w-full max-w-xs">
-        <Input
-          type="search"
-          inputSize="sm"
-          placeholder="Ara..."
-          aria-label="Ara"
-          leftIcon={<Search className="size-4" aria-hidden="true" />}
-        />
-      </div>
+      {/* Gerçek bir metin girişi DEĞİL — tıklanınca global komut paletini açan bir tetikleyici
+          (Faz 14 / İz F / C1, bkz. `AppLayout.tsx`). Yazma burada değil, palet içinde olur;
+          bu yüzden `<Input>` yerine anlamsal olarak doğru olan `<button>` kullanılıyor. */}
+      <button
+        type="button"
+        onClick={onOpenSearch}
+        aria-label={t('layout.search')}
+        className={cn(
+          'flex h-8 w-full max-w-xs items-center gap-2 rounded-md border border-border-strong bg-surface-2 px-3 text-xs text-fg-muted',
+          'transition-colors duration-150 hover:bg-surface-3 motion-reduce:transition-none',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-1'
+        )}
+      >
+        <Search className="size-4 shrink-0" aria-hidden="true" />
+        <span className="truncate">{t('layout.searchPlaceholder')}</span>
+        <span className="ml-auto hidden shrink-0 rounded border border-border-subtle px-1.5 py-0.5 font-mono text-[10px] sm:inline-block">
+          {SEARCH_SHORTCUT_HINT}
+        </span>
+      </button>
 
       <div className="ml-auto flex items-center gap-1.5">
+        <LanguageSwitcher />
+        <CurrencySwitcher />
+
         <button
           type="button"
           onClick={cycleTheme}
-          aria-label={`Tema: ${THEME_META[theme].label}. Değiştirmek için tıklayın.`}
+          aria-label={t('layout.themeAria', { theme: t(THEME_META[theme].labelKey) })}
           className={iconButtonClass}
         >
           <ThemeIcon className="size-4" aria-hidden="true" />
@@ -128,8 +153,8 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed }: TopbarProps) {
 
         {!realtimeConnected && (
           <span
-            title="Gerçek zamanlı bağlantı kesildi"
-            aria-label="Gerçek zamanlı bağlantı kesildi"
+            title={t('layout.realtimeDisconnected')}
+            aria-label={t('layout.realtimeDisconnected')}
             role="status"
             className="inline-flex size-9 shrink-0 items-center justify-center text-warning"
           >
@@ -154,9 +179,9 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed }: TopbarProps) {
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-1'
             )}
           >
-            <Avatar name={user?.name ?? 'Kullanıcı'} size="sm" />
+            <Avatar name={user?.name ?? t('layout.userFallback')} size="sm" />
             <span className="hidden flex-col items-start sm:flex">
-              <span className="max-w-[10rem] truncate text-sm font-medium text-fg">{user?.name ?? 'Kullanıcı'}</span>
+              <span className="max-w-[10rem] truncate text-sm font-medium text-fg">{user?.name ?? t('layout.userFallback')}</span>
               <span className="max-w-[10rem] truncate text-xs text-fg-muted">{user?.email ?? ''}</span>
             </span>
           </button>
@@ -164,12 +189,12 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed }: TopbarProps) {
           {menuOpen && (
             <div
               role="menu"
-              aria-label="Kullanıcı menüsü"
+              aria-label={t('layout.userMenu')}
               onKeyDown={handleMenuKeyDown}
               className="absolute right-0 top-full z-50 mt-2 w-56 rounded-lg border border-border bg-surface-3 py-1.5 shadow-popover"
             >
               <div className="border-b border-border-subtle px-3 pb-2 pt-1 sm:hidden">
-                <p className="truncate text-sm font-medium text-fg">{user?.name ?? 'Kullanıcı'}</p>
+                <p className="truncate text-sm font-medium text-fg">{user?.name ?? t('layout.userFallback')}</p>
                 <p className="truncate text-xs text-fg-muted">{user?.email ?? ''}</p>
               </div>
               {/* Profil — yer tutucu, sonraki bir fazda bağlanacak. */}
@@ -180,7 +205,7 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed }: TopbarProps) {
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-fg-disabled disabled:cursor-not-allowed"
               >
                 <UserIcon className="size-4" aria-hidden="true" />
-                Profil
+                {t('layout.profile')}
               </button>
               <button
                 ref={logoutButtonRef}
@@ -190,7 +215,7 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed }: TopbarProps) {
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-danger transition-colors duration-150 hover:bg-surface-2 motion-reduce:transition-none"
               >
                 <LogOut className="size-4" aria-hidden="true" />
-                Çıkış Yap
+                {t('layout.logout')}
               </button>
             </div>
           )}

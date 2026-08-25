@@ -36,21 +36,4 @@ class UpdateUserRequest extends FormRequest
             'department' => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'name.string' => 'Ad Soyad metin olmalıdır.',
-            'name.max' => 'Ad Soyad en fazla :max karakter olabilir.',
-            'email.email' => 'Geçerli bir e-posta adresi girin.',
-            'email.max' => 'E-posta en fazla :max karakter olabilir.',
-            'email.unique' => 'Bu e-posta adresi zaten kullanılıyor.',
-            'role.exists' => 'Seçilen rol geçerli değil.',
-            'department.string' => 'Departman metin olmalıdır.',
-            'department.max' => 'Departman en fazla :max karakter olabilir.',
-        ];
-    }
 }

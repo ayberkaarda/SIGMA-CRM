@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Notifications\Support\NotificationText;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -67,15 +68,36 @@ abstract class CrmNotification extends Notification implements ShouldQueue
      * doğrulandı). `readonly` yalnızca kozmetik bir savunma katmanıydı;
      * kaldırılması payload sözleşmesini DEĞİŞTİRMEZ.
      *
+     * ---------------------------------------------------------------------------
+     * FAZ 14 / İZ D — METİN YERİNE ANAHTAR+PARAMETRE
+     * ---------------------------------------------------------------------------
+     * Alt sınıflar artık İKİ moddan birinde yazılır:
+     *
+     *   ANAHTAR MODU (hedef): `titleKey`/`bodyKey`/`params` verilir, `notificationTitle`/
+     *   `notificationBody` verilmez. `data` sütununa metin DEĞİL anlam yazılır; cümle okuma
+     *   anında OKUYANIN diliyle üretilir (gerekçe: NotificationText).
+     *
+     *   DÜZ METİN MODU (miras): `notificationTitle`/`notificationBody` verilir. 11 tipin
+     *   9'u hâlâ böyledir ve çalışmaya devam eder — dönüşüm kademelidir, tek seferlik bir
+     *   "hepsini birden değiştir" hamlesi değildir.
+     *
+     * İki metin alanı ARTIK NULLABLE ve parametre SIRASI değişti; bu güvenlidir çünkü 12
+     * alt sınıfın hepsi `new self(...)`'i ADLANDIRILMIŞ ARGÜMANLARLA çağırır (doğrulandı) —
+     * konum değil ad bağlayıcıdır.
+     *
      * @param  array<string, mixed>  $meta
+     * @param  array<string, mixed>  $params
      */
     public function __construct(
         protected int $recipientId,
         protected string $notificationType,
-        protected string $notificationTitle,
-        protected string $notificationBody,
         protected string $notificationLink,
         protected array $meta,
+        protected ?string $notificationTitle = null,
+        protected ?string $notificationBody = null,
+        protected ?string $titleKey = null,
+        protected ?string $bodyKey = null,
+        protected array $params = [],
     ) {
         $this->afterCommit();
     }
@@ -89,12 +111,30 @@ abstract class CrmNotification extends Notification implements ShouldQueue
     }
 
     /**
-     * Faz 10 payload sözleşmesi — tam olarak 5 anahtar.
+     * `notifications.data` sözleşmesi.
+     *
+     * ANAHTAR MODUNDA: `{ type, title_key, body_key, params, link, meta }` (PHASE-INTL §1.4).
+     * Render edilmiş `title`/`body` BİLİNÇLİ OLARAK YAZILMAZ — yazılsaydı okuma anındaki
+     * çözümün yanında ölü ve yanlış dilde bir kopya dururdu; ilk okuyan onu "yedek" sanıp
+     * kullanmaya başladığında dil donması geri gelirdi.
+     *
+     * DÜZ METİN MODUNDA: Faz 10'un beş anahtarı aynen korunur.
      *
      * @return array<string, mixed>
      */
     public function toArray($notifiable): array
     {
+        if ($this->titleKey !== null) {
+            return [
+                'type' => $this->notificationType,
+                'title_key' => $this->titleKey,
+                'body_key' => $this->bodyKey,
+                'params' => $this->params,
+                'link' => $this->notificationLink,
+                'meta' => $this->meta,
+            ];
+        }
+
         return [
             'type' => $this->notificationType,
             'title' => $this->notificationTitle,
@@ -120,11 +160,33 @@ abstract class CrmNotification extends Notification implements ShouldQueue
      * doğrulandı), yani `database` kanalındaki satırın birincil anahtarıyla
      * burası birebir aynı uuid'i taşır.
      *
+     * ---------------------------------------------------------------------------
+     * FAZ 14: YAYIN YÜKÜ HEM ANAHTAR+PARAMETRE HEM ÇÖZÜLMÜŞ METİN TAŞIR
+     * ---------------------------------------------------------------------------
+     * `data` sütunundan farklı olarak burada çözülmüş `title`/`body` DE gönderilir. Bu bir
+     * çelişki değil, iki farklı nesnenin iki farklı ihtiyacıdır:
+     *
+     *   • DB satırı KALICIDIR ve yıllar sonra, kullanıcının o günkü diliyle okunur → metin
+     *     saklamak dil donmasıdır (bkz. toArray()).
+     *   • Yayın çerçevesi ANLIKTIR: tek bir alıcıya, şu an, kendisi için gönderilir. Alıcının
+     *     dili gönderim anında BİLİNİR (`$notifiable->locale`), o yüzden metni burada çözmek
+     *     hiçbir şeyi dondurmaz — çerçeve saniyeler içinde tüketilip atılır.
+     *
+     * İkisini birden göndermenin bedeli birkaç yüz bayt; karşılığında mevcut istemci
+     * (`features/notifications`) hiç değişmeden çalışmaya devam eder ve anahtar+parametreyi
+     * kendi tarafında render etmek isteyen ileriki bir istemci de gerekli veriyi bulur.
+     *
      * @return array<string, mixed>
      */
     public function toBroadcast($notifiable): array
     {
-        return array_merge($this->toArray($notifiable), [
+        $data = $this->toArray($notifiable);
+
+        $locale = is_string($notifiable->locale ?? null) && $notifiable->locale !== ''
+            ? $notifiable->locale
+            : app()->getLocale();
+
+        return array_merge($data, NotificationText::resolve($data, $locale), [
             'id' => $this->id,
             'created_at' => now()->toIso8601String(),
             'unread_count' => $notifiable->unreadNotifications()->count(),

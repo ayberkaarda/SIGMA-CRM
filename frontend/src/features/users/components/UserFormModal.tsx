@@ -1,13 +1,23 @@
 // Kullanıcı oluşturma/düzenleme modalı. `user` prop'u verilmezse (null/undefined) oluşturma modu.
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Check, Copy, Eye, EyeOff, Info, Wand2 } from 'lucide-react'
 import { Button, Input, Modal, Select, toast } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
 import { getFieldErrors } from '../../../lib/axios'
 import { useCreateUser, useRoles, useUpdateUser } from '../api/usersApi'
-import { evaluatePassword, generateStrongPassword } from '../utils/password'
+import { PASSWORD_MIN_LENGTH, PASSWORD_STRENGTH_KEYS, evaluatePassword, generateStrongPassword } from '../utils/password'
+import type { PasswordRuleId } from '../utils/password'
 import type { User } from '../types'
+
+const RULE_LABEL_KEYS: Record<PasswordRuleId, string> = {
+  length: 'users:passwordRules.length',
+  upper: 'users:passwordRules.upper',
+  lower: 'users:passwordRules.lower',
+  digit: 'users:passwordRules.digit',
+  special: 'users:passwordRules.special',
+}
 
 type UserFormModalProps = {
   open: boolean
@@ -25,6 +35,7 @@ const STRENGTH_BAR_COLOR: Record<number, string> = {
 }
 
 export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
+  const { t } = useTranslation(['users', 'common'])
   const isEdit = !!user
   const { data: roles } = useRoles()
   const createUser = useCreateUser()
@@ -73,19 +84,19 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
     if (!password) return
     try {
       await navigator.clipboard.writeText(password)
-      toast.success('Şifre panoya kopyalandı.')
+      toast.success(t('users:form.toast.passwordCopied'))
     } catch {
-      toast.error('Panoya kopyalanamadı. Şifreyi elle seçip kopyalayın.')
+      toast.error(t('users:form.toast.passwordCopyFailed'))
     }
   }
 
   function validate(): boolean {
     const errors: Record<string, string[]> = {}
-    if (!name.trim()) errors.name = ['Ad soyad zorunludur.']
-    if (!email.trim()) errors.email = ['E-posta zorunludur.']
-    if (!roleName) errors.role = ['Rol seçimi zorunludur.']
+    if (!name.trim()) errors.name = [t('users:form.errors.nameRequired')]
+    if (!email.trim()) errors.email = [t('users:form.errors.emailRequired')]
+    if (!roleName) errors.role = [t('users:form.errors.roleRequired')]
     if (!isEdit && !passwordEvaluation.isValid) {
-      errors.password = ['Şifre, politika kurallarının tamamını karşılamalıdır.']
+      errors.password = [t('users:form.errors.passwordPolicy')]
     }
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
@@ -118,7 +129,7 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
   }
 
   const roleOptions = [
-    { value: '', label: 'Rol seçin', disabled: true },
+    { value: '', label: t('users:form.rolePlaceholder'), disabled: true },
     ...(roles ?? []).map((role) => ({ value: role.name, label: role.name })),
   ]
 
@@ -126,29 +137,29 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? 'Kullanıcıyı Düzenle' : 'Yeni Kullanıcı'}
+      title={isEdit ? t('users:form.titleEdit') : t('users:form.titleCreate')}
       size="md"
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Vazgeç
+            {t('common:actions.cancel')}
           </Button>
           <Button type="submit" form="user-form" loading={isPending}>
-            {isEdit ? 'Kaydet' : 'Oluştur'}
+            {isEdit ? t('common:actions.save') : t('common:actions.create')}
           </Button>
         </div>
       }
     >
       <form id="user-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Input
-          label="Ad Soyad"
+          label={t('users:form.nameLabel')}
           value={name}
           onChange={(e) => setName(e.target.value)}
           error={fieldError('name')}
           required
         />
         <Input
-          label="E-posta"
+          label={t('users:form.emailLabel')}
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -156,14 +167,14 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
           required
         />
         <Select
-          label="Rol"
+          label={t('users:form.roleLabel')}
           value={roleName}
           onChange={(e) => setRoleName(e.target.value)}
           options={roleOptions}
           error={fieldError('role')}
         />
         <Input
-          label="Departman"
+          label={t('users:form.departmentLabel')}
           value={department}
           onChange={(e) => setDepartment(e.target.value)}
           error={fieldError('department')}
@@ -174,7 +185,7 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
             <div className="flex items-end gap-2">
               <div className="flex-1">
                 <Input
-                  label="Geçici Şifre"
+                  label={t('users:form.temporaryPasswordLabel')}
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -184,7 +195,7 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
                     <button
                       type="button"
                       onClick={() => setShowPassword((prev) => !prev)}
-                      aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                      aria-label={showPassword ? t('users:form.hidePassword') : t('users:form.showPassword')}
                       className="pointer-events-auto text-fg-muted hover:text-fg"
                     >
                       {showPassword ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
@@ -196,8 +207,8 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
                 type="button"
                 variant="secondary"
                 onClick={handleGeneratePassword}
-                title="Rastgele güçlü şifre üret"
-                aria-label="Rastgele güçlü şifre üret"
+                title={t('users:form.generatePasswordTitle')}
+                aria-label={t('users:form.generatePasswordTitle')}
               >
                 <Wand2 className="size-4" aria-hidden="true" />
               </Button>
@@ -206,8 +217,8 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
                 variant="secondary"
                 onClick={handleCopyPassword}
                 disabled={!password}
-                title="Panoya kopyala"
-                aria-label="Şifreyi panoya kopyala"
+                title={t('users:form.copyPasswordTitle')}
+                aria-label={t('users:form.copyPasswordAria')}
               >
                 <Copy className="size-4" aria-hidden="true" />
               </Button>
@@ -226,7 +237,11 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
                     />
                   ))}
                 </div>
-                <p className="text-xs text-fg-muted">Güç: {passwordEvaluation.strengthLabel}</p>
+                <p className="text-xs text-fg-muted">
+                  {t('users:form.strengthLabel', {
+                    strength: t(`users:passwordStrength.${PASSWORD_STRENGTH_KEYS[passwordEvaluation.score]}`),
+                  })}
+                </p>
                 <ul className="flex flex-col gap-1">
                   {passwordEvaluation.rules.map((rule) => (
                     <li
@@ -234,7 +249,7 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
                       className={cn('flex items-center gap-1.5 text-xs', rule.met ? 'text-success' : 'text-fg-muted')}
                     >
                       <Check className="size-3.5" aria-hidden="true" />
-                      {rule.label}
+                      {t(RULE_LABEL_KEYS[rule.id], { count: PASSWORD_MIN_LENGTH })}
                     </li>
                   ))}
                 </ul>
@@ -246,10 +261,7 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
         {!isEdit && (
           <div className="flex items-start gap-2 rounded-md bg-primary-tint p-3 text-xs text-primary">
             <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            <p>
-              Kullanıcı oluşturulduğunda geçici şifre ile giriş yapar ve ilk girişte şifresini değiştirmek
-              zorundadır.
-            </p>
+            <p>{t('users:form.createNotice')}</p>
           </div>
         )}
       </form>

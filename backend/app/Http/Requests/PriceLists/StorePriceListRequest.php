@@ -30,19 +30,4 @@ class StorePriceListRequest extends FormRequest
             'valid_until' => ['nullable', 'date', 'after_or_equal:valid_from'],
         ];
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'name.required' => 'Liste adı zorunludur.',
-            'name.max' => 'Liste adı en fazla :max karakter olabilir.',
-            'code.required' => 'Liste kodu zorunludur.',
-            'code.unique' => 'Bu liste kodu zaten kullanılıyor.',
-            'currency.size' => 'Para birimi 3 karakterli bir kod olmalıdır (ör. TRY).',
-            'valid_until.after_or_equal' => 'Bitiş tarihi başlangıç tarihinden önce olamaz.',
-        ];
-    }
 }

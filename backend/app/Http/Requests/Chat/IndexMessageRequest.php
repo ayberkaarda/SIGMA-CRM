@@ -30,17 +30,6 @@ class IndexMessageRequest extends FormRequest
         ];
     }
 
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'before.integer' => 'Sayfalama imleci geçerli değil.',
-            'per_page.max' => 'Sayfa başına mesaj sayısı en fazla :max olabilir.',
-        ];
-    }
-
     public function before(): ?int
     {
         $value = $this->validated()['before'] ?? null;

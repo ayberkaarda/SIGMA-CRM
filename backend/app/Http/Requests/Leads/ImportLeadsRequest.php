@@ -76,13 +76,10 @@ class ImportLeadsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'file.required' => 'Bir CSV dosyası seçmelisiniz.',
-            'file.file' => 'Geçerli bir dosya yükleyin.',
-            'file.mimes' => 'Yalnızca .csv veya .txt uzantılı dosyalar kabul edilir.',
-            'file.mimetypes' => 'Dosya içeriği CSV formatında görünmüyor.',
-            'file.max' => 'Dosya en fazla 5 MB olabilir.',
-            'duplicate_mode.in' => 'Duplicate stratejisi skip, create veya update olmalıdır.',
-            'owner_id.exists' => 'Seçilen sahip geçerli değil.',
+            'file.mimes' => __('validation.custom.leads.import_invalid_type'),
+            'file.mimetypes' => __('validation.custom.leads.import_invalid_content'),
+            'file.max' => __('validation.custom.leads.import_too_large', ['max_mb' => 5]),
+            'duplicate_mode.in' => __('validation.custom.leads.import_duplicate_mode'),
         ];
     }
 }

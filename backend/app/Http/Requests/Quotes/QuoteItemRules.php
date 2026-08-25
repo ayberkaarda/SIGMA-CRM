@@ -51,19 +51,8 @@ final class QuoteItemRules
     public static function messages(): array
     {
         return [
-            'items.*.product_id.exists' => 'Seçilen ürünlerden biri geçerli değil.',
-            'items.*.name.required_without' => 'Ürün seçilmeyen kalemlerde kalem adı zorunludur.',
-            'items.*.name.max' => 'Kalem adı en fazla :max karakter olabilir.',
-            'items.*.quantity.numeric' => 'Miktar sayısal olmalıdır.',
-            'items.*.quantity.min' => 'Miktar negatif olamaz.',
-            'items.*.unit_price.numeric' => 'Birim fiyat sayısal olmalıdır.',
-            'items.*.unit_price.min' => 'Birim fiyat negatif olamaz.',
-            'items.*.discount_percent.min' => 'Kalem indirim oranı 0 ile 100 arasında olmalıdır.',
-            'items.*.discount_percent.max' => 'Kalem indirim oranı 0 ile 100 arasında olmalıdır.',
-            'items.*.tax_rate.min' => 'KDV oranı 0 ile 100 arasında olmalıdır.',
-            'items.*.tax_rate.max' => 'KDV oranı 0 ile 100 arasında olmalıdır.',
-            'items.*.line_total.missing' => 'Kalem toplamı sunucu tarafından hesaplanır ve gönderilemez.',
-            'items.*.position.missing' => 'Kalem sırası, gönderilen listenin sırasından belirlenir.',
+            'items.*.line_total.missing' => __('validation.custom.quotes.item_line_total_locked'),
+            'items.*.position.missing' => __('validation.custom.quotes.item_position_locked'),
         ];
     }
 }

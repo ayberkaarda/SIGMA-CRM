@@ -6,6 +6,7 @@
 // seçip onaylayınca `PipelineStagesTab` aynı ucu bu kez `{ is_active: false, move_to_stage_id }`
 // ile tekrar çağırır.
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AlertTriangle } from 'lucide-react'
 import { Button, Modal, Select } from '../../../components/ui'
 
@@ -28,6 +29,7 @@ export function DeactivateStageModal({
   onClose,
   onConfirm,
 }: DeactivateStageModalProps) {
+  const { t } = useTranslation(['settings', 'common'])
   const [selectedId, setSelectedId] = useState<string>('')
 
   const options = availableStages.map((stage) => ({ value: String(stage.id), label: stage.name }))
@@ -39,11 +41,11 @@ export function DeactivateStageModal({
         setSelectedId('')
         onClose()
       }}
-      title="Aşamayı Pasifleştir"
+      title={t('settings:deactivateStageModal.title')}
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
-            Vazgeç
+            {t('common:actions.cancel')}
           </Button>
           <Button
             type="button"
@@ -52,7 +54,7 @@ export function DeactivateStageModal({
             disabled={!selectedId}
             onClick={() => selectedId && onConfirm(Number(selectedId))}
           >
-            Taşı ve Pasifleştir
+            {t('settings:deactivateStageModal.confirm')}
           </Button>
         </div>
       }
@@ -61,17 +63,16 @@ export function DeactivateStageModal({
         <div className="flex items-start gap-2 rounded-md bg-warning-tint px-3 py-2 text-sm text-warning">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           <span>
-            <strong>{stageName}</strong> aşamasında {openDealsCount} açık fırsat var. Pasifleştirmeden önce hangi
-            aşamaya taşınsın?
+            <strong>{stageName}</strong> {t('settings:deactivateStageModal.warning', { count: openDealsCount })}
           </span>
         </div>
 
         <Select
-          label="Hedef Aşama"
+          label={t('settings:deactivateStageModal.targetLabel')}
           value={selectedId}
           onChange={(e) => setSelectedId(e.target.value)}
           options={options}
-          placeholder="Bir aşama seçin…"
+          placeholder={t('settings:deactivateStageModal.targetPlaceholder')}
         />
       </div>
     </Modal>

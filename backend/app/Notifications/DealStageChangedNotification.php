@@ -12,6 +12,10 @@ namespace App\Notifications;
  * dokümanı — worker'ın modeli yeniden sorgulamaması gerekçesiyle); bu yüzden
  * burası da bir Eloquent modeli DEĞİL, listener'ın event payload'ından
  * derlediği skaler alanları alır.
+ *
+ * FAZ 14 / İz D — anahtar moduna dönüştürüldü. `deal_title`/`stage`
+ * (pipeline aşama adı) KULLANICI VERİSİDİR (§1.5 — aşama adı çevrilmez),
+ * parametre olarak taşınır; cümlenin kendisi sözlükte durur.
  */
 class DealStageChangedNotification extends CrmNotification
 {
@@ -26,8 +30,12 @@ class DealStageChangedNotification extends CrmNotification
         return new self(
             recipientId: $ownerId,
             notificationType: 'deal.stage_changed',
-            notificationTitle: 'Fırsat aşaması değişti',
-            notificationBody: sprintf('%s — artık "%s" aşamasında', $dealTitle, $toStageName),
+            titleKey: 'notifications.deal_stage_changed.title',
+            bodyKey: 'notifications.deal_stage_changed.body',
+            params: [
+                'deal_title' => $dealTitle,
+                'stage' => $toStageName,
+            ],
             notificationLink: '/deals/'.$dealId,
             meta: [
                 'deal_id' => $dealId,

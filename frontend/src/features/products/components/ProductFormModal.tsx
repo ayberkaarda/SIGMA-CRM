@@ -7,6 +7,8 @@
 // tarafından render edilen bir açılır liste, stilize edilmez).
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { Button, Checkbox, Input, Modal, Select, Textarea } from '../../../components/ui'
 import { getFieldErrors } from '../../../lib/axios'
 import { useCreateProduct, useUpdateProduct } from '../api/productsApi'
@@ -16,12 +18,14 @@ import { ProductCustomFieldsSection } from './ProductCustomFieldsSection'
 import { ProductTagMultiSelect } from './ProductTagMultiSelect'
 import type { Product, ProductTag } from '../types'
 
-const CURRENCY_OPTIONS = [
-  { value: 'TRY', label: 'TRY — Türk Lirası' },
-  { value: 'USD', label: 'USD — Amerikan Doları' },
-  { value: 'EUR', label: 'EUR — Euro' },
-  { value: 'GBP', label: 'GBP — İngiliz Sterlini' },
-]
+function currencyOptions(t: TFunction) {
+  return [
+    { value: 'TRY', label: t('form.currency.try') },
+    { value: 'USD', label: t('form.currency.usd') },
+    { value: 'EUR', label: t('form.currency.eur') },
+    { value: 'GBP', label: t('form.currency.gbp') },
+  ]
+}
 
 const CATEGORY_DATALIST_ID = 'product-category-suggestions'
 
@@ -33,6 +37,7 @@ export type ProductFormModalProps = {
 }
 
 export function ProductFormModal({ open, onClose, product }: ProductFormModalProps) {
+  const { t } = useTranslation('products')
   const isEdit = !!product
 
   const { data: categories } = useProductCategories()
@@ -92,16 +97,16 @@ export function ProductFormModal({ open, onClose, product }: ProductFormModalPro
 
   function validate(): boolean {
     const errors: Record<string, string[]> = {}
-    if (!name.trim()) errors.name = ['Ürün adı zorunludur.']
-    if (unitPrice === '') errors.unit_price = ['Birim fiyat zorunludur.']
+    if (!name.trim()) errors.name = [t('form.validation.nameRequired')]
+    if (unitPrice === '') errors.unit_price = [t('form.validation.unitPriceRequired')]
     else if (Number.isNaN(Number(unitPrice)) || Number(unitPrice) < 0) {
-      errors.unit_price = ['Birim fiyat geçerli, negatif olmayan bir sayı olmalıdır.']
+      errors.unit_price = [t('form.validation.unitPriceInvalid')]
     }
     if (taxRate !== '' && (Number.isNaN(Number(taxRate)) || Number(taxRate) < 0 || Number(taxRate) > 100)) {
-      errors.tax_rate = ['KDV oranı 0 ile 100 arasında olmalıdır.']
+      errors.tax_rate = [t('form.validation.taxRateRange')]
     }
     if (stockQuantity !== '' && (Number.isNaN(Number(stockQuantity)) || Number(stockQuantity) < 0)) {
-      errors.stock_quantity = ['Stok miktarı negatif olmayan bir tam sayı olmalıdır.']
+      errors.stock_quantity = [t('form.validation.stockQuantityInvalid')]
     }
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
@@ -143,33 +148,33 @@ export function ProductFormModal({ open, onClose, product }: ProductFormModalPro
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? 'Ürünü Düzenle' : 'Yeni Ürün'}
+      title={isEdit ? t('form.titleEdit') : t('form.titleCreate')}
       size="lg"
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Vazgeç
+            {t('form.cancel')}
           </Button>
           <Button type="submit" form="product-form" loading={isPending}>
-            {isEdit ? 'Kaydet' : 'Oluştur'}
+            {isEdit ? t('form.submitEdit') : t('form.submitCreate')}
           </Button>
         </div>
       }
     >
       <form id="product-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Input label="Ürün Adı" value={name} onChange={(e) => setName(e.target.value)} error={fieldError('name')} required />
+          <Input label={t('form.nameLabel')} value={name} onChange={(e) => setName(e.target.value)} error={fieldError('name')} required />
           <Input
-            label="SKU"
+            label={t('form.skuLabel')}
             value={sku}
             onChange={(e) => setSku(e.target.value)}
             error={fieldError('sku')}
-            hint="Boş bırakılabilir; girilirse benzersiz olmalıdır."
+            hint={t('form.skuHint')}
           />
         </div>
 
         <Textarea
-          label="Açıklama"
+          label={t('form.descriptionLabel')}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           error={fieldError('description')}
@@ -177,13 +182,13 @@ export function ProductFormModal({ open, onClose, product }: ProductFormModalPro
 
         <div>
           <Input
-            label="Kategori"
+            label={t('form.categoryLabel')}
             list={CATEGORY_DATALIST_ID}
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            placeholder="Mevcut bir kategori seçin veya yeni yazın"
+            placeholder={t('form.categoryPlaceholder')}
             error={fieldError('category')}
-            hint={!fieldError('category') ? 'Listeden seçebilir veya serbestçe yeni bir kategori yazabilirsiniz.' : undefined}
+            hint={!fieldError('category') ? t('form.categoryHint') : undefined}
           />
           <datalist id={CATEGORY_DATALIST_ID}>
             {(categories ?? []).map((c) => (
@@ -194,7 +199,7 @@ export function ProductFormModal({ open, onClose, product }: ProductFormModalPro
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Input
-            label="Birim Fiyat"
+            label={t('form.unitPriceLabel')}
             type="number"
             min={0}
             step="0.01"
@@ -204,14 +209,14 @@ export function ProductFormModal({ open, onClose, product }: ProductFormModalPro
             required
           />
           <Select
-            label="Para Birimi"
+            label={t('form.currencyLabel')}
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
-            options={CURRENCY_OPTIONS}
+            options={currencyOptions(t)}
             error={fieldError('currency')}
           />
           <Input
-            label="KDV %"
+            label={t('form.taxRateLabel')}
             type="number"
             min={0}
             max={100}
@@ -223,20 +228,20 @@ export function ProductFormModal({ open, onClose, product }: ProductFormModalPro
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Input label="Birim" value={unit} onChange={(e) => setUnit(e.target.value)} error={fieldError('unit')} />
+          <Input label={t('form.unitLabel')} value={unit} onChange={(e) => setUnit(e.target.value)} error={fieldError('unit')} />
           <Input
-            label="Stok Miktarı"
+            label={t('form.stockQuantityLabel')}
             type="number"
             min={0}
             step="1"
             value={stockQuantity}
             onChange={(e) => setStockQuantity(e.target.value)}
             error={fieldError('stock_quantity')}
-            hint="Boş bırakılırsa stok takibi yapılmadığı anlamına gelir."
+            hint={t('form.stockQuantityHint')}
           />
         </div>
 
-        <Checkbox label="Aktif" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+        <Checkbox label={t('form.activeLabel')} checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
 
         <ProductTagMultiSelect value={tags} onChange={setTags} options={tagOptions ?? []} isLoading={tagsLoading} />
 

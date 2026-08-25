@@ -26,18 +26,6 @@ class LoginRequest extends FormRequest
         ];
     }
 
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'email.required' => 'E-posta adresi zorunludur.',
-            'email.email' => 'Geçerli bir e-posta adresi giriniz.',
-            'password.required' => 'Şifre zorunludur.',
-        ];
-    }
-
     protected function prepareForValidation(): void
     {
         $this->merge([

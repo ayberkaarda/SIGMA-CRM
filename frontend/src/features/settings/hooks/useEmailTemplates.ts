@@ -7,6 +7,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '../../../components/ui'
 import { getErrorMessage } from '../../../lib/axios'
+import i18n from '../../../i18n'
 import {
   createEmailTemplateRequest,
   deleteEmailTemplateRequest,
@@ -29,7 +30,7 @@ export function useCreateEmailTemplate() {
     mutationFn: (payload: EmailTemplatePayload) => createEmailTemplateRequest(payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: settingsKeys.emailTemplates })
-      toast.success('E-posta şablonu oluşturuldu.')
+      toast.success(i18n.t('settings:toast.templateCreated'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -42,7 +43,7 @@ export function useUpdateEmailTemplate() {
       updateEmailTemplateRequest(id, payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: settingsKeys.emailTemplates })
-      toast.success('E-posta şablonu güncellendi.')
+      toast.success(i18n.t('settings:toast.templateUpdated'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -56,7 +57,7 @@ export function useDeleteEmailTemplate() {
     mutationFn: (id: number) => deleteEmailTemplateRequest(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: settingsKeys.emailTemplates })
-      toast.success('E-posta şablonu silindi.')
+      toast.success(i18n.t('settings:toast.templateDeleted'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })

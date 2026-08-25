@@ -34,15 +34,4 @@ class StatusTicketRequest extends FormRequest
             'status' => ['required', 'string', Rule::in(TicketStatusMachine::statuses())],
         ];
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'status.required' => 'Durum alanı zorunludur.',
-            'status.in' => 'Seçilen durum geçerli değil.',
-        ];
-    }
 }

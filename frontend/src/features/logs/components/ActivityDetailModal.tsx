@@ -8,6 +8,8 @@
 //     sınırında kırpıldığı (alan bazlı not, bkz. `row.isTruncated`).
 //   - `properties._response_truncated: boolean` — yanıtın TAMAMI (old+attributes JSON'u) 5000
 //     karakteri aştıysa; alan bazlı kırpmadan bağımsız, genel bir uyarı bandı olarak gösterilir.
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { ArrowRight } from 'lucide-react'
 import { Badge, Modal } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
@@ -36,7 +38,7 @@ type DiffRow = {
   isTruncated: boolean
 }
 
-function buildDiffRows(activity: ActivityLog): DiffRow[] {
+function buildDiffRows(activity: ActivityLog, t: TFunction): DiffRow[] {
   const { old, attributes, _truncated } = activity.properties
   const fields = new Set<string>([...Object.keys(old ?? {}), ...Object.keys(attributes ?? {})])
   const truncatedFields = new Set(_truncated ?? [])
@@ -52,7 +54,7 @@ function buildDiffRows(activity: ActivityLog): DiffRow[] {
         field,
         oldValue,
         newValue,
-        changed: hasOld && hasNew && formatDiffValue(oldValue) !== formatDiffValue(newValue),
+        changed: hasOld && hasNew && formatDiffValue(oldValue, t) !== formatDiffValue(newValue, t),
         isNewField: hasNew && !hasOld,
         isRemovedField: hasOld && !hasNew,
         isTruncated: truncatedFields.has(field),
@@ -61,17 +63,18 @@ function buildDiffRows(activity: ActivityLog): DiffRow[] {
 }
 
 export function ActivityDetailModal({ activity, onClose }: ActivityDetailModalProps) {
-  const rows = activity ? buildDiffRows(activity) : []
+  const { t } = useTranslation(['logs', 'common'])
+  const rows = activity ? buildDiffRows(activity, t) : []
 
   return (
     <Modal
       open={!!activity}
       onClose={onClose}
       size="lg"
-      title={activity ? activity.description || activityEventLabel(activity.event) : undefined}
+      title={activity ? activity.description || activityEventLabel(activity.event, t) : undefined}
       description={
         activity
-          ? `${subjectTypeLabel(activity.subject_type)}${activity.subject_label ? ` · ${activity.subject_label}` : activity.subject_id ? ` · #${activity.subject_id}` : ''} · ${formatDateTime(activity.created_at)}`
+          ? `${subjectTypeLabel(activity.subject_type, t)}${activity.subject_label ? ` · ${activity.subject_label}` : activity.subject_id ? ` · #${activity.subject_id}` : ''} · ${formatDateTime(activity.created_at)}`
           : undefined
       }
     >
@@ -79,12 +82,12 @@ export function ActivityDetailModal({ activity, onClose }: ActivityDetailModalPr
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={activityEventBadgeVariant(activity.event)}>
-              {activityEventLabel(activity.event)}
+              {activityEventLabel(activity.event, t)}
             </Badge>
             <Badge variant="neutral">
               {activity.causer
                 ? activity.causer.name
-                : contextLabel(activity.properties._context ?? 'system')}
+                : contextLabel(activity.properties._context ?? 'system', t)}
             </Badge>
             {activity.log_name && (
               <Badge variant="neutral" className="font-mono">
@@ -95,19 +98,19 @@ export function ActivityDetailModal({ activity, onClose }: ActivityDetailModalPr
 
           {activity.properties._response_truncated && (
             <div className="rounded-md bg-warning-tint px-3 py-2 text-xs text-warning">
-              Bu kaydın değişiklik verisi boyut sınırı nedeniyle kısmen kırpılmış olabilir.
+              {t('logs:detailModal.responseTruncatedWarning')}
             </div>
           )}
 
           {rows.length === 0 ? (
-            <p className="text-sm text-fg-muted">Bu kayıt için değişiklik ayrıntısı bulunmuyor.</p>
+            <p className="text-sm text-fg-muted">{t('logs:detailModal.noDetailTitle')}</p>
           ) : (
             <div className="flex flex-col divide-y divide-border-subtle overflow-hidden rounded-md border border-border-subtle">
               <div className="grid grid-cols-[minmax(0,120px)_1fr_auto_1fr] gap-3 bg-surface-2 px-3 py-2 text-xs font-medium text-fg-muted">
-                <span>Alan</span>
-                <span>Eski</span>
+                <span>{t('logs:detailModal.columns.field')}</span>
+                <span>{t('logs:detailModal.columns.old')}</span>
                 <span aria-hidden="true" />
-                <span>Yeni</span>
+                <span>{t('logs:detailModal.columns.new')}</span>
               </div>
               {rows.map((row) => (
                 <div
@@ -120,7 +123,7 @@ export function ActivityDetailModal({ activity, onClose }: ActivityDetailModalPr
                     </span>
                     {row.isTruncated && (
                       <span className="text-xs leading-tight text-warning">
-                        (1024 karakterde kırpıldı)
+                        {t('logs:detailModal.fieldTruncatedNote')}
                       </span>
                     )}
                   </span>
@@ -130,7 +133,7 @@ export function ActivityDetailModal({ activity, onClose }: ActivityDetailModalPr
                       row.isNewField ? 'text-fg-disabled' : 'text-fg',
                     )}
                   >
-                    {row.isNewField ? '—' : formatDiffValue(row.oldValue)}
+                    {row.isNewField ? '—' : formatDiffValue(row.oldValue, t)}
                   </span>
                   <ArrowRight
                     className="mt-0.5 size-3.5 shrink-0 text-fg-muted"
@@ -146,7 +149,7 @@ export function ActivityDetailModal({ activity, onClose }: ActivityDetailModalPr
                           : 'text-fg',
                     )}
                   >
-                    {row.isRemovedField ? '—' : formatDiffValue(row.newValue)}
+                    {row.isRemovedField ? '—' : formatDiffValue(row.newValue, t)}
                   </span>
                 </div>
               ))}

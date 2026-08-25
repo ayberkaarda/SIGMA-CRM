@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ShieldAlert } from 'lucide-react'
 import { EmptyState } from '../../../components/ui'
 import { useAuthStore } from '../store'
@@ -16,6 +17,7 @@ type RequireAuthProps = {
  * gerekiyorsa yoksa 403 boş durumu gösterir.
  */
 export function RequireAuth({ permission, children }: RequireAuthProps) {
+  const { t } = useTranslation(['auth', 'common'])
   const status = useAuthStore((state) => state.status)
   const user = useAuthStore((state) => state.user)
   const location = useLocation()
@@ -27,7 +29,7 @@ export function RequireAuth({ permission, children }: RequireAuthProps) {
         <div
           className="size-8 animate-spin motion-reduce:animate-none rounded-full border-2 border-border-strong border-t-primary"
           role="status"
-          aria-label="Yükleniyor"
+          aria-label={t('common:states.loading')}
         />
       </div>
     )
@@ -50,8 +52,8 @@ export function RequireAuth({ permission, children }: RequireAuthProps) {
       <div className="flex min-h-screen items-center justify-center bg-surface-0">
         <EmptyState
           icon={<ShieldAlert className="size-6" aria-hidden="true" />}
-          title="Bu sayfaya erişim yetkiniz yok"
-          description="Bu içeriği görüntülemek için gerekli izne sahip değilsiniz. Erişim gerekiyorsa sistem yöneticinizle iletişime geçin."
+          title={t('auth:forbidden.title')}
+          description={t('auth:forbidden.description')}
         />
       </div>
     )

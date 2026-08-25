@@ -14,6 +14,8 @@
 // "müşteriye yanıt" arasındaki farkı bilerek seçim yapsın.
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { Button, Input, Modal, Select, Textarea } from '../../../components/ui'
 import { getFieldErrors } from '../../../lib/axios'
 import { isoToLocalInput, localInputToIso, nowLocalInput } from '../../tasks/components/dateTimeInput'
@@ -27,13 +29,16 @@ export type TicketActivityFormModalProps = {
   kind: 'note' | 'interaction'
 }
 
-const INTERACTION_TYPE_OPTIONS = [
-  { value: 'call', label: 'Arama' },
-  { value: 'email', label: 'E-posta' },
-  { value: 'meeting', label: 'Toplantı' },
-]
+function interactionTypeOptions(t: TFunction) {
+  return [
+    { value: 'call', label: t('enums:activity.type.call') },
+    { value: 'email', label: t('enums:activity.type.email') },
+    { value: 'meeting', label: t('enums:activity.type.meeting') },
+  ]
+}
 
 export function TicketActivityFormModal({ open, onClose, ticket, kind }: TicketActivityFormModalProps) {
+  const { t } = useTranslation(['tickets', 'enums'])
   const createActivity = useCreateActivity()
 
   const [type, setType] = useState<'call' | 'email' | 'meeting'>('call')
@@ -71,16 +76,22 @@ export function TicketActivityFormModal({ open, onClose, ticket, kind }: TicketA
 
   function validate(): boolean {
     const errors: Record<string, string[]> = {}
-    if (!subject.trim()) errors.subject = [isNote ? 'Başlık zorunludur.' : 'Konu zorunludur.']
-    if (isNote && !body.trim()) errors.body = ['Not içeriği zorunludur.']
+    if (!subject.trim()) {
+      errors.subject = [
+        isNote
+          ? t('tickets:activity.form.validation.titleRequired')
+          : t('tickets:activity.form.validation.subjectRequired'),
+      ]
+    }
+    if (isNote && !body.trim()) errors.body = [t('tickets:activity.form.validation.bodyRequired')]
 
     if (!isNote) {
-      if (!occurredAt) errors.occurred_at = ['Gerçekleşme tarihi zorunludur.']
+      if (!occurredAt) errors.occurred_at = [t('tickets:activity.form.validation.occurredAtRequired')]
       const inFuture = !!occurredAt && occurredAt > nowLocal
-      setOccurredClientError(inFuture ? 'Aktivite tarihi gelecekte olamaz.' : undefined)
-      if (inFuture) errors.occurred_at = ['Aktivite tarihi gelecekte olamaz.']
+      setOccurredClientError(inFuture ? t('tickets:activity.form.validation.occurredAtFuture') : undefined)
+      if (inFuture) errors.occurred_at = [t('tickets:activity.form.validation.occurredAtFuture')]
       if (durationMinutes !== '' && (Number(durationMinutes) < 0 || Number(durationMinutes) > 1440)) {
-        errors.duration_minutes = ['Süre 0 ile 1440 dakika arasında olmalıdır.']
+        errors.duration_minutes = [t('tickets:activity.form.validation.durationRange')]
       }
     }
 
@@ -116,20 +127,20 @@ export function TicketActivityFormModal({ open, onClose, ticket, kind }: TicketA
     <Modal
       open={open}
       onClose={onClose}
-      title={isNote ? 'Not Ekle' : 'Etkileşim Kaydet'}
+      title={isNote ? t('tickets:activity.form.titleNote') : t('tickets:activity.form.titleInteraction')}
       description={
         isNote
-          ? 'Bu bir iç nottur; müşteriye verilmiş bir yanıt sayılmaz ve talebin "İlk Yanıt" zaman damgasını TETİKLEMEZ.'
-          : 'Arama/e-posta/toplantı müşteriye verilen bir yanıttır — talebin henüz "İlk Yanıt" damgası yoksa bu kayıt onu tetikler.'
+          ? t('tickets:activity.form.descriptionNote')
+          : t('tickets:activity.form.descriptionInteraction')
       }
       size="lg"
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Vazgeç
+            {t('tickets:activity.form.cancel')}
           </Button>
           <Button type="submit" form="ticket-activity-form" loading={isPending}>
-            Kaydet
+            {t('tickets:activity.form.save')}
           </Button>
         </div>
       }
@@ -137,30 +148,36 @@ export function TicketActivityFormModal({ open, onClose, ticket, kind }: TicketA
       <form id="ticket-activity-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
         {isNote ? (
           <Input
-            label="Başlık"
+            label={t('tickets:activity.form.titleFieldLabel')}
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             error={fieldError('subject')}
-            placeholder="ör. Müşteriyle görüşme özeti"
+            placeholder={t('tickets:activity.form.titlePlaceholder')}
             required
           />
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Select
-              label="Tür"
+              label={t('tickets:activity.form.typeLabel')}
               value={type}
               onChange={(e) => setType(e.target.value as 'call' | 'email' | 'meeting')}
-              options={INTERACTION_TYPE_OPTIONS}
+              options={interactionTypeOptions(t)}
               required
             />
-            <Input label="Konu" value={subject} onChange={(e) => setSubject(e.target.value)} error={fieldError('subject')} required />
+            <Input
+              label={t('tickets:activity.form.subjectLabel')}
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              error={fieldError('subject')}
+              required
+            />
           </div>
         )}
 
         {!isNote && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input
-              label="Gerçekleşme Tarihi"
+              label={t('tickets:activity.form.occurredAtLabel')}
               type="datetime-local"
               value={occurredAt}
               onChange={(e) => {
@@ -172,7 +189,7 @@ export function TicketActivityFormModal({ open, onClose, ticket, kind }: TicketA
               required
             />
             <Input
-              label="Süre (dakika)"
+              label={t('tickets:activity.form.durationLabel')}
               type="number"
               min={0}
               max={1440}
@@ -184,11 +201,16 @@ export function TicketActivityFormModal({ open, onClose, ticket, kind }: TicketA
         )}
 
         {!isNote && (
-          <Input label="Sonuç" value={outcome} onChange={(e) => setOutcome(e.target.value)} error={fieldError('outcome')} />
+          <Input
+            label={t('tickets:activity.form.outcomeFieldLabel')}
+            value={outcome}
+            onChange={(e) => setOutcome(e.target.value)}
+            error={fieldError('outcome')}
+          />
         )}
 
         <Textarea
-          label={isNote ? 'Not İçeriği' : 'Açıklama'}
+          label={isNote ? t('tickets:activity.form.bodyLabelNote') : t('tickets:activity.form.bodyLabelInteraction')}
           value={body}
           onChange={(e) => setBody(e.target.value)}
           error={fieldError('body')}

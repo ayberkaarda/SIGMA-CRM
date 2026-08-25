@@ -3,6 +3,7 @@
 // bildirir — her tuş vuruşunu URL'e yazmak geçmişi doldurur ve her karakterde pano
 // sorgusunu yeniden tetiklerdi.
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Search, X } from 'lucide-react'
 import { Button, Input, Select } from '../../../../components/ui'
 import { useDealCompanyOptions, useDealOwnerOptions } from '../../api/boardApi'
@@ -33,6 +34,7 @@ export type BoardFiltersProps = {
 }
 
 export function BoardFilters({ values, onChange, onClear }: BoardFiltersProps) {
+  const { t } = useTranslation('deals')
   const owners = useDealOwnerOptions()
   const companies = useDealCompanyOptions()
 
@@ -69,10 +71,10 @@ export function BoardFilters({ values, onChange, onClear }: BoardFiltersProps) {
     <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border-subtle bg-surface-1 p-3">
       <div className="min-w-64 flex-1">
         <Input
-          label="Ara"
+          label={t('board.filters.searchLabel')}
           value={searchDraft}
           onChange={(event) => setSearchDraft(event.target.value)}
-          placeholder="Fırsat başlığı veya açıklaması"
+          placeholder={t('board.filters.searchPlaceholder')}
           leftIcon={<Search className="size-4" aria-hidden="true" />}
         />
       </div>
@@ -80,11 +82,11 @@ export function BoardFilters({ values, onChange, onClear }: BoardFiltersProps) {
       {!owners.isForbidden && (
         <div className="w-48">
           <Select
-            label="Sahip"
+            label={t('board.filters.ownerLabel')}
             value={values.owner_id}
             onChange={(event) => onChange({ owner_id: event.target.value })}
             options={[
-              { value: '', label: 'Tüm sahipler' },
+              { value: '', label: t('board.filters.allOwners') },
               ...(owners.data ?? []).map((owner) => ({
                 value: String(owner.id),
                 label: owner.name,
@@ -97,11 +99,11 @@ export function BoardFilters({ values, onChange, onClear }: BoardFiltersProps) {
       {!companies.isForbidden && (
         <div className="w-48">
           <Select
-            label="Firma"
+            label={t('board.filters.companyLabel')}
             value={values.company_id}
             onChange={(event) => onChange({ company_id: event.target.value })}
             options={[
-              { value: '', label: 'Tüm firmalar' },
+              { value: '', label: t('board.filters.allCompanies') },
               ...(companies.data ?? []).map((company) => ({
                 value: String(company.id),
                 label: company.name,
@@ -113,7 +115,7 @@ export function BoardFilters({ values, onChange, onClear }: BoardFiltersProps) {
 
       <div className="w-40">
         <Input
-          label="Kapanış (baş.)"
+          label={t('board.filters.closeFrom')}
           type="date"
           value={values.from}
           onChange={(event) => onChange({ from: event.target.value })}
@@ -122,7 +124,7 @@ export function BoardFilters({ values, onChange, onClear }: BoardFiltersProps) {
 
       <div className="w-40">
         <Input
-          label="Kapanış (bit.)"
+          label={t('board.filters.closeTo')}
           type="date"
           value={values.to}
           onChange={(event) => onChange({ to: event.target.value })}
@@ -139,7 +141,7 @@ export function BoardFilters({ values, onChange, onClear }: BoardFiltersProps) {
             onClear()
           }}
         >
-          Temizle
+          {t('board.filters.clear')}
         </Button>
       )}
     </div>

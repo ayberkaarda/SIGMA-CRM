@@ -7,11 +7,13 @@ use App\Http\Resources\Reports\ConversionResource;
 use App\Http\Resources\Reports\SalesPerformanceResource;
 use App\Http\Resources\Reports\SourceAnalysisResource;
 use App\Http\Resources\Reports\UserPerformanceResource;
+use App\Services\Exchange\ExchangeRateService;
 use App\Services\Reports\ConversionReport;
 use App\Services\Reports\ReportExportService;
 use App\Services\Reports\SalesPerformanceReport;
 use App\Services\Reports\SourceAnalysisReport;
 use App\Services\Reports\Support\DateRangeResolver;
+use App\Services\Reports\Support\ReportCurrencyContext;
 use App\Services\Reports\UserPerformanceReport;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -36,7 +38,18 @@ class ReportController extends Controller
         private readonly ConversionReport $conversion,
         private readonly ReportExportService $exporter,
         private readonly DateRangeResolver $dateRange,
+        private readonly ExchangeRateService $rates,
     ) {}
+
+    /**
+     * Görüntü para birimi bağlamı — istek başına TEK kez, isteği yapan
+     * kullanıcının `users.preferred_currency`'sinden (PHASE-INTL §2.4).
+     * Gerekçe DashboardController::currencyContext() ile aynıdır.
+     */
+    private function currencyContext(Request $request): ReportCurrencyContext
+    {
+        return ReportCurrencyContext::make($this->rates, $request->user()?->preferred_currency);
+    }
 
     public function salesPerformance(Request $request): JsonResponse
     {
@@ -46,9 +59,14 @@ class ReportController extends Controller
         $groupBy = $request->query('group_by');
         $userId = $this->parseUserId($request);
 
-        $result = $this->salesPerformance->run($range, is_string($groupBy) ? $groupBy : 'day', $userId);
+        $result = $this->salesPerformance->run(
+            $range,
+            is_string($groupBy) ? $groupBy : 'day',
+            $userId,
+            $this->currencyContext($request),
+        );
 
-        return $this->respond((new SalesPerformanceResource($result))->resolve());
+        return $this->respond((new SalesPerformanceResource($result))->resolve(), $result['rate_info']);
     }
 
     public function userPerformance(Request $request): JsonResponse
@@ -57,7 +75,9 @@ class ReportController extends Controller
 
         $range = $this->dateRange->resolve($request->query('from'), $request->query('to'));
 
-        return $this->respond((new UserPerformanceResource($this->userPerformance->run($range)))->resolve());
+        $result = $this->userPerformance->run($range, $this->currencyContext($request));
+
+        return $this->respond((new UserPerformanceResource($result))->resolve(), $result['rate_info']);
     }
 
     public function sourceAnalysis(Request $request): JsonResponse
@@ -66,7 +86,9 @@ class ReportController extends Controller
 
         $range = $this->dateRange->resolve($request->query('from'), $request->query('to'));
 
-        return $this->respond((new SourceAnalysisResource($this->sourceAnalysis->run($range)))->resolve());
+        $result = $this->sourceAnalysis->run($range, $this->currencyContext($request));
+
+        return $this->respond((new SourceAnalysisResource($result))->resolve(), $result['rate_info']);
     }
 
     public function conversion(Request $request): JsonResponse
@@ -101,7 +123,7 @@ class ReportController extends Controller
         $range = $this->dateRange->resolve($request->query('from'), $request->query('to'));
         $userId = $this->parseUserId($request);
 
-        return $this->exporter->export($slug, $range, $userId, $format);
+        return $this->exporter->export($slug, $range, $userId, $format, $this->currencyContext($request));
     }
 
     private function parseUserId(Request $request): ?int
@@ -131,8 +153,18 @@ class ReportController extends Controller
      *      zararsızdır ama VERİ SÖZLEŞMESİ'ndeki `delta_pct: float | null`
      *      tipini tel üzerinde belirsizleştirir. Bayrak bunu önler.
      */
-    private function respond(mixed $data): JsonResponse
+    private function respond(mixed $data, ?array $rateInfo = null): JsonResponse
     {
-        return new JsonResponse(['data' => $data], Response::HTTP_OK, [], JSON_PRESERVE_ZERO_FRACTION);
+        $payload = ['data' => $data];
+
+        // `rate_info` (Faz 14 / İz E): `data`'nın KARDEŞİ, içinde değil —
+        // gerekçe ve tam alan sözleşmesi için bkz. App\Services\Reports\
+        // Support\ReportCurrencyContext::rateInfo(). Para taşımayan
+        // `/reports/conversion` ucunda eklenmez (yalnız lead sayıları).
+        if ($rateInfo !== null) {
+            $payload['rate_info'] = $rateInfo;
+        }
+
+        return new JsonResponse($payload, Response::HTTP_OK, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 }

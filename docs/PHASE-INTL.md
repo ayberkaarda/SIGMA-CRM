@@ -290,21 +290,27 @@ modül dosyalarına dokunmaz; `routes/api.php` eklemeleri tek elden. İz D/E ile
 - [ ] **İz D:** 4 dilde (tr/en/de/fr) uygulama gezilebilir; dil seçici header + login'de; hiçbir ekranda
       ham anahtar görünmüyor; anahtar-parite denetleyici (frontend tr/en/de/fr + backend `lang/*`) yeşil;
       DE/FR çoğul kuralları doğru; kullanıcı-verisi (aşama adı, custom field, tag, şirket profili, teklif
-      şartları) çevrilmedi (§1.5 sınırı).
-- [ ] **İz D:** Bildirim metinleri `notifications.data` içinde anahtar+parametre olarak saklanıyor, okuma
+      şartları) çevrilmedi (§1.5 sınırı). **KISMEN:** dil seçici + parite denetleyici (`npm run i18n:check`,
+      27 ns / ~2089 anahtar, iki yön yeşil) + kullanıcı-verisi sınırı doğrulandı; ancak dört dilin de
+      gerçek ekranlarda ham anahtar/kırık düzen basmadığının **elle, göz ile** 4-dil × 6-rol nokta-kontrolü
+      yapılmadı — bu kontrol bilinçli olarak Faz 15 kısa yeniden-kabul turuna ertelendi (§1.7, §6, §8).
+      Ayrıca `pages/Showcase.tsx` çevrilmedi (§8 bilinen sınır (b)).
+- [x] **İz D:** Bildirim metinleri `notifications.data` içinde anahtar+parametre olarak saklanıyor, okuma
       anında alıcının diliyle çözülüyor (donmuş metin yok); eski satırlar için düz-metin fallback var.
-- [ ] **İz D:** README.md İngilizce, README.tr.md Türkçe; `docs/` altı Türkçe kaldı (sınır §1.6).
-- [ ] **İz E:** TCMB kur çekme komutu çalışıyor (ForexBuying/Unit), manuel yedek Ayarlar'da; hafta sonu/
+      12/12 bildirim tipi geçirildi; kuyrukta çalışan `UserDeactivated` alıcının kendi `locale`'iyle çözülüyor.
+- [x] **İz D:** README.md İngilizce, README.tr.md Türkçe; `docs/` altı Türkçe kaldı (sınır §1.6).
+- [x] **İz E:** TCMB kur çekme komutu çalışıyor (ForexBuying/Unit), manuel yedek Ayarlar'da; hafta sonu/
       tatil "yayın yok" hata değil (son kur geçerli); kur bayatladığında (>4 gün) her yüzeyde (switcher,
       rapor, PDF) tarih etiketi + uyarı görünüyor.
-- [ ] **İz E:** Kayıtlar kendi para biriminde; kullanıcı `preferred_currency` ile görüyor; kapanmış fırsat
+- [x] **İz E:** Kayıtlar kendi para biriminde; kullanıcı `preferred_currency` ile görüyor; kapanmış fırsat
       kapanış-anı TRY tutarıyla (donmuş `base_amount`), açık fırsat güncel kurla toplanıyor; raporda
       kullanılan kur + tarihi gösteriliyor; teklif `sent`'te kur donuyor, PDF'te kur+tarih var.
-- [ ] **İz E:** XXE testi (A5.8) yeşil; kur ayrıştırma `LIBXML_NONET` + harici varlık kapalı; giden çağrı
+- [x] **İz E:** XXE testi (A5.8) yeşil; kur ayrıştırma `LIBXML_NONET` + harici varlık kapalı; giden çağrı
       sabit URL + zaman aşımı + TLS doğrulama + boyut sınırı (H7). Para hesabı float kullanmıyor (bcmath).
-- [ ] **İz F:** C1–C4 inşa edildi; her yeni uç Policy/izin kontrollü; global aramada yetkisiz kayıt
+- [x] **İz F:** C1–C4 inşa edildi; her yeni uç Policy/izin kontrollü; global aramada yetkisiz kayıt
       sızmıyor; kayıtlı görünüm sahiplik/paylaşım kuralı çalışıyor.
-- [ ] Tüm mevcut test suiti (Faz 13 sonrası) hâlâ yeşil; yeni testlerle birlikte sayı arttı.
+- [x] Tüm mevcut test suiti (Faz 13 sonrası) hâlâ yeşil; yeni testlerle birlikte sayı arttı — **1305 test /
+      9635 assertion (2026-08-25)**, Faz 13 kapanışında 1098 test / 8843 assertion'dı.
 
 ---
 
@@ -349,3 +355,57 @@ metni değiştirir (i18n), para birimi görüntüsünü ekler ve C1–C4 özelli
 - **F6 / Türkçe İ/ı casing:** ön bulgu Faz 13'te saptandı, **düzeltmesi Faz 13'te (H8)**. Faz 14 locale
   işiyle felsefi olarak akraba ama burada tekrarlanmaz — yalnız bağ notu (§1.5).
 - **`utf8mb4_unicode_ci` Türkçe sıralaması:** bilinen sınır, bu fazda da değişmez (§1.5).
+
+---
+
+## 8. Faz 14 Kapanışı — Sonuç, Ertelenen Kararlar ve Bilinen Sınırlar
+
+**Ölçülen sonuç (2026-08-25):**
+- Kanonik `syncra_crm_test` üzerinde, paralel şerit yokken: **1305 test / 9635 assertion, 0 hata**
+  (Faz 13 kapanış tabanı 1098 test / 8843 assertion'dı).
+- Frontend: `npx tsc -p tsconfig.app.json --noEmit` → **0 hata** (kök `tsconfig.json` solution-style
+  olduğu için düz `npx tsc --noEmit` yanıltıcı biçimde sessizce 0 döner — hiçbir dosyayı kontrol etmez;
+  bu tuzak `docs/PROGRESS.md` Ortam Durumu tablosuna ayrıca not düşüldü).
+- `npm run i18n:check` → **27 namespace / ~2089 anahtar**, iki yönde de yeşil: (1) dil↔dil anahtar
+  paritesi (tr/en/de/fr), (2) kod→sözlük statik tarama (`useTranslation` bağlamaları + `t()`/`<Trans>`
+  kullanımları). 185 dosya tarandı; 70 dinamik anahtar (`t(\`x.${y}\`)` biçiminde, derleme zamanında
+  çözülemeyen) statik olarak çözülemedi — **sessizce yutulmadı, raporlandı** ve kapsam dışı bırakıldı
+  (bilinen sınır (e), aşağıda).
+- `npm run test:money-currency` → **16/16** yeşil (`currencyDisplay: 'narrowSymbol'` regresyonu).
+- Doğrulama komutları: `php artisan test` (backend, kanonik DB), `npx tsc -p tsconfig.app.json --noEmit`
+  (frontend tip kontrolü — DOĞRU komut budur, bkz. yukarı), `npm run i18n:check` (i18n parite),
+  `npm run test:money-currency` (para/para birimi biçimlendirme regresyonu).
+
+**Faz 15'e ERTELENEN KARAR — PDF tarih biçimi:**
+PDF'te tarihler dört dilde de sabit `d.m.Y` (`24.08.2026`) basılıyor; oysa uygulama arayüzü locale'e
+göre biçimlendiriyor (`en-GB` → `24/08/2026`, `de-DE` → `24.08.2026`, `fr-FR` → `24/08/2026`).
+**Gerekçe (bilinçli, çözülmedi):** müşteriye giden bir belgede `en-GB` slash biçimi (`24/08/2026`)
+Amerikalı bir okuyucu tarafından `m/d/y` sanılıp `08.24.2026` gibi yanlış okunabilir; noktalı `d.m.Y`
+biçimi bu belirsizliği taşımıyor (ay 13'ten büyük olamayacağı için tek okunuşu var). Ama bu, PDF ile UI
+arasında görünür bir fark yaratıyor. Kararı — PDF'i UI'nın locale davranışına uydurmak mı, yoksa
+belirsizlik-taşımaz `d.m.Y`'de sabit kalmak mı — **Faz 15 kabul turunda kullanıcı verecek**; değişikliği
+uygulamak tek satırlık bir formatter parametresi.
+
+**Bilinen sınırlar (bilinçli, hata değil):**
+- **(a) `Company` tipinde `currency` alanı yok** (`annual_revenue` para birimsiz) → firma ekranlarında
+  para birimi dönüşümü uygulanmadı. Kapsam kararı zaten Deal/Quote seviyesindeydi (§2.1 "Kayıtlar kendi
+  para biriminde saklanır (`deals.currency` zaten var)"); Company'nin kendi bir para alanı hiç olmadı.
+- **(b) `pages/Showcase.tsx` çevrilmedi** — kendi başlığında "kalıcı ürün sayfası değildir" diyen dev
+  tasarım galerisi (Faz 1'den kalma); i18n kapsamı kullanıcı-yüzeyli üretim ekranlarıyla sınırlı tutuldu.
+- **(c) Lead'in ters yönü (contact/company/deal → lead) şemada YOK** (`lead_id` kolonu yok) — bu Faz
+  14'ün kapsamı değil (İz F ilişkili-kayıt paneli C3 mevcut ilişkiler üzerine kurulu), uydurulmadı.
+- **(d) `QuoteFormPage`'de para birimi SEÇİCİSİ yok** — teklif para birimi seçimi bu fazın kapsamında
+  değildi (§2 Kapsam: "kalem bazlı farklı para birimi kullanıcı seçmedi"); iskonto alanı ISO kodu
+  basıyor çünkü `money.ts` yalnız-simge erişimcisi sunmuyor. Küçük, izole bir eksik.
+- **(e) `i18n:check` 70 dinamik anahtarı** (`t(\`x.${y}\`)` biçiminde, derleme zamanında string
+  birleştirmeyle üretilen) statik çözemiyor — sessizce yutmuyor, konsola raporluyor ve kapsam dışı
+  bırakıyor. Bu anahtarlar elle gözden geçirilmedi; Faz 15 nokta-kontrolünde bu ekranlara özellikle
+  bakılmalı.
+
+**Faz 15'e taşınan iş:**
+- §6'daki kısa yeniden-kabul turu: 4 dil × 6 rol nokta-kontrolü (özellikle dinamik anahtar taşıyan
+  ekranlar, bkz. bilinen sınır (e)), para birimi seçimi/kur etiketi/PDF kur satırı doğrulaması, C1–C4
+  yetki sınırı testi.
+- PDF tarih biçimi kararı (yukarıda) — kullanıcı onayı bekliyor.
+- README final: API endpoint listesi + ER diyagramı iki dile de eklenecek (Faz 14 yalnız README yapısını
+  ve mevcut içeriği çevirdi, Faz 15 içerik tamamlar — §1.6).

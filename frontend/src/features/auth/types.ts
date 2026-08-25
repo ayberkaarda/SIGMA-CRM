@@ -11,6 +11,10 @@ export type User = {
   name: string
   email: string
   department: string | null
+  /** Kişisel arayüz dili (`tr`/`en`/`de`/`fr`) — pre-auth localStorage seçiminin OTORİTESİ (§1.3). */
+  locale: string
+  /** Kişisel görüntüleme para birimi (İz E; şema aynı göçte eklendi — PHASE-INTL §2.3). */
+  preferred_currency: string
   is_active: boolean
   must_change_password: boolean
   last_login_at: string | null
@@ -28,6 +32,12 @@ export type LoginPayload = {
 
 export type ForgotPasswordPayload = {
   email: string
+}
+
+/** `PATCH /api/me/preferences` — iki alan da opsiyonel, gönderilen doğrulanır. */
+export type UpdatePreferencesPayload = {
+  locale?: string
+  preferred_currency?: string
 }
 
 export type ChangePasswordPayload = {

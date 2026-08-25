@@ -12,6 +12,10 @@ use App\Events\TicketSlaBreached;
  *
  * Zamanlanmış bir tarayıcıdan geldiği için actor YOKTUR.
  *
+ * FAZ 14 / İz D — anahtar moduna dönüştürüldü. `minutes` sayısal bir
+ * DEĞERDİR, birim adı ("dk"/"min"/"Min.") cümlenin parçasıdır ve sözlükte
+ * durur — böylece her dil kendi kısaltmasını/sözcük sırasını kullanır.
+ *
  * @see TicketSlaBreached::payload() Payload alanları için.
  */
 class TicketSlaBreachedNotification extends CrmNotification
@@ -21,13 +25,13 @@ class TicketSlaBreachedNotification extends CrmNotification
         return new self(
             recipientId: $assignedTo,
             notificationType: 'ticket.sla_breached',
-            notificationTitle: 'SLA ihlal edildi',
-            notificationBody: sprintf(
-                '%s — %s (%d dk gecikme)',
-                $ticketNumber,
-                $subject,
-                (int) round($overdueSeconds / 60),
-            ),
+            titleKey: 'notifications.ticket_sla_breached.title',
+            bodyKey: 'notifications.ticket_sla_breached.body',
+            params: [
+                'ticket_number' => $ticketNumber,
+                'subject' => $subject,
+                'minutes' => (string) (int) round($overdueSeconds / 60),
+            ],
             notificationLink: '/tickets/'.$ticketId,
             meta: [
                 'ticket_id' => $ticketId,

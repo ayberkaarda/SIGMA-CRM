@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios'
 import type { InternalAxiosRequestConfig } from 'axios'
 import { toast } from '../components/ui'
+import i18n from '../i18n'
 
 /**
  * Shared axios instance configured for Laravel Sanctum's SPA (cookie-based)
@@ -100,7 +101,7 @@ api.interceptors.response.use(
     // state, notify the user, and bounce to /login.
     if (status === 403 && code === 'USER_DEACTIVATED') {
       if (!onLoginPage) {
-        toast.error('Hesabınız pasifleştirildi. Oturumunuz sonlandırıldı.')
+        toast.error(i18n.t('errors:accountDeactivated'))
         onUnauthorized?.()
       }
       return Promise.reject(error)
@@ -125,7 +126,7 @@ export function getErrorMessage(error: unknown): string {
     const message = error.response?.data?.errors?.message
     if (message) return message
   }
-  return 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.'
+  return i18n.t('errors:generic')
 }
 
 /** Extracts per-field validation errors (422) from an API error response, if any. */

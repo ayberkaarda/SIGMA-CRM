@@ -6,14 +6,25 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { isAxiosError } from 'axios'
+import { useTranslation } from 'react-i18next'
 import { Check, Eye, EyeOff, LogOut, X } from 'lucide-react'
 import { Button, Card, CardBody, Input, toast } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
 import { getErrorMessage, getFieldErrors } from '../../../lib/axios'
-import { evaluatePassword } from '../../../features/users/utils/password'
+import { PASSWORD_MIN_LENGTH, evaluatePassword } from '../../../features/users/utils/password'
+import type { PasswordRuleId } from '../../../features/users/utils/password'
 import { useAuth, useChangePassword } from '../hooks/useAuth'
 
 type LocationState = { from?: { pathname: string } }
+
+/** `users:passwordRules.*` anahtarları — bkz. `UserFormModal`/`ResetPasswordModal`'daki aynı harita. */
+const RULE_LABEL_KEYS: Record<PasswordRuleId, string> = {
+  length: 'users:passwordRules.length',
+  upper: 'users:passwordRules.upper',
+  lower: 'users:passwordRules.lower',
+  digit: 'users:passwordRules.digit',
+  special: 'users:passwordRules.special',
+}
 
 function getRetryAfterSeconds(error: unknown): number | null {
   if (!isAxiosError(error)) return null
@@ -23,6 +34,7 @@ function getRetryAfterSeconds(error: unknown): number | null {
 }
 
 export function ChangePasswordPage() {
+  const { t } = useTranslation(['auth', 'common'])
   const navigate = useNavigate()
   const location = useLocation()
   const { user, status, logout } = useAuth()
@@ -73,14 +85,14 @@ export function ChangePasswordPage() {
         password,
         password_confirmation: passwordConfirmation,
       })
-      toast.success('Şifreniz güncellendi.')
+      toast.success(t('auth:changePassword.success'))
       const state = location.state as LocationState | null
       navigate(state?.from?.pathname ?? '/', { replace: true })
     } catch (error) {
       const retryAfter = getRetryAfterSeconds(error)
       if (retryAfter) {
         setLockoutSeconds(retryAfter)
-        toast.error(`Çok fazla deneme. ${retryAfter} saniye sonra tekrar deneyin.`)
+        toast.error(t('auth:changePassword.lockout', { seconds: retryAfter }))
         return
       }
 
@@ -113,15 +125,12 @@ export function ChangePasswordPage() {
             className="mb-2 w-28"
           />
           <span className="text-2xl font-semibold tracking-tight text-fg">Syncra</span>
-          <p className="text-sm text-fg-muted">Şifrenizi değiştirmeniz gerekiyor</p>
+          <p className="text-sm text-fg-muted">{t('auth:changePassword.subtitle')}</p>
         </div>
 
         <Card>
           <CardBody className="flex flex-col gap-5">
-            <p className="text-sm text-fg-muted">
-              Hesabınıza geçici bir şifreyle giriş yaptınız. Devam etmeden önce kalıcı, yalnızca sizin
-              bildiğiniz yeni bir şifre belirlemeniz gerekiyor.
-            </p>
+            <p className="text-sm text-fg-muted">{t('auth:changePassword.description')}</p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
               <div aria-live="polite">
@@ -135,7 +144,7 @@ export function ChangePasswordPage() {
               <Input
                 ref={currentPasswordRef}
                 type={showCurrent ? 'text' : 'password'}
-                label="Mevcut (geçici) şifre"
+                label={t('auth:changePassword.currentPasswordLabel')}
                 name="current_password"
                 autoComplete="current-password"
                 value={currentPassword}
@@ -145,7 +154,7 @@ export function ChangePasswordPage() {
                     type="button"
                     onClick={() => setShowCurrent((current) => !current)}
                     className="pointer-events-auto text-fg-muted hover:text-fg"
-                    aria-label={showCurrent ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                    aria-label={showCurrent ? t('auth:login.hidePassword') : t('auth:login.showPassword')}
                   >
                     {showCurrent ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
                   </button>
@@ -156,7 +165,7 @@ export function ChangePasswordPage() {
 
               <Input
                 type={showNew ? 'text' : 'password'}
-                label="Yeni şifre"
+                label={t('auth:changePassword.newPasswordLabel')}
                 name="password"
                 autoComplete="new-password"
                 value={password}
@@ -166,7 +175,7 @@ export function ChangePasswordPage() {
                     type="button"
                     onClick={() => setShowNew((current) => !current)}
                     className="pointer-events-auto text-fg-muted hover:text-fg"
-                    aria-label={showNew ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                    aria-label={showNew ? t('auth:login.hidePassword') : t('auth:login.showPassword')}
                   >
                     {showNew ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
                   </button>
@@ -186,14 +195,14 @@ export function ChangePasswordPage() {
                     ) : (
                       <X className="size-3.5 shrink-0" aria-hidden="true" />
                     )}
-                    {rule.label}
+                    {t(RULE_LABEL_KEYS[rule.id], { count: PASSWORD_MIN_LENGTH })}
                   </li>
                 ))}
               </ul>
 
               <Input
                 type={showConfirm ? 'text' : 'password'}
-                label="Yeni şifre (tekrar)"
+                label={t('auth:changePassword.confirmPasswordLabel')}
                 name="password_confirmation"
                 autoComplete="new-password"
                 value={passwordConfirmation}
@@ -203,7 +212,7 @@ export function ChangePasswordPage() {
                     type="button"
                     onClick={() => setShowConfirm((current) => !current)}
                     className="pointer-events-auto text-fg-muted hover:text-fg"
-                    aria-label={showConfirm ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                    aria-label={showConfirm ? t('auth:login.hidePassword') : t('auth:login.showPassword')}
                   >
                     {showConfirm ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
                   </button>
@@ -213,12 +222,14 @@ export function ChangePasswordPage() {
               />
 
               <Button type="submit" fullWidth loading={changePassword.isPending} disabled={submitDisabled}>
-                {lockoutSeconds > 0 ? `Tekrar deneyin (${lockoutSeconds}s)` : 'Şifreyi Değiştir'}
+                {lockoutSeconds > 0
+                  ? t('auth:login.retryIn', { seconds: lockoutSeconds })
+                  : t('auth:changePassword.submit')}
               </Button>
             </form>
 
             <Button variant="ghost" fullWidth leftIcon={<LogOut className="size-4" aria-hidden="true" />} onClick={handleLogout}>
-              Çıkış Yap
+              {t('common:layout.logout')}
             </Button>
           </CardBody>
         </Card>

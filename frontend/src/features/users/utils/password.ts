@@ -1,47 +1,52 @@
 // Şifre politikası ön kontrolü (istemci tarafı) + kriptografik olarak güvenli şifre üretici.
 // Asıl doğrulama daima backend'de yapılır; burası yalnızca canlı UX geri bildirimi içindir.
+//
+// Faz 14 / İz D: kurallar/güç için ANAHTAR taşınır (bkz. `activityTypeMeta.ts`'teki aynı
+// gerekçe) — bu dosya saf bir yardımcı (React/i18next bağımsız), çeviri tüketici bileşende
+// (`UserFormModal`/`ResetPasswordModal`/`ChangePasswordPage`) `users:passwordRules.*` /
+// `users:passwordStrength.*` anahtarlarıyla `rule.id`/`PASSWORD_STRENGTH_KEYS[score]` üzerinden
+// çözülür. Miras `rule.label`/`strengthLabel` SABİT TÜRKÇE alanları (dalga 1'de yalnızca
+// `ChangePasswordPage.tsx` onları tükettiği için bırakılmıştı) bu fazda KALDIRILDI — o sayfa da
+// artık `rule.id` + çeviri anahtarına geçti (bkz. `ChangePasswordPage.tsx`).
+export type PasswordRuleId = 'length' | 'upper' | 'lower' | 'digit' | 'special'
 
 export type PasswordRule = {
-  id: string
-  label: string
+  id: PasswordRuleId
   met: boolean
 }
 
+/** 0-5 arası, karşılanan kural sayısı — `users:passwordStrength.*` anahtarlarıyla aynı sırada. */
+export type PasswordStrengthScore = 0 | 1 | 2 | 3 | 4 | 5
+
 export type PasswordEvaluation = {
   rules: PasswordRule[]
-  score: number // 0-5, karşılanan kural sayısı
+  score: PasswordStrengthScore
   isValid: boolean
-  strengthLabel: 'Çok zayıf' | 'Zayıf' | 'Orta' | 'İyi' | 'Güçlü'
 }
 
-const MIN_LENGTH = 12
+export const PASSWORD_MIN_LENGTH = 12
 
-const STRENGTH_LABELS: PasswordEvaluation['strengthLabel'][] = [
-  'Çok zayıf',
-  'Çok zayıf',
-  'Zayıf',
-  'Orta',
-  'İyi',
-  'Güçlü',
-]
+/** `users:passwordStrength.*` anahtarları — `score`'a göre sırayla (bkz. `PasswordEvaluation.score`). */
+export const PASSWORD_STRENGTH_KEYS = ['veryWeak', 'veryWeak', 'weak', 'medium', 'good', 'strong'] as const
 
 /** Şifre politikası: en az 12 karakter, büyük+küçük harf, rakam, özel karakter. */
 export function evaluatePassword(password: string): PasswordEvaluation {
-  const rules: PasswordRule[] = [
-    { id: 'length', label: `En az ${MIN_LENGTH} karakter`, met: password.length >= MIN_LENGTH },
-    { id: 'upper', label: 'En az bir büyük harf', met: /[A-Z]/.test(password) },
-    { id: 'lower', label: 'En az bir küçük harf', met: /[a-z]/.test(password) },
-    { id: 'digit', label: 'En az bir rakam', met: /[0-9]/.test(password) },
-    { id: 'special', label: 'En az bir özel karakter', met: /[^A-Za-z0-9]/.test(password) },
-  ]
+  const ruleIds: PasswordRuleId[] = ['length', 'upper', 'lower', 'digit', 'special']
+  const met: Record<PasswordRuleId, boolean> = {
+    length: password.length >= PASSWORD_MIN_LENGTH,
+    upper: /[A-Z]/.test(password),
+    lower: /[a-z]/.test(password),
+    digit: /[0-9]/.test(password),
+    special: /[^A-Za-z0-9]/.test(password),
+  }
 
-  const score = rules.filter((rule) => rule.met).length
+  const rules: PasswordRule[] = ruleIds.map((id) => ({ id, met: met[id] }))
+  const score = rules.filter((rule) => rule.met).length as PasswordStrengthScore
 
   return {
     rules,
     score,
     isValid: rules.every((rule) => rule.met),
-    strengthLabel: STRENGTH_LABELS[score],
   }
 }
 

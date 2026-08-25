@@ -91,19 +91,7 @@ class CalculateQuoteRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'items.array' => 'Kalemler bir liste olmalıdır.',
-            'items.max' => 'Tek seferde en fazla :max kalem hesaplanabilir.',
-            'items.*.quantity.numeric' => 'Miktar sayısal olmalıdır.',
-            'items.*.quantity.min' => 'Miktar negatif olamaz.',
-            'items.*.unit_price.numeric' => 'Birim fiyat sayısal olmalıdır.',
-            'items.*.unit_price.min' => 'Birim fiyat negatif olamaz.',
-            'items.*.discount_percent.min' => 'Kalem indirim oranı 0 ile 100 arasında olmalıdır.',
-            'items.*.discount_percent.max' => 'Kalem indirim oranı 0 ile 100 arasında olmalıdır.',
-            'items.*.tax_rate.min' => 'KDV oranı 0 ile 100 arasında olmalıdır.',
-            'items.*.tax_rate.max' => 'KDV oranı 0 ile 100 arasında olmalıdır.',
-            'discount_type.in' => 'İndirim tipi yalnızca "amount" veya "percent" olabilir.',
-            'discount_value.numeric' => 'İndirim değeri sayısal olmalıdır.',
-            'discount_value.min' => 'İndirim değeri negatif olamaz.',
+            'discount_type.in' => __('validation.custom.quotes.discount_type_invalid'),
         ];
     }
 }

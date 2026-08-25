@@ -24,15 +24,4 @@ class AssignTaskRequest extends FormRequest
             'assigned_to' => ['required', 'integer', 'exists:users,id'],
         ];
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'assigned_to.required' => 'Atanan kişi alanı zorunludur.',
-            'assigned_to.exists' => 'Seçilen atanan kişi geçerli değil.',
-        ];
-    }
 }

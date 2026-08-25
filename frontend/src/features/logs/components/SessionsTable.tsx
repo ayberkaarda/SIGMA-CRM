@@ -1,4 +1,5 @@
 // Oturum sekmesi tablosu — server-side sayfalama/sıralama, yükleme/boş/hata durumları.
+import { useTranslation } from 'react-i18next'
 import { LogIn } from 'lucide-react'
 import {
   Avatar,
@@ -14,7 +15,7 @@ import {
   Tr,
 } from '../../../components/ui'
 import type { SessionLog } from '../types'
-import { SESSION_EVENT_BADGE, SESSION_EVENT_LABELS, formatDateTime, formatDuration } from '../utils'
+import { SESSION_EVENT_BADGE, formatDateTime, formatDuration, sessionEventLabel } from '../utils'
 
 export type SessionsTableProps = {
   data: SessionLog[]
@@ -35,14 +36,15 @@ export function SessionsTable({
   sortDirectionFor,
   onSortToggle,
 }: SessionsTableProps) {
+  const { t } = useTranslation(['logs', 'common'])
   const isEmpty = !isLoading && !isError && data.length === 0
 
   if (isError) {
     return (
       <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
-        <p className="text-sm text-fg-muted">Oturum kayıtları yüklenirken bir hata oluştu.</p>
+        <p className="text-sm text-fg-muted">{t('logs:sessions.loadError')}</p>
         <Button variant="secondary" onClick={onRetry}>
-          Tekrar dene
+          {t('common:actions.retry')}
         </Button>
       </div>
     )
@@ -52,8 +54,8 @@ export function SessionsTable({
     return (
       <EmptyState
         icon={<LogIn className="size-6" aria-hidden="true" />}
-        title="Oturum kaydı bulunamadı"
-        description="Arama veya filtre kriterlerinizle eşleşen oturum kaydı yok."
+        title={t('logs:sessions.emptyTitle')}
+        description={t('logs:sessions.emptyDescription')}
       />
     )
   }
@@ -62,42 +64,42 @@ export function SessionsTable({
     <Table>
       <THead>
         <Tr>
-          <Th>Kullanıcı</Th>
+          <Th>{t('logs:sessions.columns.user')}</Th>
           <Th
             sortable
             sortDirection={sortDirectionFor('event')}
             onSort={() => onSortToggle('event')}
           >
-            Olay
+            {t('logs:sessions.columns.event')}
           </Th>
           <Th
             sortable
             sortDirection={sortDirectionFor('ip_address')}
             onSort={() => onSortToggle('ip_address')}
           >
-            IP
+            {t('logs:sessions.columns.ip')}
           </Th>
-          <Th>Cihaz / Tarayıcı / Platform</Th>
+          <Th>{t('logs:sessions.columns.device')}</Th>
           <Th
             sortable
             sortDirection={sortDirectionFor('logged_in_at')}
             onSort={() => onSortToggle('logged_in_at')}
           >
-            Giriş
+            {t('logs:sessions.columns.loginAt')}
           </Th>
           <Th
             sortable
             sortDirection={sortDirectionFor('logged_out_at')}
             onSort={() => onSortToggle('logged_out_at')}
           >
-            Çıkış
+            {t('logs:sessions.columns.logoutAt')}
           </Th>
           <Th
             sortable
             sortDirection={sortDirectionFor('duration_seconds')}
             onSort={() => onSortToggle('duration_seconds')}
           >
-            Süre
+            {t('logs:sessions.columns.duration')}
           </Th>
         </Tr>
       </THead>
@@ -148,7 +150,7 @@ export function SessionsTable({
                 </Td>
                 <Td>
                   <Badge variant={SESSION_EVENT_BADGE[log.event]}>
-                    {SESSION_EVENT_LABELS[log.event] ?? log.event}
+                    {sessionEventLabel(log.event, t)}
                   </Badge>
                 </Td>
                 <Td className="font-mono text-xs">{log.ip_address ?? '—'}</Td>
@@ -159,7 +161,7 @@ export function SessionsTable({
                 </Td>
                 <Td>{formatDateTime(log.logged_in_at)}</Td>
                 <Td>{formatDateTime(log.logged_out_at)}</Td>
-                <Td>{formatDuration(log.duration_seconds)}</Td>
+                <Td>{formatDuration(log.duration_seconds, t)}</Td>
               </Tr>
             ))}
       </TBody>

@@ -20,6 +20,8 @@
 // bırakılır — kullanıcı 422'yi hiç görmez. DELETE ucu/butonu YOK; aşamalar hiçbir zaman
 // silinemez, yalnızca pasifleştirilip aktifleştirilebilir.
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import {
   DndContext,
   KeyboardSensor,
@@ -56,6 +58,7 @@ type PendingDeactivation = {
 } | null
 
 export function PipelineStagesTab() {
+  const { t } = useTranslation(['settings', 'common'])
   const { data, isLoading, isError, refetch } = usePipelineStages()
   const reorderStages = useReorderPipelineStages()
   const updateStage = useUpdatePipelineStage()
@@ -88,13 +91,13 @@ export function PipelineStagesTab() {
     try {
       if (!stage.is_active) {
         await updateStage.mutateAsync({ id: stage.id, payload: { is_active: true } })
-        toast.success(`"${stage.name}" aşaması aktifleştirildi.`)
+        toast.success(t('settings:pipeline.toast.activated', { name: stage.name }))
         return
       }
 
       try {
         await updateStage.mutateAsync({ id: stage.id, payload: { is_active: false } })
-        toast.success(`"${stage.name}" aşaması pasifleştirildi.`)
+        toast.success(t('settings:pipeline.toast.deactivated', { name: stage.name }))
       } catch (error) {
         const details = extractStageHasOpenDeals(error)
         if (details) {
@@ -120,7 +123,10 @@ export function PipelineStagesTab() {
         payload: { is_active: false, move_to_stage_id: moveToStageId },
       })
       toast.success(
-        `Aşama pasifleştirildi, ${details.open_deals_count} fırsat ${targetStage?.name ?? 'seçilen aşamaya'} aşamasına taşındı.`
+        t('settings:pipeline.toast.movedAndDeactivated', {
+          count: details.open_deals_count,
+          target: targetStage?.name ?? t('settings:pipeline.movedTargetFallback'),
+        })
       )
       setPendingDeactivation(null)
     } catch (error) {
@@ -143,9 +149,9 @@ export function PipelineStagesTab() {
   if (isError) {
     return (
       <div className="flex flex-col items-center gap-3 py-12 text-center">
-        <p className="text-sm text-fg-muted">Pipeline aşamaları yüklenirken bir hata oluştu.</p>
+        <p className="text-sm text-fg-muted">{t('settings:pipeline.loadError')}</p>
         <Button variant="secondary" onClick={() => refetch()}>
-          Tekrar dene
+          {t('common:actions.retry')}
         </Button>
       </div>
     )
@@ -154,16 +160,14 @@ export function PipelineStagesTab() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-fg-muted">
-          Aşamaları sürükleyerek sıralayın. Aşamalar silinemez, yalnızca pasifleştirilip aktifleştirilebilir.
-        </p>
+        <p className="text-sm text-fg-muted">{t('settings:pipeline.dragHint')}</p>
         <Button leftIcon={<Plus className="size-4" aria-hidden="true" />} onClick={() => setFormModal({ mode: 'create' })}>
-          Yeni Aşama
+          {t('settings:pipeline.newStage')}
         </Button>
       </div>
 
       {stages.length === 0 ? (
-        <EmptyState title="Aşama bulunamadı" description="Henüz tanımlı bir pipeline aşaması yok." />
+        <EmptyState title={t('settings:pipeline.empty.title')} description={t('settings:pipeline.empty.description')} />
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={stages.map((stage) => stage.id)} strategy={verticalListSortingStrategy}>
@@ -173,6 +177,7 @@ export function PipelineStagesTab() {
                   key={stage.id}
                   stage={stage}
                   busy={busyStageId === stage.id}
+                  t={t}
                   onEdit={() => setFormModal({ mode: 'edit', stage })}
                   onToggleActive={() => void handleToggleActive(stage)}
                 />
@@ -206,11 +211,12 @@ export function PipelineStagesTab() {
 type StageRowProps = {
   stage: PipelineStage
   busy: boolean
+  t: TFunction
   onEdit: () => void
   onToggleActive: () => void
 }
 
-function StageRow({ stage, busy, onEdit, onToggleActive }: StageRowProps) {
+function StageRow({ stage, busy, t, onEdit, onToggleActive }: StageRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: stage.id })
   const isSystemStage = stage.is_won || stage.is_lost
 
@@ -228,7 +234,7 @@ function StageRow({ stage, busy, onEdit, onToggleActive }: StageRowProps) {
         type="button"
         {...attributes}
         {...listeners}
-        aria-label={`${stage.name} aşamasını yeniden sırala`}
+        aria-label={t('settings:pipeline.reorderAria', { name: stage.name })}
         className="cursor-grab touch-none rounded-sm p-1 text-fg-muted hover:bg-surface-2 hover:text-fg active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         <GripVertical className="size-4" aria-hidden="true" />
@@ -242,27 +248,27 @@ function StageRow({ stage, busy, onEdit, onToggleActive }: StageRowProps) {
 
       {/* `deals_count`: pasifleştirmeden önce kullanıcıya bağlam verir (bkz. görev tanımı). */}
       <Badge variant="neutral" size="sm">
-        {stage.deals_count} fırsat
+        {t('settings:pipeline.dealsCount', { count: stage.deals_count })}
       </Badge>
 
       {stage.is_won && (
         <Badge variant="success" size="sm">
-          <Trophy className="size-3" aria-hidden="true" /> Sistem — Kazanıldı
+          <Trophy className="size-3" aria-hidden="true" /> {t('settings:pipeline.systemWon')}
         </Badge>
       )}
       {stage.is_lost && (
         <Badge variant="danger" size="sm">
-          <CircleSlash2 className="size-3" aria-hidden="true" /> Sistem — Kaybedildi
+          <CircleSlash2 className="size-3" aria-hidden="true" /> {t('settings:pipeline.systemLost')}
         </Badge>
       )}
 
       <Badge variant={stage.is_active ? 'success' : 'neutral'} size="sm">
-        {stage.is_active ? 'Aktif' : 'Pasif'}
+        {stage.is_active ? t('settings:status.active') : t('settings:status.inactive')}
       </Badge>
 
       <div className="ml-auto flex items-center gap-1">
         <Button variant="ghost" size="sm" leftIcon={<Pencil className="size-3.5" aria-hidden="true" />} onClick={onEdit}>
-          Düzenle
+          {t('common:actions.edit')}
         </Button>
         <Button
           variant="ghost"
@@ -279,9 +285,9 @@ function StageRow({ stage, busy, onEdit, onToggleActive }: StageRowProps) {
           disabled={isSystemStage || busy}
           loading={busy}
           onClick={onToggleActive}
-          title={isSystemStage ? 'Sistem aşaması pasifleştirilemez' : undefined}
+          title={isSystemStage ? t('settings:pipeline.deactivateDisabledTitle') : undefined}
         >
-          {stage.is_active ? 'Pasifleştir' : 'Aktifleştir'}
+          {stage.is_active ? t('settings:customFields.deactivate') : t('settings:customFields.activate')}
         </Button>
       </div>
     </div>

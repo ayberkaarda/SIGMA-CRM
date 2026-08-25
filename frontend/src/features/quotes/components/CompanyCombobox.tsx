@@ -3,6 +3,7 @@
 // paylaşımı yok, bu yüzden bu tur bileşenler her modülde küçük birer kopya olarak yaşıyor).
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Building2, X } from 'lucide-react'
 import { Input } from '../../../components/ui'
 import { cn } from '../../../lib/cn'
@@ -18,7 +19,9 @@ export type CompanyComboboxProps = {
   disabled?: boolean
 }
 
-export function CompanyCombobox({ value, onChange, label = 'Firma', error, disabled }: CompanyComboboxProps) {
+export function CompanyCombobox({ value, onChange, label, error, disabled }: CompanyComboboxProps) {
+  const { t } = useTranslation()
+  const resolvedLabel = label ?? t('quotes:companyCombobox.label')
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState('')
   const debouncedDraft = useDebouncedValue(draft, 300)
@@ -59,12 +62,12 @@ export function CompanyCombobox({ value, onChange, label = 'Firma', error, disab
   return (
     <div ref={containerRef} className="relative">
       <Input
-        label={label}
+        label={resolvedLabel}
         value={displayValue}
         onChange={(e) => setDraft(e.target.value)}
         onFocus={handleFocus}
         onKeyDown={handleKeyDown}
-        placeholder="Firma ara..."
+        placeholder={t('quotes:companyCombobox.placeholder')}
         leftIcon={<Building2 className="size-4" aria-hidden="true" />}
         disabled={disabled}
         rightIcon={
@@ -76,7 +79,7 @@ export function CompanyCombobox({ value, onChange, label = 'Firma', error, disab
                 e.stopPropagation()
                 handleSelect(null)
               }}
-              aria-label="Firma seçimini temizle"
+              aria-label={t('quotes:companyCombobox.clearAria')}
               className="pointer-events-auto text-fg-muted hover:text-fg"
             >
               <X className="size-4" aria-hidden="true" />
@@ -98,12 +101,12 @@ export function CompanyCombobox({ value, onChange, label = 'Firma', error, disab
               !value && 'text-fg',
             )}
           >
-            Firma yok / temizle
+            {t('quotes:companyCombobox.clearOption')}
           </button>
           {isLoading ? (
-            <p className="px-3 py-2 text-sm text-fg-muted">Yükleniyor…</p>
+            <p className="px-3 py-2 text-sm text-fg-muted">{t('quotes:companyCombobox.loading')}</p>
           ) : (options ?? []).length === 0 ? (
-            <p className="px-3 py-2 text-sm text-fg-muted">Sonuç bulunamadı</p>
+            <p className="px-3 py-2 text-sm text-fg-muted">{t('quotes:companyCombobox.empty')}</p>
           ) : (
             (options ?? []).map((option) => (
               <button

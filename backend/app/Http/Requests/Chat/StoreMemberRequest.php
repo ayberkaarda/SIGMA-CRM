@@ -31,19 +31,6 @@ class StoreMemberRequest extends FormRequest
         ];
     }
 
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'user_ids.required' => 'En az bir kullanıcı seçmelisiniz.',
-            'user_ids.array' => 'Kullanıcılar bir liste olmalıdır.',
-            'user_ids.*.distinct' => 'Aynı kullanıcı birden fazla kez eklenemez.',
-            'user_ids.*.exists' => 'Seçilen kullanıcılardan biri geçerli değil.',
-        ];
-    }
-
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {

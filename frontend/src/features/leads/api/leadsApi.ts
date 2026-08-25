@@ -4,6 +4,7 @@ import axios from 'axios'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, getErrorMessage } from '../../../lib/axios'
 import { toast } from '../../../components/ui'
+import i18n from '../../../i18n'
 import type {
   ConvertLeadPayload,
   ConvertLeadResult,
@@ -144,7 +145,7 @@ export function useCreateLead() {
     mutationFn: createLeadRequest,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: leadsKeys.all })
-      toast.success('Müşteri adayı oluşturuldu.')
+      toast.success(i18n.t('leads:toast.created'))
     },
     onError: (error) => {
       toast.error(getErrorMessage(error))
@@ -159,7 +160,7 @@ export function useUpdateLead() {
     onSuccess: (updatedLead) => {
       void queryClient.invalidateQueries({ queryKey: leadsKeys.all })
       void queryClient.invalidateQueries({ queryKey: leadsKeys.detail(updatedLead.id) })
-      toast.success('Müşteri adayı güncellendi.')
+      toast.success(i18n.t('leads:toast.updated'))
     },
     onError: (error) => {
       toast.error(getErrorMessage(error))
@@ -173,7 +174,7 @@ export function useDeleteLead() {
     mutationFn: (id: number) => deleteLeadRequest(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: leadsKeys.all })
-      toast.success('Müşteri adayı silindi.')
+      toast.success(i18n.t('leads:toast.deleted'))
     },
     onError: (error) => {
       toast.error(getErrorMessage(error))
@@ -200,7 +201,7 @@ export function useConvertLead() {
     onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: leadsKeys.all })
       void queryClient.invalidateQueries({ queryKey: leadsKeys.detail(result.lead.id) })
-      toast.success('Müşteri adayı başarıyla dönüştürüldü.')
+      toast.success(i18n.t('leads:toast.converted'))
     },
     onError: (error) => {
       toast.error(getErrorMessage(error))
@@ -215,7 +216,7 @@ export function useAssignLead() {
     onSuccess: (updatedLead) => {
       void queryClient.invalidateQueries({ queryKey: leadsKeys.all })
       void queryClient.invalidateQueries({ queryKey: leadsKeys.detail(updatedLead.id) })
-      toast.success('Sahip ataması güncellendi.')
+      toast.success(i18n.t('leads:toast.assigned'))
     },
     onError: (error) => {
       toast.error(getErrorMessage(error))

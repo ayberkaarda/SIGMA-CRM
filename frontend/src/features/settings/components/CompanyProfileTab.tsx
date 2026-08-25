@@ -17,22 +17,31 @@
 // yaygın anahtarlar için Türkçe etiket sözlüğü var, bilinmeyen bir anahtar anahtar adından
 // türetilmiş bir etiketle (bkz. `titleizeKey`) yine de doğru render edilir.
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { Save, Undo2 } from 'lucide-react'
 import { Button, Checkbox, Input, Skeleton, Textarea, toast } from '../../../components/ui'
 import { useSettings, useUpdateSettings } from '../hooks/useSettings'
 import type { Setting, SettingValue } from '../types'
 
-const COMPANY_FIELD_LABELS: Record<string, string> = {
-  'company.name': 'Şirket Adı',
-  'company.email': 'E-posta',
-  'company.phone': 'Telefon',
-  'company.address': 'Adres',
-  'company.website': 'Web Sitesi',
-  'company.tax_number': 'Vergi Numarası',
-  'company.tax_office': 'Vergi Dairesi',
-  'company.logo_url': 'Logo URL',
-  'company.currency': 'Para Birimi',
+// `setting.key` (ör. `company.tax_number`) -> `settings:company.fields` altındaki camelCase
+// anahtar (ör. `taxNumber`). Yalnızca BİLİNEN alanlar için çeviri var; bilinmeyen bir anahtar
+// `titleizeKey` ile anahtar adından türetilmiş bir etikete düşer (bkz. dosya başı notu).
+const FIELD_LABEL_SUFFIX: Record<string, string> = {
+  'company.name': 'name',
+  'company.email': 'email',
+  'company.phone': 'phone',
+  'company.address': 'address',
+  'company.website': 'website',
+  'company.tax_number': 'taxNumber',
+  'company.tax_office': 'taxOffice',
+  'company.logo_url': 'logoUrl',
+  'company.currency': 'currency',
 }
+
+// `settings:keys.company.<snake>.description` çevirisi bulunan alanlar (§1.5 — ayar
+// açıklamaları çevrilir, DB `description` yalnızca çevirisi olmayan anahtarlar için fallback'tir).
+const DESCRIBABLE_KEYS = new Set(['name', 'email', 'phone', 'address', 'tax_number'])
 
 const MULTILINE_HINTS = ['address', 'description', 'note']
 
@@ -42,8 +51,17 @@ function titleizeKey(key: string): string {
   return words.replace(/\b\w/g, (c) => c.toUpperCase()) || key
 }
 
-function labelFor(setting: Setting): string {
-  return COMPANY_FIELD_LABELS[setting.key] ?? titleizeKey(setting.key)
+function labelFor(setting: Setting, t: TFunction): string {
+  const suffix = FIELD_LABEL_SUFFIX[setting.key]
+  return suffix ? t(`settings:company.fields.${suffix}`) : titleizeKey(setting.key)
+}
+
+/** Çevirisi olan bir açıklama varsa onu, yoksa sunucudan gelen `description`'ı (seed-metadata
+ *  fallback, §1.5) döner. */
+function descriptionFor(setting: Setting, t: TFunction): string | undefined {
+  const snake = setting.key.split('.').pop() ?? ''
+  if (DESCRIBABLE_KEYS.has(snake)) return t(`settings:keys.company.${snake}.description`)
+  return setting.description ?? undefined
 }
 
 function isMultiline(key: string): boolean {
@@ -59,6 +77,7 @@ function toEditableText(setting: Setting): string {
 }
 
 export function CompanyProfileTab() {
+  const { t } = useTranslation(['settings', 'common'])
   const { data, isLoading, isError, refetch } = useSettings()
   const updateSettings = useUpdateSettings()
 
@@ -131,7 +150,7 @@ export function CompanyProfileTab() {
         }
         const num = Number(raw)
         if (Number.isNaN(num)) {
-          errors[key] = 'Geçerli bir sayı girin.'
+          errors[key] = t('settings:company.errors.invalidNumber')
           continue
         }
         patch[key] = num
@@ -146,7 +165,7 @@ export function CompanyProfileTab() {
         try {
           patch[key] = JSON.parse(raw)
         } catch {
-          errors[key] = 'Geçerli bir JSON değeri girin.'
+          errors[key] = t('settings:company.errors.invalidJson')
         }
         continue
       }
@@ -156,7 +175,7 @@ export function CompanyProfileTab() {
 
     setJsonErrors(errors)
     if (Object.keys(errors).length > 0) {
-      toast.error('Bazı alanlar hatalı — kaydetmeden önce düzeltin.')
+      toast.error(t('settings:company.errors.fixBeforeSave'))
       return
     }
     if (Object.keys(patch).length === 0) return
@@ -177,23 +196,23 @@ export function CompanyProfileTab() {
   if (isError) {
     return (
       <div className="flex flex-col items-center gap-3 py-12 text-center">
-        <p className="text-sm text-fg-muted">Ayarlar yüklenirken bir hata oluştu.</p>
+        <p className="text-sm text-fg-muted">{t('settings:company.loadError')}</p>
         <Button variant="secondary" onClick={() => refetch()}>
-          Tekrar dene
+          {t('common:actions.retry')}
         </Button>
       </div>
     )
   }
 
   if (companySettings.length === 0) {
-    return <p className="py-8 text-center text-sm text-fg-muted">Tanımlı şirket ayarı bulunamadı.</p>
+    return <p className="py-8 text-center text-sm text-fg-muted">{t('settings:company.empty')}</p>
   }
 
   return (
     <div className="flex flex-col gap-5">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {companySettings.map((setting) => {
-          const label = labelFor(setting)
+          const label = labelFor(setting, t)
 
           if (setting.type === 'boolean') {
             return (
@@ -215,7 +234,7 @@ export function CompanyProfileTab() {
                   label={label}
                   value={value}
                   onChange={(e) => handleTextChange(setting.key, e.target.value)}
-                  hint={jsonErrors[setting.key] ? undefined : setting.description ?? 'JSON biçiminde bir değer.'}
+                  hint={jsonErrors[setting.key] ? undefined : descriptionFor(setting, t) ?? t('settings:company.jsonHint')}
                   error={jsonErrors[setting.key]}
                   className="font-mono text-xs"
                   rows={5}
@@ -231,7 +250,7 @@ export function CompanyProfileTab() {
                   label={label}
                   value={value}
                   onChange={(e) => handleTextChange(setting.key, e.target.value)}
-                  hint={setting.description ?? undefined}
+                  hint={descriptionFor(setting, t)}
                 />
               </div>
             )
@@ -244,7 +263,7 @@ export function CompanyProfileTab() {
               type={setting.type === 'integer' ? 'number' : 'text'}
               value={value}
               onChange={(e) => handleTextChange(setting.key, e.target.value)}
-              hint={setting.description ?? undefined}
+              hint={descriptionFor(setting, t)}
             />
           )
         })}
@@ -258,7 +277,7 @@ export function CompanyProfileTab() {
           onClick={seedFromServer}
           disabled={!isDirty || updateSettings.isPending}
         >
-          Değişiklikleri Geri Al
+          {t('settings:company.resetChanges')}
         </Button>
         <Button
           type="button"
@@ -267,7 +286,7 @@ export function CompanyProfileTab() {
           disabled={!isDirty}
           loading={updateSettings.isPending}
         >
-          Kaydet
+          {t('common:actions.save')}
         </Button>
       </div>
     </div>

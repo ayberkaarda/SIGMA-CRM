@@ -84,16 +84,15 @@ class StoreCustomFieldRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'entity_type.required' => 'entity_type zorunludur.',
-            'entity_type.in' => 'Geçersiz entity_type. Geçerli değerler: '.implode('|', CustomFieldController::ENTITY_TYPES),
-            'name.required' => 'Alan adı zorunludur.',
-            'key.required' => 'Alan anahtarı (key) zorunludur.',
-            'key.regex' => 'Anahtar küçük harfle başlamalı; yalnızca küçük harf, rakam ve alt çizgi içerebilir (ör. "butce_araligi").',
-            'key.unique' => 'Bu kayıt tipinde aynı anahtara sahip bir alan zaten var.',
-            'type.required' => 'Alan tipi zorunludur.',
-            'type.in' => 'Geçersiz alan tipi. Geçerli değerler: '.implode('|', CustomFieldService::TYPES),
-            'options.array' => 'Seçenekler bir liste olmalıdır.',
-            'is_active.missing' => 'Yeni alan daima aktif oluşturulur.',
+            'entity_type.in' => __('validation.custom.settings.custom_field_entity_type_invalid', [
+                'values' => implode('|', CustomFieldController::ENTITY_TYPES),
+            ]),
+            'key.regex' => __('validation.custom.settings.key_format'),
+            'key.unique' => __('validation.custom.settings.custom_field_key_unique'),
+            'type.in' => __('validation.custom.settings.custom_field_type_invalid', [
+                'values' => implode('|', CustomFieldService::TYPES),
+            ]),
+            'is_active.missing' => __('validation.custom.settings.custom_field_is_active_locked'),
         ];
     }
 }

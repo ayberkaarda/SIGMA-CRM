@@ -53,6 +53,15 @@ use Symfony\Component\HttpFoundation\Response;
  * kartın kendi `pipeline_stage_id` alanından okunur. Zarf o alanı AYRICA
  * tekrarlamaz: aynı bilginin iki yerde durması, biri güncellenip diğeri
  * unutulduğunda sessiz bir tutarsızlık üretir.
+ *
+ * -----------------------------------------------------------------------------
+ * FAZ 14 / İZ D — `__()` NEDEN CONSTRUCTOR'DA (OKUMA ANINDA DEĞİL)
+ * -----------------------------------------------------------------------------
+ * Bu istisna, bildirimlerin aksine, HİÇBİR YERDE saklanmaz — kurulduğu anda
+ * `response()->json()` gövdesine gömülür ve saniyeler içinde tüketilir. Bu yüzden
+ * `NotificationText`teki "render ANINDA değil OKUMA anında çöz" disiplini burada
+ * uygulanmaz: kurulma anı zaten tek ve gerçek okuma anıdır — `SetLocale`
+ * middleware'i bu noktaya kadar isteğin locale'ini çoktan ayarlamıştır.
  */
 class DealVersionConflictException extends HttpResponseException
 {
@@ -66,8 +75,7 @@ class DealVersionConflictException extends HttpResponseException
     ) {
         parent::__construct(response()->json([
             'errors' => [
-                'message' => 'Bu kart siz sürüklerken başka bir kullanıcı tarafından güncellendi. '
-                    .'Panodaki güncel hâli aşağıda; işleminizi tekrar deneyin.',
+                'message' => __('errors.deal_version_conflict.message'),
                 'code' => 'DEAL_VERSION_CONFLICT',
             ],
             // Zarfın dışında, `errors` ile kardeş: `errors.fields` doğrulama

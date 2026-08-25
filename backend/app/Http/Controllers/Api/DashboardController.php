@@ -8,8 +8,10 @@ use App\Http\Resources\Reports\KpiCollectionResource;
 use App\Http\Resources\Reports\RecentActivityResource;
 use App\Http\Resources\Reports\RevenueTrendPointResource;
 use App\Http\Resources\Reports\TaskSummaryResource;
+use App\Services\Exchange\ExchangeRateService;
 use App\Services\Reports\DashboardService;
 use App\Services\Reports\Support\DateRangeResolver;
+use App\Services\Reports\Support\ReportCurrencyContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -35,7 +37,22 @@ class DashboardController extends Controller
     public function __construct(
         private readonly DashboardService $dashboard,
         private readonly DateRangeResolver $dateRange,
+        private readonly ExchangeRateService $rates,
     ) {}
+
+    /**
+     * Görüntü para birimi bağlamı — İSTEK BAŞINA TEK KEZ çözülür
+     * (PHASE-INTL §2.4). Kaynak: isteği yapan kullanıcının
+     * `users.preferred_currency`'si; yoksa/geçersizse temel para birimi
+     * (TRY). Sorgu parametresiyle EZİLEMEZ: para birimi bir kişisel
+     * TERCİHTİR, URL'den gelen geçici bir görünüm ayarı değil — aksi hâlde
+     * paylaşılan bir dashboard bağlantısı başkasının ekranında farklı
+     * rakamlar gösterirdi.
+     */
+    private function currencyContext(Request $request): ReportCurrencyContext
+    {
+        return ReportCurrencyContext::make($this->rates, $request->user()?->preferred_currency);
+    }
 
     public function kpis(Request $request): JsonResponse
     {
@@ -43,9 +60,13 @@ class DashboardController extends Controller
 
         $range = $this->dateRange->resolve($request->query('from'), $request->query('to'));
 
+        $currency = $this->currencyContext($request);
+
         // Sözleşmede `user_id` yok (yalnızca /reports/sales-performance'ta
         // var) — dashboard KPI'ları her zaman şirket geneli.
-        return $this->respond((new KpiCollectionResource($this->dashboard->kpis($range)))->resolve());
+        $kpis = $this->dashboard->kpis($range, null, $currency);
+
+        return $this->respond((new KpiCollectionResource($kpis))->resolve(), $currency);
     }
 
     public function funnel(Request $request): JsonResponse
@@ -54,7 +75,10 @@ class DashboardController extends Controller
 
         $range = $this->dateRange->resolve($request->query('from'), $request->query('to'));
 
-        return $this->respond(FunnelStageResource::collection($this->dashboard->funnel($range))->resolve());
+        $currency = $this->currencyContext($request);
+        $funnel = $this->dashboard->funnel($range, $currency);
+
+        return $this->respond(FunnelStageResource::collection($funnel)->resolve(), $currency);
     }
 
     public function revenueTrend(Request $request): JsonResponse
@@ -64,9 +88,10 @@ class DashboardController extends Controller
         $range = $this->dateRange->resolve($request->query('from'), $request->query('to'));
         $groupBy = $request->query('group_by');
 
-        return $this->respond(RevenueTrendPointResource::collection(
-            $this->dashboard->revenueTrend($range, is_string($groupBy) ? $groupBy : null)
-        )->resolve());
+        $currency = $this->currencyContext($request);
+        $trend = $this->dashboard->revenueTrend($range, is_string($groupBy) ? $groupBy : null, $currency);
+
+        return $this->respond(RevenueTrendPointResource::collection($trend)->resolve(), $currency);
     }
 
     public function recentActivities(Request $request): JsonResponse
@@ -99,9 +124,23 @@ class DashboardController extends Controller
     /**
      * Tek çıkış kapısı — bkz. ReportController::respond() aynı iki gerekçe
      * (data-anahtarı çakışması + JSON_PRESERVE_ZERO_FRACTION).
+     *
+     * `rate_info` (Faz 14 / İz E) `data`'nın KARDEŞİ olarak eklenir, İÇİNE
+     * değil: `data` her uçta farklı bir şekle sahip (dizi/nesne/koleksiyon)
+     * ve kur dipnotu o şeklin parçası DEĞİL, yanıtın meta bilgisidir.
+     * Kardeş anahtar aynı zamanda tamamen additive'dir — mevcut istemciler
+     * `data`'yı okumaya aynen devam eder. Para taşımayan uçlarda
+     * (`recent-activities`, `task-summary`) hiç eklenmez.
+     * Alan sözleşmesi: ReportCurrencyContext::rateInfo() dokümanı.
      */
-    private function respond(mixed $data): JsonResponse
+    private function respond(mixed $data, ?ReportCurrencyContext $currency = null): JsonResponse
     {
-        return new JsonResponse(['data' => $data], Response::HTTP_OK, [], JSON_PRESERVE_ZERO_FRACTION);
+        $payload = ['data' => $data];
+
+        if ($currency !== null) {
+            $payload['rate_info'] = $currency->rateInfo();
+        }
+
+        return new JsonResponse($payload, Response::HTTP_OK, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 }

@@ -8,6 +8,7 @@
 // dışı bir değer backend'de SESSİZCE varsayılana düşer, istemci tarafında ek doğrulama
 // gerekmez.
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { api, getErrorMessage } from '../../../lib/axios'
 import { toast } from '../../../components/ui'
 import type { Product, ResolvedProductPrice } from '../types'
@@ -152,11 +153,12 @@ function invalidateProductCaches(queryClient: ReturnType<typeof useQueryClient>,
 
 export function useCreateProduct() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation('products')
   return useMutation({
     mutationFn: createProductRequest,
     onSuccess: (product) => {
       invalidateProductCaches(queryClient, product.id)
-      toast.success('Ürün oluşturuldu.')
+      toast.success(t('toast.created'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -164,11 +166,12 @@ export function useCreateProduct() {
 
 export function useUpdateProduct() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation('products')
   return useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: Partial<ProductPayload> }) => updateProductRequest(id, payload),
     onSuccess: (product) => {
       invalidateProductCaches(queryClient, product.id)
-      toast.success('Ürün güncellendi.')
+      toast.success(t('toast.updated'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -176,11 +179,12 @@ export function useUpdateProduct() {
 
 export function useDeleteProduct() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation('products')
   return useMutation({
     mutationFn: (id: number) => deleteProductRequest(id),
     onSuccess: () => {
       invalidateProductCaches(queryClient)
-      toast.success('Ürün silindi.')
+      toast.success(t('toast.deleted'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })

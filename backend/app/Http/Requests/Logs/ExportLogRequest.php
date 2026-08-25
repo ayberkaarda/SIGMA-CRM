@@ -63,20 +63,6 @@ class ExportLogRequest extends FormRequest
     }
 
     /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'type.required' => 'Dışa aktarma türü zorunludur.',
-            'type.in' => 'Geçersiz dışa aktarma türü.',
-            'format.in' => 'Geçersiz dışa aktarma biçimi.',
-            'filter.user_id.exists' => 'Seçilen kullanıcı filtresi geçerli değil.',
-            'filter.subject_type.in' => 'Seçilen kayıt türü filtresi geçerli değil.',
-        ];
-    }
-
-    /**
      * @return array<string, mixed>
      */
     public function filters(): array

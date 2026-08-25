@@ -38,18 +38,6 @@ class ForRecordConversationRequest extends FormRequest
         ];
     }
 
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'conversable_type.required' => 'Kayıt türü zorunludur.',
-            'conversable_type.in' => 'Bu kayıt türü için sohbet açılamaz.',
-            'conversable_id.required' => 'Kayıt kimliği zorunludur.',
-        ];
-    }
-
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {

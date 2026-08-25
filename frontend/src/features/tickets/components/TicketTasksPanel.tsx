@@ -2,24 +2,18 @@
 // `TaskStatusBadge`/`PriorityBadge` bileşenleri DOĞRUDAN kullanılır (kopya YAZILMAZ).
 // `GET /api/tasks?filter[taskable_type]=ticket&filter[taskable_id]={id}`.
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ListPlus } from 'lucide-react'
 import { Avatar, Button, Card, CardBody, CardHeader, Skeleton } from '../../../components/ui'
+import { formatDateTime } from '../../../lib/datetime'
 import { useTasks } from '../../tasks/api/tasksApi'
 import { PriorityBadge } from '../../tasks/components/PriorityBadge'
 import { TaskStatusBadge } from '../../tasks/components/TaskStatusBadge'
 import { TicketTaskFormModal } from './TicketTaskFormModal'
 import type { Ticket } from '../types'
 
-function formatDateTime(iso: string | null): string {
-  if (!iso) return '—'
-  try {
-    return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
-  } catch {
-    return iso
-  }
-}
-
 export function TicketTasksPanel({ ticket }: { ticket: Ticket }) {
+  const { t } = useTranslation('tickets')
   const { data, isLoading, isError, refetch } = useTasks({ taskable_type: 'ticket', taskable_id: ticket.id, per_page: 50, sort: 'due_at' })
   const [addOpen, setAddOpen] = useState(false)
 
@@ -29,11 +23,11 @@ export function TicketTasksPanel({ ticket }: { ticket: Ticket }) {
     <>
       <Card>
         <CardHeader
-          title="Görevler"
-          subtitle={`${tasks.length} görev`}
+          title={t('tasks.title')}
+          subtitle={t('tasks.subtitle', { count: tasks.length })}
           action={
             <Button size="sm" leftIcon={<ListPlus className="size-4" aria-hidden="true" />} onClick={() => setAddOpen(true)}>
-              Görev Ekle
+              {t('tasks.add')}
             </Button>
           }
         />
@@ -42,13 +36,13 @@ export function TicketTasksPanel({ ticket }: { ticket: Ticket }) {
             <Skeleton variant="text" lines={3} />
           ) : isError ? (
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm text-fg-muted">Görevler yüklenirken bir hata oluştu.</p>
+              <p className="text-sm text-fg-muted">{t('tasks.loadError')}</p>
               <Button variant="secondary" size="sm" onClick={() => refetch()}>
-                Tekrar dene
+                {t('tasks.retry')}
               </Button>
             </div>
           ) : tasks.length === 0 ? (
-            <p className="text-sm text-fg-muted">Bu talebe bağlı görev yok.</p>
+            <p className="text-sm text-fg-muted">{t('tasks.empty')}</p>
           ) : (
             tasks.map((task) => (
               <div key={task.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border-subtle p-3">
@@ -58,7 +52,7 @@ export function TicketTasksPanel({ ticket }: { ticket: Ticket }) {
                     <PriorityBadge priority={task.priority} size="sm" />
                     <TaskStatusBadge status={task.status} size="sm" />
                     <span className={task.is_overdue ? 'text-xs font-medium text-danger' : 'text-xs text-fg-muted'}>
-                      Vade: {formatDateTime(task.due_at)}
+                      {t('tasks.dueLabel', { value: formatDateTime(task.due_at) })}
                     </span>
                   </div>
                 </div>

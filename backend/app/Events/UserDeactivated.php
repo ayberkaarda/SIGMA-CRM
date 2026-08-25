@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Models\User;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
@@ -45,6 +46,22 @@ use Illuminate\Queue\SerializesModels;
  * can never fail the deactivation request itself. Channel authorization
  * (routes/channels.php) and the real fan-out are completed in Phase 4.
  * ---------------------------------------------------------------------------
+ *
+ * ---------------------------------------------------------------------------
+ * PHASE 14 / TRACK D: WHY `$message` DEFAULTS TO NULL, RESOLVED IN broadcastWith()
+ * ---------------------------------------------------------------------------
+ * The queued broadcast job (`Illuminate\Broadcasting\BroadcastEvent`) calls
+ * `broadcastWith()` on the QUEUE WORKER, long after the HTTP request (and its
+ * `SetLocale`-resolved app locale) is gone — resolving the sentence at
+ * construction time (like `DealVersionConflictException`, which is consumed
+ * synchronously inside the same request) would freeze it in whatever locale
+ * happens to be active on the worker, not the deactivated user's own
+ * preference. A PHP constructor default also cannot call `__()` (not a
+ * constant expression), so the caller (`UserService::deactivate()`, which
+ * only ever passes `$userId`) keeps working unchanged. The recipient's own
+ * `locale` is looked up at broadcast time instead — the same "resolve for the
+ * actual reader, not the sender" rule `NotificationText` applies to persisted
+ * notifications, applied here to an ephemeral (never stored) broadcast frame.
  */
 class UserDeactivated implements ShouldBroadcast
 {
@@ -52,7 +69,7 @@ class UserDeactivated implements ShouldBroadcast
 
     public function __construct(
         public readonly int $userId,
-        public readonly string $message = 'Hesabınız devre dışı bırakıldı. Oturumunuz sonlandırıldı.',
+        public readonly ?string $message = null,
     ) {}
 
     /**
@@ -80,7 +97,18 @@ class UserDeactivated implements ShouldBroadcast
     {
         return [
             'user_id' => $this->userId,
-            'message' => $this->message,
+            'message' => $this->message ?? $this->resolveMessage(),
         ];
+    }
+
+    /**
+     * Deactivated user's own `locale` column, not `app()->getLocale()` — the queue
+     * worker has no request-scoped locale (see class docblock).
+     */
+    private function resolveMessage(): string
+    {
+        $locale = User::query()->whereKey($this->userId)->value('locale');
+
+        return __('errors.user_deactivated.message', [], is_string($locale) && $locale !== '' ? $locale : null);
     }
 }

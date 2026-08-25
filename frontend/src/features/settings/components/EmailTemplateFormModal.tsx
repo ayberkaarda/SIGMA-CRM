@@ -47,6 +47,7 @@
 // anlamına gelir ve otomatik türetmeyi geçersiz kılardı, oysa istenen davranış budur.
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Plus, X } from 'lucide-react'
 import { Badge, Button, Input, Modal, Textarea } from '../../../components/ui'
 import { getFieldErrors } from '../../../lib/axios'
@@ -89,6 +90,7 @@ export type EmailTemplateFormModalProps = {
 }
 
 export function EmailTemplateFormModal({ open, onClose, template }: EmailTemplateFormModalProps) {
+  const { t } = useTranslation(['settings', 'common'])
   const isEdit = !!template
 
   const createTemplate = useCreateEmailTemplate()
@@ -127,10 +129,10 @@ export function EmailTemplateFormModal({ open, onClose, template }: EmailTemplat
 
   function validate(): boolean {
     const errors: Record<string, string[]> = {}
-    if (!key.trim()) errors.key = ['Anahtar zorunludur.']
-    if (!name.trim()) errors.name = ['Şablon adı zorunludur.']
-    if (!subject.trim()) errors.subject = ['Konu zorunludur.']
-    if (!bodyHtml.trim()) errors.body_html = ['İçerik zorunludur.']
+    if (!key.trim()) errors.key = [t('settings:emailTemplateForm.errors.keyRequired')]
+    if (!name.trim()) errors.name = [t('settings:emailTemplateForm.errors.nameRequired')]
+    if (!subject.trim()) errors.subject = [t('settings:emailTemplateForm.errors.subjectRequired')]
+    if (!bodyHtml.trim()) errors.body_html = [t('settings:emailTemplateForm.errors.bodyRequired')]
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -175,15 +177,15 @@ export function EmailTemplateFormModal({ open, onClose, template }: EmailTemplat
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? 'E-posta Şablonunu Düzenle' : 'Yeni E-posta Şablonu'}
+      title={isEdit ? t('settings:emailTemplateForm.titleEdit') : t('settings:emailTemplateForm.titleCreate')}
       size="xl"
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Vazgeç
+            {t('common:actions.cancel')}
           </Button>
           <Button type="submit" form="email-template-form" loading={isPending}>
-            {isEdit ? 'Kaydet' : 'Oluştur'}
+            {isEdit ? t('common:actions.save') : t('common:actions.create')}
           </Button>
         </div>
       }
@@ -191,14 +193,32 @@ export function EmailTemplateFormModal({ open, onClose, template }: EmailTemplat
       <form id="email-template-form" onSubmit={handleSubmit} className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Input label="Anahtar (key)" value={key} onChange={(e) => setKey(e.target.value)} error={fieldError('key')} required />
-            <Input label="Şablon Adı" value={name} onChange={(e) => setName(e.target.value)} error={fieldError('name')} required />
+            <Input
+              label={t('settings:emailTemplateForm.keyLabel')}
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              error={fieldError('key')}
+              required
+            />
+            <Input
+              label={t('settings:emailTemplateForm.nameLabel')}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              error={fieldError('name')}
+              required
+            />
           </div>
 
-          <Input label="Konu" value={subject} onChange={(e) => setSubject(e.target.value)} error={fieldError('subject')} required />
+          <Input
+            label={t('settings:emailTemplateForm.subjectLabel')}
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            error={fieldError('subject')}
+            required
+          />
 
           <Textarea
-            label="İçerik (HTML)"
+            label={t('settings:emailTemplateForm.bodyLabel')}
             value={bodyHtml}
             onChange={(e) => setBodyHtml(e.target.value)}
             error={fieldError('body_html')}
@@ -208,10 +228,9 @@ export function EmailTemplateFormModal({ open, onClose, template }: EmailTemplat
           />
 
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-medium text-fg-muted">Değişkenler</span>
+            <span className="text-xs font-medium text-fg-muted">{t('settings:emailTemplateForm.variablesLabel')}</span>
             <p className="text-xs text-fg-muted">
-              Boş bırakabilirsiniz — sunucu, içerikteki <code className="font-mono">{'{{değişken}}'}</code> yer
-              tutucularından otomatik türetir.
+              {t('settings:emailTemplateForm.variablesHint', { placeholder: '{{variable}}' })}
             </p>
             {variables.map((variable, index) => (
               <div key={index} className="flex items-center gap-2">
@@ -219,10 +238,16 @@ export function EmailTemplateFormModal({ open, onClose, template }: EmailTemplat
                   <Input
                     value={variable}
                     onChange={(e) => updateVariable(index, e.target.value)}
-                    placeholder="ör. customer_name"
+                    placeholder={t('settings:emailTemplateForm.variablePlaceholderExample')}
                   />
                 </div>
-                <Button type="button" variant="ghost" size="sm" onClick={() => removeVariable(index)} aria-label="Değişkeni kaldır">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeVariable(index)}
+                  aria-label={t('settings:emailTemplateForm.removeVariable')}
+                >
                   <X className="size-4" aria-hidden="true" />
                 </Button>
               </div>
@@ -234,21 +259,21 @@ export function EmailTemplateFormModal({ open, onClose, template }: EmailTemplat
               leftIcon={<Plus className="size-3.5" aria-hidden="true" />}
               onClick={() => setVariables((prev) => [...prev, ''])}
             >
-              Değişken Ekle
+              {t('settings:emailTemplateForm.addVariable')}
             </Button>
           </div>
         </div>
 
         <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium text-fg-muted">Önizleme</span>
+          <span className="text-xs font-medium text-fg-muted">{t('settings:emailTemplateForm.previewLabel')}</span>
           <div className="flex flex-col gap-3 rounded-lg border border-border-subtle bg-surface-2 p-4">
             <div className="border-b border-border-subtle pb-2">
-              <p className="text-xs text-fg-muted">Konu</p>
-              <p className="text-sm font-medium text-fg">{subject || '—'}</p>
+              <p className="text-xs text-fg-muted">{t('settings:emailTemplateForm.previewSubjectLabel')}</p>
+              <p className="text-sm font-medium text-fg">{subject || t('settings:emailTemplateForm.previewEmptySubject')}</p>
             </div>
             {bodyHtml ? (
               <iframe
-                title="E-posta şablonu önizlemesi"
+                title={t('settings:emailTemplateForm.previewIframeTitle')}
                 sandbox=""
                 srcDoc={previewDocument}
                 referrerPolicy="no-referrer"
@@ -256,14 +281,10 @@ export function EmailTemplateFormModal({ open, onClose, template }: EmailTemplat
               />
             ) : (
               <div className="rounded-md bg-surface-1 p-3 text-sm">
-                <p className="text-fg-muted">İçerik girildikçe burada görünecek.</p>
+                <p className="text-fg-muted">{t('settings:emailTemplateForm.previewPlaceholder')}</p>
               </div>
             )}
-            <p className="text-xs text-fg-muted">
-              Önizleme yazdığınız ham HTML'i gösterir. Kaydederken sunucu güvenli olmayan
-              etiket/öznitelikleri (script, stil, olay işleyicileri) temizler; kaydedilen içerik
-              önizlemeden daha sade olabilir.
-            </p>
+            <p className="text-xs text-fg-muted">{t('settings:emailTemplateForm.previewNote')}</p>
             {variables.filter((v) => v.trim()).length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {variables

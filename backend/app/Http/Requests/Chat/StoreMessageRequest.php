@@ -68,19 +68,6 @@ class StoreMessageRequest extends FormRequest
         ];
     }
 
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'body.max' => 'Mesaj en fazla :max karakter olabilir.',
-            'attachment_id.exists' => 'Seçilen dosya geçerli değil.',
-            'mentions.array' => 'Bahsedilen kullanıcılar bir liste olmalıdır.',
-            'mentions.*.exists' => 'Bahsedilen kullanıcılardan biri geçerli değil.',
-        ];
-    }
-
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {

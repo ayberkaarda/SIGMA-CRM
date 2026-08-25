@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\ActivityController;
 use App\Http\Controllers\Api\AttachmentController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AutomationRuleController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\ConversationController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DealController;
 use App\Http\Controllers\Api\DealMoveController;
 use App\Http\Controllers\Api\EmailTemplateController;
+use App\Http\Controllers\Api\ExchangeRateController;
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\LeadImportController;
 use App\Http\Controllers\Api\LogController;
@@ -25,6 +27,8 @@ use App\Http\Controllers\Api\QuoteController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\RoleMatrixController;
+use App\Http\Controllers\Api\SavedViewController;
+use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\TaskController;
@@ -96,6 +100,36 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
      * declared inside this group.
      */
     Route::middleware('password.changed')->group(function () {
+        /*
+         * Kişisel arayüz tercihleri (Faz 14 / İz D) — izin GEREKTİRMEZ.
+         *
+         * `/settings` (settings.manage) ve `/users/{user}` (users.update) yönetici
+         * yüzeyleridir; kendi dilini/para birimini seçmek her kullanıcının hakkıdır, o
+         * yüzden `/me` ailesinde ayrı bir uç açıldı. Gövde yalnızca beyaz listeye karşı
+         * doğrulanan iki alan taşır (UpdatePreferencesRequest); özne gövdeden değil
+         * oturumdan gelir. Gerekçenin tamamı AuthController::updatePreferences()'ta.
+         */
+        Route::patch('/me/preferences', [AuthController::class, 'updatePreferences'])->name('me.preferences');
+
+        /*
+         * Herkese açık güncel kur ucu (Faz 14 / İz E — docs/PHASE-INTL.md §2 Karar B) —
+         * izin GEREKTİRMEZ (yalnız `auth:sanctum` + bu gruptaki `active`/`password.changed`).
+         *
+         * `GET /api/settings/exchange-rates` (aşağıda, `settings.manage`) yönetim ekranıdır ve
+         * AYNEN kalır — bu uç onun yetkisini GEVŞETMEZ, tamamen ayrı bir amaca hizmet eder:
+         * sıradan kullanıcının kendi `preferred_currency`'sinde tutar görebilmesi. Gerekçe:
+         * TCMB kurları kamuya açık veridir (https://www.tcmb.gov.tr/kurlar/today.xml, kimliksiz
+         * herkes okuyabilir) — gizli değildir; kullanıcının kendi tercih ettiği para biriminde
+         * bir tutar görmesi bir yönetici yetkisi OLAMAZ. `ExchangeRateController::current()`.
+         *
+         * `throttle:30,1,exchange-rates-current` — salt-okunur, `LIMIT`li (desteklenen para
+         * birimi sayısı kadar, en fazla birkaç satır), ucuz sorgu; yine de kimliği doğrulanmış
+         * her kullanıcının varsayılan throttle anahtarı zaten KULLANICI bazlıdır (IP değil).
+         */
+        Route::get('/exchange-rates/current', [ExchangeRateController::class, 'current'])
+            ->middleware('throttle:30,1,exchange-rates-current')
+            ->name('exchange-rates.current');
+
         /*
          * Users + roles - controllers are owned by the parallel lane (C);
          * the route contract is fixed here.
@@ -420,6 +454,27 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::patch('/settings/roles/{role}/permissions', [RoleMatrixController::class, 'update'])->name('settings.roles.permissions.update');
 
         /*
+         * Kur (döviz) — Faz 14 / İz E (docs/PHASE-INTL.md §2.1, §2.6) —
+         * `settings.manage`. Yalnız OKUMA (para birimi başına en güncel kur +
+         * bayatlık) ve MANUEL DÜZELTME; otomatik TCMB çekmesi bir konsol
+         * komutudur (`exchange:fetch-tcmb`), HTTP ucu değildir.
+         */
+        Route::get('/settings/exchange-rates', [ExchangeRateController::class, 'index'])->name('settings.exchange-rates.index');
+        Route::post('/settings/exchange-rates', [ExchangeRateController::class, 'store'])->name('settings.exchange-rates.store');
+
+        /*
+         * Otomasyon kuralları — Faz 14 / İz F, C4 (docs/PHASE-INTL.md §3,
+         * docs/PHASE-AUDIT.md §5.1/§5.4). Yetkilendirme `AutomationRulePolicy`
+         * içinde (`settings.manage` + seçilen tetikleyici/eylemin izin-eşlemesi) —
+         * diğer Ayarlar uçlarının aksine burada tek satır Gate YETERSİZ, controller
+         * her uçta `Gate::authorize()` ile gerçek bir Policy çağırır.
+         */
+        Route::get('/settings/automation-rules', [AutomationRuleController::class, 'index'])->name('settings.automation-rules.index');
+        Route::post('/settings/automation-rules', [AutomationRuleController::class, 'store'])->name('settings.automation-rules.store');
+        Route::patch('/settings/automation-rules/{automationRule}', [AutomationRuleController::class, 'update'])->name('settings.automation-rules.update');
+        Route::delete('/settings/automation-rules/{automationRule}', [AutomationRuleController::class, 'destroy'])->name('settings.automation-rules.destroy');
+
+        /*
          * Raporlar + Dashboard (Faz 11) — `reports.view` / `reports.export` /
          * `dashboard.view` izinleri.
          */
@@ -473,5 +528,47 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
          */
         Route::post('/attachments', [AttachmentController::class, 'store'])->name('attachments.store');
         Route::get('/attachments/{attachment}', [AttachmentController::class, 'show'])->name('attachments.show');
+
+        /*
+         * Global arama / komut paleti (Faz 14 / İz F / Attio C1) —
+         * `GlobalSearchService`; modül bazlı yetkilendirme (`Gate::allows
+         * ('viewAny', ...)`) controller/servis katmanında yapılır, bkz.
+         * `docs/PHASE-AUDIT.md` §5.4.
+         *
+         * `throttle:60,1,search` — bu uç bir komut paletidir ve HER TUŞ
+         * VURUŞUNDA çağrılabilir (frontend'in debounce'u bu ucun
+         * sorumluluğu DEĞİL; sunucu tarafı kendi başına savunmalı).
+         * `leads-import`/`heavy-export` (5-10/dk) DB/CPU-ağır, TEK seferlik
+         * toplu işlemlerdir — bu uç ise ucuz, salt-okunur, `LIMIT`li
+         * sorgulardan oluşur (bkz. GlobalSearchService PER_MODULE_LIMIT/
+         * TOTAL_LIMIT). Dakikada 60 (saniyede ortalama 1) normal bir
+         * daktilo hızında yazan kullanıcıyı ASLA sınırlamaz (tipik
+         * debounce'lu bir arama kutusu saniyede birden fazla istek
+         * atmaz) ama saniyede onlarca isteklik bir script/döngüyü keser.
+         * Kimliği doğrulanmış istekte Laravel'in varsayılan throttle
+         * anahtarı zaten KULLANICI bazlıdır (IP değil).
+         */
+        Route::get('/search', [SearchController::class, 'index'])
+            ->middleware('throttle:60,1,search')
+            ->name('search.index');
+
+        /*
+         * Kayıtlı Görünümler / Saved Views (Faz 14 / İz F / Attio C2) —
+         * `docs/PHASE-INTL.md` §3, güvenlik kısıtı `docs/PHASE-AUDIT.md` §5.4.
+         *
+         * Bu uçlar HİÇBİR ZAMAN deal/lead/... VERİSİ döndürmez — yalnızca
+         * `saved_views` metadata'sını (isim/modül/saklanmış filtre) CRUD'lar.
+         * Bir görünümü "uygulamak" ayrı bir uç DEĞİLDİR: frontend `index()`'ten
+         * aldığı `query_json`'ı kendi URL'ine yazar, gerçek veri her zaman
+         * ilgili modülün KENDİ liste ucundan (`GET /api/deals` vb.) AÇAN
+         * kullanıcının kendi yetkisiyle çekilir (bkz. `SavedViewController`
+         * dokümanı — "confused deputy" kısıtı). Modül bazlı yetkilendirme
+         * (`.view` izni) `SavedViewPolicy` içinde yapılır; ayrı bir izin adı
+         * İCAT EDİLMEDİ.
+         */
+        Route::get('/saved-views', [SavedViewController::class, 'index'])->name('saved-views.index');
+        Route::post('/saved-views', [SavedViewController::class, 'store'])->name('saved-views.store');
+        Route::patch('/saved-views/{savedView}', [SavedViewController::class, 'update'])->name('saved-views.update');
+        Route::delete('/saved-views/{savedView}', [SavedViewController::class, 'destroy'])->name('saved-views.destroy');
     });
 });

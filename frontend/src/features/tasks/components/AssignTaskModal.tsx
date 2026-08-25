@@ -1,5 +1,6 @@
 // Görev atama modalı — `deals/components/AssignDealOwnerModal.tsx` ile aynı desen.
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button, Modal, Select } from '../../../components/ui'
 import { useAssignTask, useTaskUserOptions } from '../api/tasksApi'
 import type { Task } from '../types'
@@ -11,6 +12,7 @@ export type AssignTaskModalProps = {
 }
 
 export function AssignTaskModal({ open, onClose, task }: AssignTaskModalProps) {
+  const { t } = useTranslation(['tasks', 'common'])
   const { data: userOptions } = useTaskUserOptions()
   const assignTask = useAssignTask()
   const [assignedTo, setAssignedTo] = useState('')
@@ -23,7 +25,7 @@ export function AssignTaskModal({ open, onClose, task }: AssignTaskModalProps) {
   }
 
   const options = [
-    { value: '', label: 'Atanmamış' },
+    { value: '', label: t('tasks:common.unassigned') },
     ...(userOptions ?? []).map((u) => ({ value: String(u.id), label: u.name })),
   ]
 
@@ -37,20 +39,25 @@ export function AssignTaskModal({ open, onClose, task }: AssignTaskModalProps) {
     <Modal
       open={open}
       onClose={onClose}
-      title="Görevi Ata"
+      title={t('tasks:assignModal.title')}
       description={task?.title}
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>
-            Vazgeç
+            {t('common:actions.cancel')}
           </Button>
           <Button loading={assignTask.isPending} onClick={handleSubmit}>
-            Ata
+            {t('tasks:assignModal.submit')}
           </Button>
         </div>
       }
     >
-      <Select label="Atanan" value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)} options={options} />
+      <Select
+        label={t('tasks:form.assigneeLabel')}
+        value={assignedTo}
+        onChange={(e) => setAssignedTo(e.target.value)}
+        options={options}
+      />
     </Modal>
   )
 }

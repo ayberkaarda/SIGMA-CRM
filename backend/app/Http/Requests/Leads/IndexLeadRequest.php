@@ -40,24 +40,6 @@ class IndexLeadRequest extends FormRequest
     }
 
     /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'per_page.max' => 'Sayfa başına kayıt sayısı en fazla :max olabilir.',
-            'filter.status.in' => 'Seçilen durum filtresi geçerli değil.',
-            'filter.source.in' => 'Seçilen kaynak filtresi geçerli değil.',
-            'filter.owner_id.exists' => 'Seçilen sahip filtresi geçerli değil.',
-            'filter.score_min.between' => 'Minimum skor 0 ile 100 arasında olmalıdır.',
-            'filter.score_max.between' => 'Maksimum skor 0 ile 100 arasında olmalıdır.',
-            'filter.from.date' => 'Başlangıç tarihi geçerli bir tarih olmalıdır.',
-            'filter.to.date' => 'Bitiş tarihi geçerli bir tarih olmalıdır.',
-            'filter.tag_id.exists' => 'Seçilen etiket filtresi geçerli değil.',
-        ];
-    }
-
-    /**
      * Repository/Service katmanının beklediği düz filtre dizisini üretir.
      *
      * @return array<string, mixed>

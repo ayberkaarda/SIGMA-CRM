@@ -39,30 +39,4 @@ class ChangePasswordRequest extends FormRequest
             ],
         ];
     }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'current_password.required' => 'Mevcut şifreniz zorunludur.',
-            'current_password.current_password' => 'Mevcut şifreniz hatalı.',
-            'password.required' => 'Yeni şifre alanı zorunludur.',
-            'password.confirmed' => 'Yeni şifre tekrarı eşleşmiyor.',
-            'password.different' => 'Yeni şifreniz mevcut şifrenizden farklı olmalıdır.',
-            'password.uncompromised' => 'Girilen şifre veri ihlallerinde ifşa olmuş. Lütfen başka bir şifre seçin.',
-        ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public function attributes(): array
-    {
-        return [
-            'current_password' => 'mevcut şifre',
-            'password' => 'yeni şifre',
-        ];
-    }
 }

@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
 import { toast } from '../../../components/ui'
 import { getErrorMessage } from '../../../lib/axios'
+import i18n from '../../../i18n'
 import {
   addConversationMembersRequest,
   chatKeys,
@@ -47,7 +48,7 @@ export function useCreateConversation() {
     mutationFn: (payload: CreateConversationPayload) => createConversationRequest(payload),
     onSuccess: (conversation) => {
       syncConversation(queryClient, conversation)
-      toast.success('Sohbet oluşturuldu.')
+      toast.success(i18n.t('chat:toast.created'))
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -90,7 +91,7 @@ export function useConversationMembers(conversationId: number | null): UseConver
     mutationFn: (userIds: number[]) => addConversationMembersRequest(conversationId as number, userIds),
     onSuccess: (updated) => {
       syncConversation(queryClient, updated)
-      toast.success('Üye eklendi.')
+      toast.success(i18n.t('chat:toast.memberAdded'))
     },
     onError,
   })
@@ -102,7 +103,7 @@ export function useConversationMembers(conversationId: number | null): UseConver
         void queryClient.invalidateQueries({ queryKey: chatKeys.conversation(conversationId) })
       }
       void queryClient.invalidateQueries({ queryKey: chatKeys.conversations })
-      toast.success('Üye çıkarıldı.')
+      toast.success(i18n.t('chat:toast.memberRemoved'))
     },
     onError,
   })
@@ -114,7 +115,7 @@ export function useConversationMembers(conversationId: number | null): UseConver
         clearConversationUnread(conversationId)
         forgetConversation(queryClient, conversationId)
       }
-      toast.success('Sohbetten ayrıldınız.')
+      toast.success(i18n.t('chat:toast.left'))
     },
     onError,
   })
@@ -123,7 +124,7 @@ export function useConversationMembers(conversationId: number | null): UseConver
     mutationFn: (name: string) => renameConversationRequest(conversationId as number, name),
     onSuccess: (updated) => {
       syncConversation(queryClient, updated)
-      toast.success('Sohbet adı güncellendi.')
+      toast.success(i18n.t('chat:toast.renamed'))
     },
     onError,
   })
@@ -135,7 +136,7 @@ export function useConversationMembers(conversationId: number | null): UseConver
         clearConversationUnread(conversationId)
         forgetConversation(queryClient, conversationId)
       }
-      toast.success('Sohbet silindi.')
+      toast.success(i18n.t('chat:toast.deleted'))
     },
     onError,
   })
@@ -144,7 +145,7 @@ export function useConversationMembers(conversationId: number | null): UseConver
     mutationFn: (isMuted: boolean) => muteConversationRequest(conversationId as number, isMuted),
     onSuccess: (updated) => {
       syncConversation(queryClient, updated)
-      toast.success(updated.is_muted ? 'Bildirimler sessize alındı.' : 'Bildirimler açıldı.')
+      toast.success(updated.is_muted ? i18n.t('chat:toast.muted') : i18n.t('chat:toast.unmuted'))
     },
     onError,
   })
